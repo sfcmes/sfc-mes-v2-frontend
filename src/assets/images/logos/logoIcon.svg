@@ -1,0 +1,7 @@
+<svg width="212" height="50" viewBox="0 0 212 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M6 46V16H46V46H6Z" fill="#615DFF"/>
+  <path d="M18 46V24H26V46H18Z" fill="#3DD9EB"/>
+  <path d="M34 46V32H42V46H34Z" fill="#3DD9EB"/>
+  <path d="M22 16V8H38V16H22Z" fill="#3DD9EB"/>
+  <text x="70" y="40" fill="#11142D" font-size="20" font-family="Arial, sans-serif">SFC-MES</text>
+</svg>
