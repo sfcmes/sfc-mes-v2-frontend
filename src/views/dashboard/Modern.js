@@ -10,10 +10,10 @@ import Projects from '../../components/dashboards/modern/Projects';
 import SellingProducts from '../../components/dashboards/modern/SellingProducts';
 import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
-import Welcome from 'src/layouts/full/shared/welcome/Welcome';
-import Towers from '../../components/dashboards/modern/Towers';
-import Floors from '../../components/dashboards/modern/Floors';
-import Units from '../../components/dashboards/modern/Units';
+import Welcome from '../../layouts/full/shared/welcome/Welcome';
+// import Towers from '../../components/dashboards/modern/Towers';
+// import Floors from '../../components/dashboards/modern/Floors';
+// import Units from '../../components/dashboards/modern/Units';
 
 const Modern = () => {
   return (
@@ -66,7 +66,7 @@ const Modern = () => {
           <TopPerformers />
         </Grid>
         {/* New sections */}
-        <Grid item xs={12} lg={4}>
+        {/* <Grid item xs={12} lg={4}>
           <Towers />
         </Grid>
         <Grid item xs={12} lg={4}>
@@ -74,7 +74,7 @@ const Modern = () => {
         </Grid>
         <Grid item xs={12} lg={4}>
           <Units />
-        </Grid>
+        </Grid> */}
       </Grid>
       {/* column */}
       <Welcome />

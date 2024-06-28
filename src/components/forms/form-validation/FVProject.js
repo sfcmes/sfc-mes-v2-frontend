@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { Box, Button, Stack, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Button, Stack, FormControl, InputLabel, TextField, Select, MenuItem } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
 import CustomFormLabel from '../theme-elements/CustomFormLabel';
 
@@ -10,25 +10,25 @@ const validationSchema = yup.object({
     .string()
     .min(2, 'Too Short!')
     .max(50, 'Too Long!')
-    .required('กรุณาใส่ชื่อโครงการ'),
+    .required('กรุณาเลือกชื่อโครงการ'),
   projectCode: yup
     .string()
     .min(2, 'Too Short!')
     .max(50, 'Too Long!')
-    .required('กรุณาใส่รหัสโครงการ'),
+    .required('กรุณาใส่รหัส Section'),
   section: yup
     .number()
     .integer('Section must be an integer')
     .min(1, 'Section must be at least 1')
     .max(100, 'Section must be less than or equal to 100')
-    .required('กรุณาใส่จำนวนชั้นของโครงการ'),
+    .required('กรุณาใส่จำนวน Component'),
   status: yup
     .string()
     .oneOf(["Planning", "In Progress", "Completed", "On Hold"])
-    .required('กรุณาเลือกสถานะโครงการ'),
+    .required('กรุณาเลือกสถานะSection'),
 });
 
-const FVProject = () => {
+const FVProject = ({ onAddProject }) => {
   const formik = useFormik({
     initialValues: {
       projectName: '',
@@ -38,7 +38,17 @@ const FVProject = () => {
     },
     validationSchema: validationSchema,
     onSubmit: (values) => {
-      alert(JSON.stringify(values, null, 2));
+      const newProject = {
+        id: `${values.projectCode}-${Date.now()}`,
+        code: values.projectCode,
+        name: values.projectName,
+        status: values.status,
+        progress: 0, // default progress
+        sections: values.section,
+        components: 0, // default components
+      };
+      onAddProject(newProject);
+      formik.resetForm();
     },
   });
 
@@ -47,15 +57,15 @@ const FVProject = () => {
       <Stack>
         <Box>
           <CustomFormLabel>ชื่อโครงการ</CustomFormLabel>
-          <CustomTextField
+          <TextField
             fullWidth
             id="projectName"
             name="projectName"
+            label="ชื่อโครงการ"
             value={formik.values.projectName}
             onChange={formik.handleChange}
             error={formik.touched.projectName && Boolean(formik.errors.projectName)}
             helperText={formik.touched.projectName && formik.errors.projectName}
-            placeholder="Skyrise (Tower D)"
           />
         </Box>
         <Box>
@@ -88,7 +98,7 @@ const FVProject = () => {
         <Box>
           <CustomFormLabel>สถานะโครงการ</CustomFormLabel>
           <FormControl fullWidth>
-            <InputLabel id="status-label"></InputLabel>
+            <InputLabel id="status-label">สถานะโครงการ</InputLabel>
             <Select
               labelId="status-label"
               id="status"

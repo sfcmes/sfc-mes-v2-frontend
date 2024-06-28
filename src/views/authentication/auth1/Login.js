@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Grid, Box, Stack, Typography } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
-import img1 from 'src/assets/images/backgrounds/login-bg.svg';
+import img1 from 'src/assets/images/backgrounds/login-bg.jpg';
 import Logo from 'src/layouts/full/shared/logo/Logo';
 import AuthLogin from '../authForms/AuthLogin';
 
@@ -29,29 +29,19 @@ const Login = () => (
           },
         }}
       >
-        <Box position="relative">
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
+            height: '100vh',
+            backgroundImage: `url(${img1})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
           <Box px={3}>
             <Logo />
-          </Box>
-          <Box
-            alignItems="center"
-            justifyContent="center"
-            height={'calc(100vh - 75px)'}
-            sx={{
-              display: {
-                xs: 'none',
-                lg: 'flex',
-              },
-            }}
-          >
-            <img
-              src={img1}
-              alt="bg"
-              style={{
-                width: '100%',
-                maxWidth: '500px',
-              }}
-            />
           </Box>
         </Box>
       </Grid>
@@ -67,16 +57,16 @@ const Login = () => (
       >
         <Box p={4}>
           <AuthLogin
-            title="Welcome to Modernize"
+            title="Welcome to SFC MES SYSTEM"
             subtext={
               <Typography variant="subtitle1" color="textSecondary" mb={1}>
-                Your Admin Dashboard
+                SFC Manufacturing Execution System
               </Typography>
             }
             subtitle={
               <Stack direction="row" spacing={1} mt={3}>
                 <Typography color="textSecondary" variant="h6" fontWeight="500">
-                  New to Modernize?
+                  New to SFC MES?
                 </Typography>
                 <Typography
                   component={Link}

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import DashboardCard from '../../shared/DashboardCard';
 import CustomSelect from '../../forms/theme-elements/CustomSelect';
 import {
-  MenuItem, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow, Chip, TableContainer
+  MenuItem, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow, Chip, TableContainer, Modal
 } from '@mui/material';
-import ProjectDetailsModal from './ProjectDetailsModal';
+import SectionsTable from './SectionsTable';
+import ComponentsTable from './ComponentsTable';
 
 const projects = [
   {
@@ -13,9 +14,8 @@ const projects = [
     name: 'ลูกขั้นบันได UOB (TOWER A)',
     status: 'In Progress',
     progress: 65,
-    towers: [{ id: 1, code: 'UA', name: 'ลูกขั้นบันได UOB (TOWER A)' }],
-    floors: [{ id: 1, towerCode: 'UA', floorNumber: 1 }],
-    units: [{ id: 1, floorNumber: 1, unitNumber: 101, status: 'Approved' }],
+    sections: 10,
+    components: 100
   },
   {
     id: '6f670de8-54f0-4af1-acb7-76f41c618e86',
@@ -23,9 +23,8 @@ const projects = [
     name: 'Skyrise (Tower F)',
     status: 'Completed',
     progress: 100,
-    towers: [{ id: 2, code: 'SKF', name: 'Skyrise (Tower F)' }],
-    floors: [{ id: 2, towerCode: 'SKF', floorNumber: 2 }],
-    units: [{ id: 2, floorNumber: 2, unitNumber: 202, status: 'Approved' }],
+    sections: 10,
+    components: 100
   },
   {
     id: '89cdfe36-5b1b-4679-b737-3a8bcfd29618',
@@ -33,9 +32,8 @@ const projects = [
     name: 'Skyrise (Tower G)',
     status: 'In Progress',
     progress: 80,
-    towers: [{ id: 3, code: 'SKG', name: 'Skyrise (Tower G)' }],
-    floors: [{ id: 3, towerCode: 'SKG', floorNumber: 3 }],
-    units: [{ id: 3, floorNumber: 3, unitNumber: 303, status: 'Approved' }],
+    sections: 10,
+    components: 100
   },
   {
     id: 'b856b64b-b25a-42ab-be7c-d37715f6df2c',
@@ -43,9 +41,8 @@ const projects = [
     name: 'Skyrise (Tower E)',
     status: 'Delayed',
     progress: 40,
-    towers: [{ id: 4, code: 'SKE', name: 'Skyrise (Tower E)' }],
-    floors: [{ id: 4, towerCode: 'SKE', floorNumber: 4 }],
-    units: [{ id: 4, floorNumber: 4, unitNumber: 404, status: 'Approved' }],
+    sections: 10,
+    components: 100
   },
   {
     id: 'bc2d14b2-8ac1-4025-b338-d0c838ebe08d',
@@ -53,9 +50,8 @@ const projects = [
     name: 'Skyrise (Tower D)',
     status: 'In Progress',
     progress: 90,
-    towers: [{ id: 5, code: 'SKD', name: 'Skyrise (Tower D)' }],
-    floors: [{ id: 5, towerCode: 'SKD', floorNumber: 5 }],
-    units: [{ id: 5, floorNumber: 5, unitNumber: 505, status: 'Approved' }],
+    sections: 10,
+    components: 100
   },
   {
     id: 'f7025e3b-6ab0-4b99-b8cb-3593fc2f9ce2',
@@ -63,30 +59,120 @@ const projects = [
     name: 'ลูกขั้นบันได UOB (TOWER B)',
     status: 'In Progress',
     progress: 75,
-    towers: [{ id: 6, code: 'UB', name: 'ลูกขั้นบันได UOB (TOWER B)' }],
-    floors: [{ id: 6, towerCode: 'UB', floorNumber: 6 }],
-    units: [{ id: 6, floorNumber: 6, unitNumber: 606, status: 'Approved' }],
+    sections: 10,
+    components: 100
   },
 ];
 
+const mockSections = {
+  UA: Array.from({ length: 10 }, (_, i) => ({
+    section_id: `UA-${i + 1}`,
+    section_name: `Floor ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    components: 10,
+  })),
+  SKF: Array.from({ length: 10 }, (_, i) => ({
+    section_id: `SKF-${i + 1}`,
+    section_name: `Floor ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    components: 10,
+  })),
+  SKG: Array.from({ length: 10 }, (_, i) => ({
+    section_id: `SKG-${i + 1}`,
+    section_name: `Floor ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    components: 10,
+  })),
+  SKE: Array.from({ length: 10 }, (_, i) => ({
+    section_id: `SKE-${i + 1}`,
+    section_name: `Floor ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    components: 10,
+  })),
+  SKD: Array.from({ length: 10 }, (_, i) => ({
+    section_id: `SKD-${i + 1}`,
+    section_name: `Floor ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    components: 10,
+  })),
+  UB: Array.from({ length: 10 }, (_, i) => ({
+    section_id: `UB-${i + 1}`,
+    section_name: `Floor ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    components: 10,
+  })),
+};
+
+
+const mockComponents = {
+  'UA-1': Array.from({ length: 10 }, (_, i) => ({
+    component_id: `UA-1-${i + 1}`,
+    component_name: `Component ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    type: i % 3 === 0 ? 'Wall' : i % 3 === 1 ? 'Floor' : 'Ceiling',
+  })),
+  'SKF-1': Array.from({ length: 10 }, (_, i) => ({
+    component_id: `SKF-1-${i + 1}`,
+    component_name: `Component ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    type: i % 3 === 0 ? 'Wall' : i % 3 === 1 ? 'Floor' : 'Ceiling',
+  })),
+  'SKG-1': Array.from({ length: 10 }, (_, i) => ({
+    component_id: `SKG-1-${i + 1}`,
+    component_name: `Component ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    type: i % 3 === 0 ? 'Wall' : i % 3 === 1 ? 'Floor' : 'Ceiling',
+  })),
+  'SKE-1': Array.from({ length: 10 }, (_, i) => ({
+    component_id: `SKE-1-${i + 1}`,
+    component_name: `Component ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    type: i % 3 === 0 ? 'Wall' : i % 3 === 1 ? 'Floor' : 'Ceiling',
+  })),
+  'SKD-1': Array.from({ length: 10 }, (_, i) => ({
+    component_id: `SKD-1-${i + 1}`,
+    component_name: `Component ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    type: i % 3 === 0 ? 'Wall' : i % 3 === 1 ? 'Floor' : 'Ceiling',
+  })),
+  'UB-1': Array.from({ length: 10 }, (_, i) => ({
+    component_id: `UB-1-${i + 1}`,
+    component_name: `Component ${i + 1}`,
+    status: i % 3 === 0 ? 'Completed' : i % 3 === 1 ? 'In Progress' : 'Planning',
+    type: i % 3 === 0 ? 'Wall' : i % 3 === 1 ? 'Floor' : 'Ceiling',
+  })),
+  // Add similar mock data for other sections
+};
+
 const TopPerformers = () => {
-  // for select
   const [month, setMonth] = useState('1');
+  const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [sectionModalOpen, setSectionModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState(null);
 
   const handleChange = (event) => {
     setMonth(event.target.value);
   };
 
-  const handleRowDoubleClick = (project) => {
+  const handleProjectClick = (project) => {
     setSelectedProject(project);
-    setModalOpen(true);
+    setProjectModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
+  const handleSectionClick = (section) => {
+    setSelectedSection(section);
+    setSectionModalOpen(true);
+  };
+
+  const handleCloseProjectModal = () => {
+    setProjectModalOpen(false);
     setSelectedProject(null);
+  };
+
+  const handleCloseSectionModal = () => {
+    setSectionModalOpen(false);
+    setSelectedSection(null);
   };
 
   return (
@@ -126,11 +212,17 @@ const TopPerformers = () => {
                 <TableCell>
                   <Typography variant="subtitle2" fontWeight={600}>Progress</Typography>
                 </TableCell>
+                <TableCell>
+                  <Typography variant="subtitle2" fontWeight={600}>Sections</Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="subtitle2" fontWeight={600}>Components</Typography>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {projects.map((project) => (
-                <TableRow key={project.id} onDoubleClick={() => handleRowDoubleClick(project)}>
+                <TableRow key={project.id} onDoubleClick={() => handleProjectClick(project)}>
                   <TableCell>
                     <Box>
                       <Typography variant="subtitle2" fontWeight={600}>
@@ -171,13 +263,75 @@ const TopPerformers = () => {
                       {project.progress}%
                     </Typography>
                   </TableCell>
+                  <TableCell>
+                    <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
+                      {project.sections}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
+                      {project.components}
+                    </Typography>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </DashboardCard>
-      <ProjectDetailsModal open={modalOpen} handleClose={handleCloseModal} project={selectedProject} />
+
+      <Modal
+        open={projectModalOpen}
+        onClose={handleCloseProjectModal}
+        aria-labelledby="project-modal-title"
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '80%',
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          maxHeight: '80vh',
+          overflow: 'auto',
+        }}>
+          <Typography id="project-modal-title" variant="h6" component="h2" gutterBottom>
+            Sections for {selectedProject?.name}
+          </Typography>
+          <SectionsTable 
+            sections={selectedProject ? mockSections[selectedProject.code] : []} 
+            onSectionClick={handleSectionClick}
+          />
+        </Box>
+      </Modal>
+
+      <Modal
+        open={sectionModalOpen}
+        onClose={handleCloseSectionModal}
+        aria-labelledby="section-modal-title"
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '80%',
+          bgcolor: 'background.paper',
+          boxShadow: 24,
+          p: 4,
+          maxHeight: '80vh',
+          overflow: 'auto',
+        }}>
+          <Typography id="section-modal-title" variant="h6" component="h2" gutterBottom>
+            Components for {selectedSection?.section_name}
+          </Typography>
+          <ComponentsTable 
+            components={selectedSection ? mockComponents[selectedSection.section_id] : []}
+          />
+        </Box>
+      </Modal>
     </>
   );
 };

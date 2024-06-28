@@ -1,7 +1,6 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
-import { format } from 'date-fns';
 import {
   Box,
   Table,
@@ -15,21 +14,72 @@ import {
   Toolbar,
   IconButton,
   Tooltip,
-  FormControlLabel,
   Typography,
-  Avatar,
-  TextField,
-  InputAdornment,
   Paper,
+  Chip,
 } from '@mui/material';
 
 import { visuallyHidden } from '@mui/utils';
 
-import { useSelector, useDispatch } from 'react-redux';
-import { fetchProducts } from 'src/store/apps/eCommerce/EcommerceSlice';
 import CustomCheckbox from '../../../forms/theme-elements/CustomCheckbox';
-import CustomSwitch from '../../../forms/theme-elements/CustomSwitch';
 import { IconDotsVertical, IconFilter, IconSearch, IconTrash } from '@tabler/icons';
+
+const projects = [
+  {
+    id: '58cd3eb8-e397-4676-9a51-db30f4f97e57',
+    code: 'UA',
+    name: 'ลูกขั้นบันได UOB (TOWER A)',
+    status: 'In Progress',
+    progress: 65,
+    sections: 10,
+    components: 100
+  },
+  {
+    id: '6f670de8-54f0-4af1-acb7-76f41c618e86',
+    code: 'SKF',
+    name: 'Skyrise (Tower F)',
+    status: 'Completed',
+    progress: 100,
+    sections: 10,
+    components: 100
+  },
+  {
+    id: '89cdfe36-5b1b-4679-b737-3a8bcfd29618',
+    code: 'SKG',
+    name: 'Skyrise (Tower G)',
+    status: 'In Progress',
+    progress: 80,
+    sections: 10,
+    components: 100
+  },
+  {
+    id: 'b856b64b-b25a-42ab-be7c-d37715f6df2c',
+    code: 'SKE',
+    name: 'Skyrise (Tower E)',
+    status: 'Delayed',
+    progress: 40,
+    sections: 10,
+    components: 100
+  },
+  {
+    id: 'bc2d14b2-8ac1-4025-b338-d0c838ebe08d',
+    code: 'SKD',
+    name: 'Skyrise (Tower D)',
+    status: 'In Progress',
+    progress: 90,
+    sections: 10,
+    components: 100
+  },
+  {
+    id: 'f7025e3b-6ab0-4b99-b8cb-3593fc2f9ce2',
+    code: 'UB',
+    name: 'ลูกขั้นบันได UOB (TOWER B)',
+    status: 'In Progress',
+    progress: 75,
+    sections: 10,
+    components: 100
+  },
+];
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -62,15 +112,8 @@ const headCells = [
     id: 'name',
     numeric: false,
     disablePadding: false,
-    label: 'Project',
+    label: 'Project Name',
   },
-  {
-    id: 'pname',
-    numeric: false,
-    disablePadding: false,
-    label: 'Date',
-  },
-
   {
     id: 'status',
     numeric: false,
@@ -78,16 +121,22 @@ const headCells = [
     label: 'Status',
   },
   {
-    id: 'section',
-    numeric: false,
+    id: 'progress',
+    numeric: true,
     disablePadding: false,
-    label: 'Complete Sections',
+    label: 'Progress (%)',
   },
   {
-    id: 'component',
-    numeric: false,
+    id: 'sections',
+    numeric: true,
     disablePadding: false,
-    label: 'Complete Components',
+    label: 'Sections',
+  },
+  {
+    id: 'components',
+    numeric: true,
+    disablePadding: false,
+    label: 'Components',
   },
 ];
 
@@ -106,7 +155,7 @@ function EnhancedTableHead(props) {
             checked={rowCount > 0 && numSelected === rowCount}
             onChange={onSelectAllClick}
             inputprops={{
-              'aria-label': 'select all desserts',
+              'aria-label': 'select all projects',
             }}
           />
         </TableCell>
@@ -173,7 +222,7 @@ const EnhancedTableToolbar = (props) => {
                 </InputAdornment>
               ),
             }}
-            placeholder="Search Product"
+            placeholder="Search Project"
             size="small"
             onChange={handleSearch}
             value={search}
@@ -190,7 +239,7 @@ const EnhancedTableToolbar = (props) => {
       ) : (
         <Tooltip title="Filter list">
           <IconButton>
-            <IconFilter size="1.2rem" icon="filter" />
+            <IconFilter size="1.2rem" />
           </IconButton>
         </Tooltip>
       )}
@@ -200,57 +249,43 @@ const EnhancedTableToolbar = (props) => {
 
 EnhancedTableToolbar.propTypes = {
   numSelected: PropTypes.number.isRequired,
+  handleSearch: PropTypes.func.isRequired,
+  search: PropTypes.string.isRequired,
 };
 
 const ProductTableList = () => {
   const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState('calories');
+  const [orderBy, setOrderBy] = React.useState('name');
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
-
-  const dispatch = useDispatch();
-  //Fetch Products
-  React.useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
-
-  const getProducts = useSelector((state) => state.ecommerceReducer.products);
-
-  const [rows, setRows] = React.useState(getProducts);
+  const [rows, setRows] = React.useState(projects);
   const [search, setSearch] = React.useState('');
 
-  React.useEffect(() => {
-    setRows(getProducts);
-  }, [getProducts]);
-
   const handleSearch = (event) => {
-    const filteredRows = getProducts.filter((row) => {
-      return row.title.toLowerCase().includes(event.target.value);
+    const filteredRows = projects.filter((row) => {
+      return row.name.toLowerCase().includes(event.target.value.toLowerCase());
     });
     setSearch(event.target.value);
     setRows(filteredRows);
   };
 
-  // This is for the sorting
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
 
-  // This is for select all the row
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n.title);
+      const newSelecteds = rows.map((n) => n.name);
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
-  // This is for the single row sleect
   const handleClick = (event, name) => {
     const selectedIndex = selected.indexOf(name);
     let newSelected = [];
@@ -286,7 +321,6 @@ const ProductTableList = () => {
 
   const isSelected = (name) => selected.indexOf(name) !== -1;
 
-  // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
   return (
@@ -295,7 +329,7 @@ const ProductTableList = () => {
         <EnhancedTableToolbar
           numSelected={selected.length}
           search={search}
-          handleSearch={(event) => handleSearch(event)}
+          handleSearch={handleSearch}
         />
         <Paper variant="outlined" sx={{ mx: 2, mt: 1 }}>
           <TableContainer>
@@ -316,17 +350,17 @@ const ProductTableList = () => {
                 {stableSort(rows, getComparator(order, orderBy))
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row, index) => {
-                    const isItemSelected = isSelected(row.title);
+                    const isItemSelected = isSelected(row.name);
                     const labelId = `enhanced-table-checkbox-${index}`;
 
                     return (
                       <TableRow
                         hover
-                        onClick={(event) => handleClick(event, row.title)}
+                        onClick={(event) => handleClick(event, row.name)}
                         role="checkbox"
                         aria-checked={isItemSelected}
                         tabIndex={-1}
-                        key={row.title}
+                        key={row.id}
                         selected={isItemSelected}
                       >
                         <TableCell padding="checkbox">
@@ -338,69 +372,13 @@ const ProductTableList = () => {
                             }}
                           />
                         </TableCell>
-
-                        <TableCell>
-                          <Box display="flex" alignItems="center">
-                            <Avatar
-                              src={row.photo}
-                              alt={row.photo}
-                              variant="rounded"
-                              sx={{ width: 56, height: 56, borderRadius: '100%' }}
-                            />
-                            <Box
-                              sx={{
-                                ml: 2,
-                              }}
-                            >
-                              <Typography variant="h6" fontWeight="600">
-                                {row.title}
-                              </Typography>
-                              <Typography color="textSecondary" variant="subtitle2">
-                                {row.category}
-                              </Typography>
-                            </Box>
-                          </Box>
+                        <TableCell component="th" id={labelId} scope="row" padding="none">
+                          {row.name}
                         </TableCell>
-                        <TableCell>
-                          <Typography>{format(new Date(row.created), 'E, MMM d yyyy')}</Typography>
-                        </TableCell>
-
-                        <TableCell>
-                          <Box display="flex" alignItems="center">
-                            <Box
-                              sx={{
-                                backgroundColor: row.stock
-                                  ? (theme) => theme.palette.success.main
-                                  : (theme) => theme.palette.error.main,
-                                borderRadius: '100%',
-                                height: '10px',
-                                width: '10px',
-                              }}
-                            />
-                            <Typography
-                              color="textSecondary"
-                              variant="subtitle2"
-                              sx={{
-                                ml: 1,
-                              }}
-                            >
-                              {row.stock ? 'InStock' : 'Out of Stock'}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-
-                        <TableCell>
-                          <Typography fontWeight="500" variant="h6">
-                            ${row.price}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="Edit">
-                            <IconButton size="small">
-                              <IconDotsVertical size="1.1rem" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
+                        <TableCell>{row.status}</TableCell>
+                        <TableCell align="right">{row.progress}</TableCell>
+                        <TableCell align="right">{row.sections}</TableCell>
+                        <TableCell align="right">{row.components}</TableCell>
                       </TableRow>
                     );
                   })}

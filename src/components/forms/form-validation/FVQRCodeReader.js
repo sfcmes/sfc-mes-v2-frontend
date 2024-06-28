@@ -22,42 +22,55 @@ const FVQRCodeReader = () => {
   const [debugInfo, setDebugInfo] = useState('');
   const fileInputRef = useRef(null);
 
-  // State variables for alert and modal
-  const [showAlert, setShowAlert] = useState(false);
+  // State variables for modal and alert
   const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState(null);
+  const [scanningMessage, setScanningMessage] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
   useEffect(() => {
     const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     setIsMobile(isMobileDevice);
-    setDebugInfo(prev => prev + `\nDevice detected as ${isMobileDevice ? 'mobile' : 'desktop'}`);
+    setDebugInfo(`Device detected as ${isMobileDevice ? 'mobile' : 'desktop'}`);
   }, []);
 
   const handleScanClick = () => {
     console.log('Scan button clicked');
     setIsScanning(true);
     setFacingMode('environment');
-    setDebugInfo(prev => prev + '\nScan button clicked, using environment (back) camera');
+    setDebugInfo('Scan button clicked, using environment (back) camera');
+    setScanningMessage('Scanning...');
   };
 
   const handleScan = (result) => {
     if (result) {
-      setQrCodeData(result.text);
-      console.log('QR code data:', result.text);
+      const scannedData = result.text;
+      setQrCodeData(scannedData);
+      console.log('QR code data:', scannedData);
       setIsScanning(false);
-      setDebugInfo(prev => prev + `\nQR code scanned successfully: ${result.text}`);
+      setDebugInfo(`QR code scanned successfully: ${scannedData}`);
+      setScanningMessage('');
       
-      // Show alert and modal
+      // Show modal with scanned data
+      setModalData(scannedData);
+      setShowModal(true);
+      
+      // Show alert
+      setAlertMessage('QR Code scanned successfully!');
       setShowAlert(true);
-      setTimeout(() => setShowModal(true), 1000); // Show modal after 1 second
-    } else {
-      setDebugInfo(prev => prev + '\nScanning...');
     }
   };
 
   const handleError = (err) => {
     console.error(err);
     setIsScanning(false);
-    setDebugInfo(prev => prev + `\nError during scanning: ${err.message}`);
+    setDebugInfo(`Error during scanning: ${err.message}`);
+    setScanningMessage('');
+    
+    // Show error alert
+    setAlertMessage(`Error: ${err.message}`);
+    setShowAlert(true);
   };
 
   const handleUpload = async (event) => {
@@ -67,10 +80,22 @@ const FVQRCodeReader = () => {
     try {
       const data = await readQrCodeData(file);
       setUploadedQrCodeData(data);
-      setDebugInfo(prev => prev + `\nQR code uploaded and read successfully: ${data}`);
+      setDebugInfo(`QR code uploaded and read successfully: ${data}`);
+      
+      // Show modal with uploaded data
+      setModalData(data);
+      setShowModal(true);
+      
+      // Show success alert
+      setAlertMessage('QR Code uploaded and read successfully!');
+      setShowAlert(true);
     } catch (error) {
       console.error('Error reading QR code data:', error.message);
-      setDebugInfo(prev => prev + `\nError reading uploaded QR code: ${error.message}`);
+      setDebugInfo(`Error reading uploaded QR code: ${error.message}`);
+      
+      // Show error alert
+      setAlertMessage(`Error: ${error.message}`);
+      setShowAlert(true);
     }
   };
 
@@ -78,35 +103,57 @@ const FVQRCodeReader = () => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        try {
-          const img = new Image();
-          img.src = reader.result;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            if (code) {
-              resolve(code.data);
-            } else {
-              reject(new Error('No QR code found in the image'));
-            }
-          };
-          img.onerror = () => {
-            reject(new Error('Error loading image'));
-          };
-        } catch (error) {
-          reject(error);
-        }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) {
+            resolve(code.data);
+          } else {
+            reject(new Error('No QR code found in the image'));
+          }
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = reader.result;
       };
-      reader.onerror = (error) => {
-        reject(error);
-      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
     });
+  };
+
+  const handleAccept = () => {
+    console.log('QR Code data accepted');
+    setShowModal(false);
+    // Add any additional logic for accepting the QR code data
+  };
+
+  const handleReject = () => {
+    console.log('QR Code data rejected');
+    setQrCodeData(null);
+    setUploadedQrCodeData(null);
+    setShowModal(false);
+    // Add any additional logic for rejecting the QR code data
+  };
+
+  const isJsonString = (str) => {
+    try {
+      JSON.parse(str);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  };
+
+  const formatData = (data) => {
+    if (isJsonString(data)) {
+      return JSON.stringify(JSON.parse(data), null, 2);
+    }
+    return data;
   };
 
   const stats = [
@@ -217,28 +264,38 @@ const FVQRCodeReader = () => {
         <Box sx={{ mt: 2, width: '100%', whiteSpace: 'pre-wrap' }}>
           <Typography variant="h6">Debug Information:</Typography>
           <Typography variant="body2">{debugInfo}</Typography>
+          {scanningMessage && (
+            <Typography variant="body2" sx={{ mt: 1 }}>{scanningMessage}</Typography>
+          )}
         </Box>
       </Box>
 
-      {/* Alert for scan completion */}
-      <Snackbar open={showAlert} autoHideDuration={3000} onClose={() => setShowAlert(false)}>
-        <Alert onClose={() => setShowAlert(false)} severity="success" sx={{ width: '100%' }}>
-          QR Code scanned successfully!
-        </Alert>
-      </Snackbar>
-
-      {/* Modal dialog for scanned data */}
+      {/* Modal dialog for scanned/uploaded data */}
       <Dialog open={showModal} onClose={() => setShowModal(false)}>
-        <DialogTitle>Scanned QR Code Data</DialogTitle>
+        <DialogTitle>QR Code Data</DialogTitle>
         <DialogContent>
-          <Typography>{qrCodeData}</Typography>
+          <Typography variant="h6" gutterBottom>Raw Data:</Typography>
+          <Typography variant="body1" paragraph>{modalData || 'No data available'}</Typography>
+          
+          <Typography variant="h6" gutterBottom>Formatted Data:</Typography>
+          <Typography variant="body1" component="pre" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {modalData ? formatData(modalData) : 'No data available'}
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowModal(false)}>Close</Button>
+          <Button onClick={handleReject} color="error">Reject</Button>
+          <Button onClick={handleAccept} color="primary">Accept</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Alert for notifications */}
+      <Snackbar open={showAlert} autoHideDuration={3000} onClose={() => setShowAlert(false)}>
+        <Alert onClose={() => setShowAlert(false)} severity="info" sx={{ width: '100%' }}>
+          {alertMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
 
-export default FVQRCodeReader
+export default FVQRCodeReader;
