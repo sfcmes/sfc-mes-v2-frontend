@@ -28,7 +28,7 @@ const Welcome = () => {
       <Snackbar
         open={open}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        autoHideDuration={6000}
+        autoHideDuration={3000}
         onClose={handleClose}
       >
         <Alert
@@ -37,7 +37,7 @@ const Welcome = () => {
           variant="filled"
           sx={{ width: '100%', color: 'white' }}
         >
-          <AlertTitle>Welcome To SFC MES SYSTEM</AlertTitle>
+          <AlertTitle>Welcome To SFC PC SYSTEM</AlertTitle>
           Easy to exucute your building!!!
         </Alert>
       </Snackbar>

@@ -1,10 +1,9 @@
 import React from 'react';
-import { useTheme, styled } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { Stack, Typography, Box, Card } from '@mui/material';
 import DashboardCard from '../../shared/DashboardCard';
 import ProductCarousel from '../../apps/ecommerce/productDetail/ProductCarousel';
 
-// Reusing getStatusColor function
 const getStatusColor = (status) => {
   switch (status) {
     case 'ผลิตแล้ว':
@@ -22,25 +21,17 @@ const getStatusColor = (status) => {
   }
 };
 
-const WeeklyStats = () => {
+const WeeklyStats = ({ stats, projectName }) => {
   const theme = useTheme();
 
-  const updatedStats = [
-    { title: 'ผลิตแล้ว', subtitle: '', percent: 18 },
-    { title: 'อยู่ระหว่างขนส่ง', subtitle: '', percent: 12 },
-    { title: 'ขนส่งสำเร็จ', subtitle: '', percent: 20 },
-    { title: 'ติดตั้งแล้ว', subtitle: '', percent: 35 },
-    { title: 'Rejected', subtitle: '', percent: 2 },
-  ];
-
   return (
-    <DashboardCard title="ความคืบหน้าโครงการ" subtitle="Project A">
+    <DashboardCard title="ความคืบหน้าโครงการ" subtitle={projectName}>
       <>
         <Stack mt={4}>
           <ProductCarousel />
         </Stack>
         <Stack spacing={3} mt={3}>
-          {updatedStats.map((stat, i) => (
+          {stats.map((stat, i) => (
             <Card
               key={i}
               style={{

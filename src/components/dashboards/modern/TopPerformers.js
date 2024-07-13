@@ -1,3 +1,4 @@
+// F:\project\sfc-mes\frontend\src\components\dashboards\modern\TopPerformers.js
 import React, { useState, memo } from 'react';
 import {
   Box,
@@ -397,17 +398,25 @@ const SectionRow = memo(({ section, projectCode }) => {
   );
 });
 
-const ProjectRow = memo(({ project }) => {
+const ProjectRow = memo(({ project, onRowClick }) => {
   const [open, setOpen] = useState(false);
 
-  // Calculate total components for the project
   const totalComponents = project.sections.reduce((acc, section) => acc + section.components.length, 0);
+
+  const handleRowClick = () => {
+    onRowClick(project);
+  };
+
+  const handleIconClick = (event) => {
+    event.stopPropagation(); // Prevent the row click event from firing
+    setOpen(!open);
+  };
 
   return (
     <>
-      <TableRow>
+      <TableRow onClick={handleRowClick} style={{ cursor: 'pointer' }}>
         <TableCell>
-          <IconButton size="small" onClick={() => setOpen(!open)}>
+          <IconButton size="small" onClick={handleIconClick}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -476,8 +485,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const TopPerformers = () => {
-  const [month, setMonth] = useState('1');
+const TopPerformers = ({ onRowClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleSearchChange = (event) => {
@@ -517,7 +525,7 @@ const TopPerformers = () => {
                 project.name.toLowerCase().includes(searchTerm.toLowerCase())
               )
               .map((project) => (
-                <ProjectRow key={project.id} project={project} />
+                <ProjectRow key={project.id} project={project} onRowClick={onRowClick} />
               ))}
           </TableBody>
         </Table>
