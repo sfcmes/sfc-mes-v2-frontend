@@ -3,10 +3,9 @@ import Chart from 'react-apexcharts';
 import { useTheme } from '@mui/material/styles';
 import { Stack, Typography, Avatar, Box } from '@mui/material';
 import DashboardCard from '../../shared/DashboardCard';
-import { IconGridDots } from '@tabler/icons';
+import { IconBox, IconTruck, IconTool, IconThumbUp, IconThumbDown } from '@tabler/icons';
 
-const WeeklyStats = () => {
-    
+const ComponentStatusSummary = () => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;
@@ -57,41 +56,57 @@ const WeeklyStats = () => {
   };
   const seriescolumnchart = [
     {
-      name: 'Weekly Stats',
+      name: 'Component Status',
       color: primary,
-      data: [5, 15, 5, 10, 5],
+      data: [50, 80, 60, 90, 70],
     },
   ];
 
   const stats = [
     {
-      title: 'Top Sales',
-      subtitle: 'Johnathan Doe',
-      percent: '68',
+      title: 'In Shop',
+      subtitle: 'Components',
+      percent: '25',
       color: primary,
       lightcolor: primarylight,
-      icon: <IconGridDots width={18} />,
+      icon: <IconBox width={18} />,
     },
     {
-      title: 'Best Seller',
-      subtitle: 'Footware',
-      percent: '45',
+      title: 'In Production',
+      subtitle: 'Components',
+      percent: '18',
       color: secondary,
       lightcolor: secondarylight,
-      icon: <IconGridDots width={18} />,
+      icon: <IconTool width={18} />,
     },
     {
-      title: 'Most Commented',
-      subtitle: 'Fashionware',
-      percent: '14',
+      title: 'In Transit',
+      subtitle: 'Components',
+      percent: '12',
       color: error,
       lightcolor: errorlight,
-      icon: <IconGridDots width={18} />,
+      icon: <IconTruck width={18} />,
+    },
+    {
+      title: 'Installed',
+      subtitle: 'Components',
+      percent: '35',
+      color: secondary,
+      lightcolor: secondarylight,
+      icon: <IconThumbUp width={18} />,
+    },
+    {
+      title: 'Rejected',
+      subtitle: 'Components',
+      percent: '2',
+      color: error,
+      lightcolor: errorlight,
+      icon: <IconThumbDown width={18} />,
     },
   ];
 
   return (
-    <DashboardCard title="Weekly Stats" subtitle="Average sales">
+    <DashboardCard title="Component Status Summary" subtitle="Average components">
       <>
         <Stack mt={4}>
           <Chart
@@ -136,7 +151,7 @@ const WeeklyStats = () => {
                 }}
               >
                 <Typography variant="subtitle2" fontWeight="600">
-                  +{stat.percent}
+                  {stat.percent}%
                 </Typography>
               </Avatar>
             </Stack>
@@ -147,4 +162,4 @@ const WeeklyStats = () => {
   );
 };
 
-export default WeeklyStats;
+export default ComponentStatusSummary;

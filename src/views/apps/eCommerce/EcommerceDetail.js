@@ -1,5 +1,5 @@
 import { Grid } from '@mui/material';
-import ProductCarousel from 'src/components/apps/ecommerce/productDetail/ProductCarousel';
+import ProductCarousel from '../../../components/apps/ecommerce/productDetail/ProductCarousel';
 import Breadcrumb from '../../../layouts/full/shared/breadcrumb/Breadcrumb';
 import PageContainer from '../../../components/container/PageContainer';
 import ProductDetail from 'src/components/apps/ecommerce/productDetail/ProductDetail';

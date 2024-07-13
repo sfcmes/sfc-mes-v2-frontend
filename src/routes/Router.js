@@ -124,7 +124,7 @@ const Router = [
     path: '/',
     element: <FullLayout />,
     children: [
-      { path: '/', element: <Navigate to="/dashboards/modern" /> },
+      { path: '/', element: <Navigate to="/dashboards/modern" /> },  // Changed to redirect to /auth/login
       { path: '/dashboards/modern', exact: true, element: <ModernDash /> },
       { path: '/dashboards/ecommerce', exact: true, element: <EcommerceDash /> },
       { path: '/apps/chats', element: <Chats /> },
@@ -132,7 +132,7 @@ const Router = [
       { path: '/apps/calendar', element: <Calendar /> },
       { path: '/apps/email', element: <Email /> },
       { path: '/apps/tickets', element: <Tickets /> },
-      { path: '/apps/tickets/list', element: <TicketList /> }, // <-- Add this line
+      { path: '/apps/tickets/list', element: <TicketList /> },
       { path: '/apps/contacts', element: <Contacts /> },
       { path: '/apps/ecommerce/shop', element: <Ecommerce /> },
       { path: '/apps/blog/posts', element: <Blog /> },
@@ -149,7 +149,6 @@ const Router = [
       { path: '/pages/pricing', element: <Pricing /> },
       { path: '/pages/account-settings', element: <AccountSetting /> },
       { path: '/pages/faq', element: <Faq /> },
-      //edit here
       { path: '/forms/form-project', element: <FormProject/>},
       { path: '/forms/form-section', element: <FormSection/>},
       { path: '/forms/form-component', element: <FormComponent/>},
@@ -160,7 +159,6 @@ const Router = [
       { path: '/forms/form-elements/radio', element: <MuiRadio /> },
       { path: '/forms/form-elements/slider', element: <MuiSlider /> },
       { path: '/forms/form-elements/date-time', element: <MuiDateTime /> },
-      { path: '/forms/form-elements/switch', element: <MuiSwitch /> },
       { path: '/forms/form-elements/switch', element: <MuiSwitch /> },
       { path: '/forms/quill-editor', element: <QuillEditor /> },
       { path: '/forms/form-layouts', element: <FormLayouts /> },

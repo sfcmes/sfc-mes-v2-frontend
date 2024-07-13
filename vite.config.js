@@ -36,9 +36,8 @@ export default defineConfig({
     },
   },
 
-  // plugins: [react(),svgr({
-  //   exportAsDefault: true
-  // })],
-
   plugins: [svgr(), react()],
+
+  // Add this line to include video files
+  assetsInclude: ['**/*.mp4', '**/*.mov'],
 });

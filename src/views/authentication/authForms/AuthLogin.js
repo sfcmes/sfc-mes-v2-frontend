@@ -6,7 +6,6 @@ import {
   FormControlLabel,
   Button,
   Stack,
-  Divider,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
@@ -14,48 +13,56 @@ import CustomCheckbox from '../../../components/forms/theme-elements/CustomCheck
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 import CustomFormLabel from '../../../components/forms/theme-elements/CustomFormLabel';
 
-import AuthSocialButtons from './AuthSocialButtons';
-
-const AuthLogin = ({ title, subtitle, subtext }) => (
+const AuthLogin = ({ title, subtext }) => (
   <>
     {title ? (
-      <Typography fontWeight="700" variant="h3" mb={1}>
+      <Typography fontWeight="700" variant="h3" mb={1} color="common.white">
         {title}
       </Typography>
     ) : null}
 
     {subtext}
 
-    {/* <AuthSocialButtons title="Sign in with" />
-    <Box mt={3}>
-      <Divider>
-        <Typography
-          component="span"
-          color="textSecondary"
-          variant="h6"
-          fontWeight="400"
-          position="relative"
-          px={2}
-        >
-          or sign in with
-        </Typography>
-      </Divider>
-    </Box> */}
-
-    <Stack>
+    <Stack spacing={2}>
       <Box>
-        <CustomFormLabel htmlFor="username">Username</CustomFormLabel>
-        <CustomTextField id="username" variant="outlined" fullWidth />
+        <CustomFormLabel htmlFor="username" sx={{ color: 'common.white' }}>Username</CustomFormLabel>
+        <CustomTextField 
+          id="username" 
+          variant="outlined" 
+          fullWidth 
+          sx={{ 
+            '& .MuiOutlinedInput-root': { 
+              '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+              '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.7)' },
+              '&.Mui-focused fieldset': { borderColor: 'white' },
+            },
+            input: { color: 'common.white' }
+          }}
+        />
       </Box>
       <Box>
-        <CustomFormLabel htmlFor="password">Password</CustomFormLabel>
-        <CustomTextField id="password" type="password" variant="outlined" fullWidth />
+        <CustomFormLabel htmlFor="password" sx={{ color: 'common.white' }}>Password</CustomFormLabel>
+        <CustomTextField 
+          id="password" 
+          type="password" 
+          variant="outlined" 
+          fullWidth 
+          sx={{ 
+            '& .MuiOutlinedInput-root': { 
+              '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
+              '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.7)' },
+              '&.Mui-focused fieldset': { borderColor: 'white' },
+            },
+            input: { color: 'common.white' }
+          }}
+        />
       </Box>
-      <Stack justifyContent="space-between" direction="row" alignItems="center" my={2}>
+      <Stack justifyContent="space-between" direction="row" alignItems="center">
         <FormGroup>
           <FormControlLabel
             control={<CustomCheckbox defaultChecked />}
-            label="Remeber this Device"
+            label="Remember this Device"
+            sx={{ color: 'common.white' }}
           />
         </FormGroup>
         <Typography
@@ -64,14 +71,14 @@ const AuthLogin = ({ title, subtitle, subtext }) => (
           fontWeight="500"
           sx={{
             textDecoration: 'none',
-            color: 'primary.main',
+            color: 'common.white',
           }}
         >
           Forgot Password ?
         </Typography>
       </Stack>
     </Stack>
-    <Box>
+    <Box mt={3}>
       <Button
         color="primary"
         variant="contained"
@@ -80,11 +87,17 @@ const AuthLogin = ({ title, subtitle, subtext }) => (
         component={Link}
         to="/"
         type="submit"
+        sx={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          color: 'primary.main',
+          '&:hover': {
+            backgroundColor: 'common.white',
+          }
+        }}
       >
         Sign In
       </Button>
     </Box>
-    {subtitle}
   </>
 );
 

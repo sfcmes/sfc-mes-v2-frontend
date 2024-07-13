@@ -1,137 +1,60 @@
 import React from 'react';
-import Chart from 'react-apexcharts';
-import { useTheme } from '@mui/material/styles';
-import { Stack, Typography, Avatar, Box } from '@mui/material';
+import { useTheme, styled } from '@mui/material/styles';
+import { Stack, Typography, Box, Card } from '@mui/material';
 import DashboardCard from '../../shared/DashboardCard';
-import { IconBox, IconTruck, IconTool, IconThumbUp, IconThumbDown } from '@tabler/icons';
+import ProductCarousel from '../../apps/ecommerce/productDetail/ProductCarousel';
 
-const ComponentStatusSummary = () => {
-  // chart color
+// Reusing getStatusColor function
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'ผลิตแล้ว':
+      return '#FFC107';
+    case 'อยู่ระหว่างขนส่ง':
+      return '#2196F3';
+    case 'ขนส่งสำเร็จ':
+      return '#C2AFF0';
+    case 'ติดตั้งแล้ว':
+      return '#18F2B2';
+    case 'Rejected':
+      return '#F44336';
+    default:
+      return '#9E9E9E';
+  }
+};
+
+const WeeklyStats = () => {
   const theme = useTheme();
-  const primary = theme.palette.primary.main;
-  const primarylight = theme.palette.primary.light;
-  const error = theme.palette.error.main;
-  const errorlight = theme.palette.error.light;
-  const secondary = theme.palette.success.main;
-  const secondarylight = theme.palette.success.light;
 
-  // chart
-  const optionscolumnchart = {
-    chart: {
-      type: 'area',
-      fontFamily: "'Plus Jakarta Sans', sans-serif;",
-      foreColor: '#adb0bb',
-      toolbar: {
-        show: false,
-      },
-      height: 130,
-      sparkline: {
-        enabled: true,
-      },
-      group: 'sparklines',
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2,
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 0,
-        inverseColors: false,
-        opacityFrom: 0.45,
-        opacityTo: 0,
-        stops: [20, 180],
-      },
-    },
-    markers: {
-      size: 0,
-    },
-    tooltip: {
-      theme: theme.palette.mode === 'dark' ? 'dark' : 'light',
-      x: {
-        show: false,
-      },
-    },
-  };
-  const seriescolumnchart = [
-    {
-      name: 'Component Status',
-      color: primary,
-      data: [50, 80, 60, 90, 70],
-    },
-  ];
-
-  const stats = [
-    {
-      title: 'In Shop',
-      subtitle: 'Components',
-      percent: '25',
-      color: primary,
-      lightcolor: primarylight,
-      icon: <IconBox width={18} />,
-    },
-    {
-      title: 'In Production',
-      subtitle: 'Components',
-      percent: '18',
-      color: secondary,
-      lightcolor: secondarylight,
-      icon: <IconTool width={18} />,
-    },
-    {
-      title: 'In Transit',
-      subtitle: 'Components',
-      percent: '12',
-      color: error,
-      lightcolor: errorlight,
-      icon: <IconTruck width={18} />,
-    },
-    {
-      title: 'Installed',
-      subtitle: 'Components',
-      percent: '35',
-      color: secondary,
-      lightcolor: secondarylight,
-      icon: <IconThumbUp width={18} />,
-    },
-    {
-      title: 'Rejected',
-      subtitle: 'Components',
-      percent: '2',
-      color: error,
-      lightcolor: errorlight,
-      icon: <IconThumbDown width={18} />,
-    },
+  const updatedStats = [
+    { title: 'ผลิตแล้ว', subtitle: '', percent: 18 },
+    { title: 'อยู่ระหว่างขนส่ง', subtitle: '', percent: 12 },
+    { title: 'ขนส่งสำเร็จ', subtitle: '', percent: 20 },
+    { title: 'ติดตั้งแล้ว', subtitle: '', percent: 35 },
+    { title: 'Rejected', subtitle: '', percent: 2 },
   ];
 
   return (
-    <DashboardCard title="Component Status Summary" subtitle="Average components">
+    <DashboardCard title="ความคืบหน้าโครงการ" subtitle="Project A">
       <>
         <Stack mt={4}>
-          <Chart
-            options={optionscolumnchart}
-            series={seriescolumnchart}
-            type="area"
-            height="130px"
-          />
+          <ProductCarousel />
         </Stack>
         <Stack spacing={3} mt={3}>
-          {stats.map((stat, i) => (
-            <Stack
-              direction="row"
-              spacing={2}
-              justifyContent="space-between"
-              alignItems="center"
+          {updatedStats.map((stat, i) => (
+            <Card
               key={i}
+              style={{
+                backgroundColor: getStatusColor(stat.title),
+                padding: theme.spacing(2),
+                borderRadius: theme.shape.borderRadius,
+              }}
             >
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Avatar
-                  variant="rounded"
-                  sx={{ bgcolor: stat.lightcolor, color: stat.color, width: 40, height: 40 }}
-                >
-                  {stat.icon}
-                </Avatar>
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent="space-between"
+                alignItems="center"
+              >
                 <Box>
                   <Typography variant="h6" mb="4px">
                     {stat.title}
@@ -140,21 +63,11 @@ const ComponentStatusSummary = () => {
                     {stat.subtitle}
                   </Typography>
                 </Box>
-              </Stack>
-              <Avatar
-                sx={{
-                  bgcolor: stat.lightcolor,
-                  color: stat.color,
-                  width: 42,
-                  height: 24,
-                  borderRadius: '4px',
-                }}
-              >
                 <Typography variant="subtitle2" fontWeight="600">
                   {stat.percent}%
                 </Typography>
-              </Avatar>
-            </Stack>
+              </Stack>
+            </Card>
           ))}
         </Stack>
       </>
@@ -162,4 +75,4 @@ const ComponentStatusSummary = () => {
   );
 };
 
-export default ComponentStatusSummary;
+export default WeeklyStats;

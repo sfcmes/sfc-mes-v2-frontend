@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Grid } from '@mui/material';
 import TopCards from '../../components/dashboards/modern/TopCards';
 import RevenueUpdates from '../../components/dashboards/modern/RevenueUpdates';
@@ -11,75 +11,45 @@ import SellingProducts from '../../components/dashboards/modern/SellingProducts'
 import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
-// import Towers from '../../components/dashboards/modern/Towers';
-// import Floors from '../../components/dashboards/modern/Floors';
-// import Units from '../../components/dashboards/modern/Units';
 
 const Modern = () => {
-  return (
-    <Box>
-      <Grid container spacing={3}>
-        {/* column */}
-        <Grid item sm={12} lg={12}>
-          <TopCards />
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={8}>
-          <RevenueUpdates />
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} lg={12}>
-              <YearlyBreakup />
+    const [weeklyStats, setWeeklyStats] = useState([
+        { title: 'In Shop', subtitle: 'Components', percent: 25, color: '', lightcolor: '', icon: '' },
+        { title: 'In Production', subtitle: 'Components', percent: 18, color: '', lightcolor: '', icon: '' },
+        { title: 'In Transit', subtitle: 'Components', percent: 12, color: '', lightcolor: '', icon: '' },
+        { title: 'Installed', subtitle: 'Components', percent: 35, color: '', lightcolor: '', icon: '' },
+        { title: 'Rejected', subtitle: 'Components', percent: 2, color: '', lightcolor: '', icon: '' }
+    ]);
+
+    const handleRowClick = (project) => {
+        const newStats = fetchWeeklyStatsForProject(project);
+        setWeeklyStats(newStats);
+    };
+
+    const fetchWeeklyStatsForProject = (project) => {
+        // Replace this with actual logic to fetch data
+        return [
+            { title: 'In Shop', subtitle: 'Components', percent: project.inShop || 0, color: '', lightcolor: '', icon: '' },
+            { title: 'In Production', subtitle: 'Components', percent: project.inProduction || 0, color: '', lightcolor: '', icon: '' },
+            { title: 'In Transit', subtitle: 'Components', percent: project.inTransit || 0, color: '', lightcolor: '', icon: '' },
+            { title: 'Installed', subtitle: 'Components', percent: project.installed || 0, color: '', lightcolor: '', icon: '' },
+            { title: 'Rejected', subtitle: 'Components', percent: project.rejected || 0, color: '', lightcolor: '', icon: '' }
+        ];
+    };
+
+    return (
+        <Box>
+            <Grid container spacing={3}>
+                <Grid item xs={12} lg={4}>
+                    <WeeklyStats stats={weeklyStats} />
+                </Grid>
+                <Grid item xs={12} lg={8}>
+                    <TopPerformers onRowClick={handleRowClick} />
+                </Grid>
             </Grid>
-            <Grid item xs={12} sm={6} lg={12}>
-              <MonthlyEarnings />
-            </Grid>
-          </Grid>
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={4}>
-          <EmployeeSalary />
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={4}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <Customers />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Projects />
-            </Grid>
-          </Grid>
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={4}>
-          <SellingProducts />
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={4}>
-          <WeeklyStats />
-        </Grid>
-        {/* column */}
-        <Grid item xs={12} lg={8}>
-          <TopPerformers />
-        </Grid>
-        {/* New sections */}
-        {/* <Grid item xs={12} lg={4}>
-          <Towers />
-        </Grid>
-        <Grid item xs={12} lg={4}>
-          <Floors />
-        </Grid>
-        <Grid item xs={12} lg={4}>
-          <Units />
-        </Grid> */}
-      </Grid>
-      {/* column */}
-      <Welcome />
-    </Box>
-  );
+            <Welcome />
+        </Box>
+    );
 };
 
 export default Modern;
