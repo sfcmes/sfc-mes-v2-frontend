@@ -1,3 +1,4 @@
+// F:\project\sfc-mes\frontend\src\components\dashboards\modern\TopPerformers.js
 import React, { useState, memo } from 'react';
 import {
   Box,
@@ -24,19 +25,20 @@ import {
   MenuItem,
   Tab,
   Tabs,
-  InputBase,
 } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import SearchIcon from '@mui/icons-material/Search';
+import InputBase from '@mui/material/InputBase';
+import { alpha } from '@mui/material/styles';
 
 // Utility function to generate mock data
 const generateMockProjects = (numProjects, numSections, numComponents) => {
   return Array.from({ length: numProjects }, (_, projectIndex) => {
     const projectCode = `PRJ-${String.fromCharCode(65 + projectIndex)}`;
-
+    
     if (projectCode === 'PRJ-A' || projectCode === 'PRJ-B') {
       const realFiles = Array.from({ length: 8 }, (_, componentIndex) => ({
         id: componentIndex + 1,
@@ -102,6 +104,8 @@ const generateMockProjects = (numProjects, numSections, numComponents) => {
   });
 };
 
+
+
 // Example usage
 const projects = generateMockProjects(5, 10, 50);
 
@@ -128,10 +132,33 @@ const getStatusColor = (status) => {
   }
 };
 
+// const handleFileDownload = (file) => {
+//   console.log(`Downloading file: ${file.fileName}`);
+
+//   // Create an anchor element
+//   const link = document.createElement('a');
+  
+//   // Set the href to the file URL
+//   link.href = file.url;
+  
+//   // Set the download attribute to the file name
+//   link.setAttribute('download', file.fileName);
+  
+//   // Append the anchor to the body
+//   document.body.appendChild(link);
+  
+//   // Programmatically click the anchor to trigger the download
+//   link.click();
+  
+//   // Remove the anchor from the body
+//   document.body.removeChild(link);
+// };
+
 const handleFileDownload = (file) => {
   console.log(`Downloading file: ${file.fileName}`);
   window.open(file.url, '_blank');
 };
+
 
 const FileHistoryTable = memo(({ files }) => (
   <TableContainer component={Paper} style={{ marginTop: '20px' }}>
@@ -468,7 +495,7 @@ const TopPerformers = ({ onRowClick }) => {
   return (
     <Paper elevation={3} style={{ padding: '16px' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" style={{ fontWeight: 'bold' }}>Projects</Typography>
+        <Typography variant="h5" style={{ fontWeight: 'bold' }}>โครงการ</Typography>
         <Search>
           <SearchIconWrapper>
             <SearchIcon />
@@ -486,10 +513,10 @@ const TopPerformers = ({ onRowClick }) => {
           <TableHead>
             <TableRow>
               <StyledTableCell />
-              <StyledTableCell>Project Code</StyledTableCell>
-              <StyledTableCell>Project Name</StyledTableCell>
-              <StyledTableCell align="right">Sections</StyledTableCell>
-              <StyledTableCell align="right">Total Components</StyledTableCell>
+              <StyledTableCell>รหัสโครงการ</StyledTableCell>
+              <StyledTableCell>ชื่อโครงการ</StyledTableCell>
+              <StyledTableCell align="right">จำนวนชั้น</StyledTableCell>
+              <StyledTableCell align="right">จำนวนชิ้นงานทั้งหมด</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -506,8 +533,5 @@ const TopPerformers = ({ onRowClick }) => {
     </Paper>
   );
 };
-
-
-
 
 export default TopPerformers;

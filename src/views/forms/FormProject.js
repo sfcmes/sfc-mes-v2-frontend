@@ -1,74 +1,13 @@
-import React, { useState } from 'react';
-import { CardContent, Grid, Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
-
-// common components
+import React, { useState, useEffect } from 'react';
+import { CardContent, Grid, Typography, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip } from '@mui/material';
 import PageContainer from '../../components/container/PageContainer';
 import Breadcrumb from '../../layouts/full/shared/breadcrumb/Breadcrumb';
 import ParentCard from 'src/components/shared/ParentCard';
-
-// custom components
 import FVProject from '../../components/forms/form-validation/FVProject';
 
 const BCrumb = [
   { to: '/', title: 'Home' },
   { title: 'สร้างโครงการใหม่' },
-];
-
-const initialProjects = [
-  {
-    id: '58cd3eb8-e397-4676-9a51-db30f4f97e57',
-    code: 'UA',
-    name: 'ลูกขั้นบันได UOB (TOWER A)',
-    status: 'In Progress',
-    progress: 65,
-    sections: 10,
-    components: 100
-  },
-  {
-    id: '6f670de8-54f0-4af1-acb7-76f41c618e86',
-    code: 'SKF',
-    name: 'Skyrise (Tower F)',
-    status: 'Completed',
-    progress: 100,
-    sections: 10,
-    components: 100
-  },
-  {
-    id: '89cdfe36-5b1b-4679-b737-3a8bcfd29618',
-    code: 'SKG',
-    name: 'Skyrise (Tower G)',
-    status: 'In Progress',
-    progress: 80,
-    sections: 10,
-    components: 100
-  },
-  {
-    id: 'b856b64b-b25a-42ab-be7c-d37715f6df2c',
-    code: 'SKE',
-    name: 'Skyrise (Tower E)',
-    status: 'Delayed',
-    progress: 40,
-    sections: 10,
-    components: 100
-  },
-  {
-    id: 'bc2d14b2-8ac1-4025-b338-d0c838ebe08d',
-    code: 'SKD',
-    name: 'Skyrise (Tower D)',
-    status: 'In Progress',
-    progress: 90,
-    sections: 10,
-    components: 100
-  },
-  {
-    id: 'f7025e3b-6ab0-4b99-b8cb-3593fc2f9ce2',
-    code: 'UB',
-    name: 'ลูกขั้นบันได UOB (TOWER B)',
-    status: 'In Progress',
-    progress: 75,
-    sections: 10,
-    components: 100
-  },
 ];
 
 const ProjectTable = ({ projects }) => (
@@ -101,7 +40,7 @@ const ProjectTable = ({ projects }) => (
               Components
             </Typography>
           </TableCell>
-        </TableRow>
+        </TableRow> {/* Corrected closing tag */}
       </TableHead>
       <TableBody>
         {projects.map((project) => (
@@ -162,10 +101,43 @@ const ProjectTable = ({ projects }) => (
 );
 
 const FormProject = () => {
-  const [projects, setProjects] = useState(initialProjects);
+  const [projects, setProjects] = useState([]);
 
-  const handleAddProject = (newProject) => {
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch('http://localhost:3033/projects');
+      const data = await response.json();
+      setProjects(data);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const handleAddProject = async (newProject) => {
     setProjects([...projects, newProject]);
+
+    try {
+      const response = await fetch('http://localhost:3033/save-project', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectName: newProject.name, data: newProject }),
+      });
+
+      if (!response.ok) {
+        console.error('Error saving project:', response.statusText);
+      } else {
+        console.log('Project saved successfully');
+        fetchProjects(); // Refresh the project list after adding a new project
+      }
+    } catch (error) {
+      console.error('Error saving project:', error);
+    }
   };
 
   return (

@@ -4,7 +4,6 @@ import { resolve } from 'path';
 import fs from 'fs/promises';
 import svgr from '@svgr/rollup';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
     alias: {
@@ -37,7 +36,5 @@ export default defineConfig({
   },
 
   plugins: [svgr(), react()],
-
-  // Add this line to include video files
   assetsInclude: ['**/*.mp4', '**/*.mov'],
 });

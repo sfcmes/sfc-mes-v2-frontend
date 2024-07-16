@@ -1,18 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { Box, Button, Stack, FormControl, InputLabel, Select, MenuItem, TextField } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
 import CustomFormLabel from '../theme-elements/CustomFormLabel';
-
-const projects = [
-  { code: 'UA', name: 'ลูกขั้นบันได UOB (TOWER A)' },
-  { code: 'SKF', name: 'Skyrise (Tower F)' },
-  { code: 'SKG', name: 'Skyrise (Tower G)' },
-  { code: 'SKE', name: 'Skyrise (Tower E)' },
-  { code: 'SKD', name: 'Skyrise (Tower D)' },
-  { code: 'UB', name: 'ลูกขั้นบันได UOB (TOWER B)' },
-];
 
 const validationSchema = yup.object({
   projectCode: yup
@@ -36,6 +27,22 @@ const validationSchema = yup.object({
 });
 
 const FVSection = ({ onAddSection }) => {
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('http://localhost:3033/projects');
+        const data = await response.json();
+        setProjects(data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
   const formik = useFormik({
     initialValues: {
       projectCode: '',
@@ -46,10 +53,10 @@ const FVSection = ({ onAddSection }) => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       const newSection = {
-        section_id: `${values.projectCode}-${Date.now()}`,
-        section_name: values.sectionName,
-        status: values.status,
+        projectCode: values.projectCode,
+        sectionName: values.sectionName,
         components: values.components,
+        status: values.status,
       };
       onAddSection(newSection);
       formik.resetForm();

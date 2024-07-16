@@ -1,4 +1,6 @@
-import React, { useState, memo } from 'react';
+// F:\project\sfc-mes\frontend\src\components\dashboards\modern\TopPerformers.js
+
+import React, { useState, useEffect, memo } from 'react';
 import {
   Box,
   Paper,
@@ -24,86 +26,15 @@ import {
   MenuItem,
   Tab,
   Tabs,
-  InputBase,
 } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import SearchIcon from '@mui/icons-material/Search';
-
-// Utility function to generate mock data
-const generateMockProjects = (numProjects, numSections, numComponents) => {
-  return Array.from({ length: numProjects }, (_, projectIndex) => {
-    const projectCode = `PRJ-${String.fromCharCode(65 + projectIndex)}`;
-
-    if (projectCode === 'PRJ-A' || projectCode === 'PRJ-B') {
-      const realFiles = Array.from({ length: 8 }, (_, componentIndex) => ({
-        id: componentIndex + 1,
-        name: `COMP-${String.fromCharCode(65 + projectIndex)}1-${componentIndex + 1}`,
-        width: (Math.random() * 2 + 1).toFixed(2),
-        height: (Math.random() * 3 + 2).toFixed(2),
-        thickness: (Math.random() * 0.2 + 0.1).toFixed(2),
-        weight: Math.floor(Math.random() * 500 + 300),
-        coating: (Math.random() * 0.5 + 0.1).toFixed(2),
-        addition: (Math.random() * 0.1).toFixed(2),
-        squareMeters: (Math.random() * 10 + 2).toFixed(2),
-        status: [
-          'ผลิตแล้ว',
-          'อยู่ระหว่างขนส่ง',
-          'ขนส่งสำเร็จ',
-          'ติดตั้งแล้ว',
-          'Rejected',
-        ][Math.floor(Math.random() * 5)],
-        fileName: `${String.fromCharCode(65 + projectIndex)}0${componentIndex + 1}.pdf`,
-        fileUrl: `https://sfcmes.github.io/downloadfile/${String.fromCharCode(65 + projectIndex)}0${componentIndex + 1}.pdf`
-      }));
-
-      return {
-        id: `${projectIndex + 1}`,
-        code: projectCode,
-        name: `Project ${String.fromCharCode(65 + projectIndex)}`,
-        sections: [
-          {
-            id: 1,
-            components: realFiles
-          },
-        ],
-      };
-    }
-
-    // Default handling for other projects
-    return {
-      id: `${projectIndex + 1}`,
-      code: projectCode,
-      name: `Project ${String.fromCharCode(65 + projectIndex)}`,
-      sections: Array.from({ length: numSections }, (_, sectionIndex) => ({
-        id: sectionIndex + 1,
-        components: Array.from({ length: numComponents }, (_, componentIndex) => ({
-          id: sectionIndex * numComponents + componentIndex + 1,
-          name: `COMP-${String.fromCharCode(65 + projectIndex)}${sectionIndex + 1}-${componentIndex + 1}`,
-          width: (Math.random() * 2 + 1).toFixed(2),
-          height: (Math.random() * 3 + 2).toFixed(2),
-          thickness: (Math.random() * 0.2 + 0.1).toFixed(2),
-          weight: Math.floor(Math.random() * 500 + 300),
-          coating: (Math.random() * 0.5 + 0.1).toFixed(2),
-          addition: (Math.random() * 0.1).toFixed(2),
-          squareMeters: (Math.random() * 10 + 2).toFixed(2),
-          status: [
-            'ผลิตแล้ว',
-            'อยู่ระหว่างขนส่ง',
-            'ขนส่งสำเร็จ',
-            'ติดตั้งแล้ว',
-            'Rejected',
-          ][Math.floor(Math.random() * 5)],
-        })),
-      })),
-    };
-  });
-};
-
-// Example usage
-const projects = generateMockProjects(5, 10, 50);
+import InputBase from '@mui/material/InputBase';
+import { alpha } from '@mui/material/styles';
+import { fetchProjects, fetchSectionsByProjectId } from '../../../services/projectService';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -133,7 +64,7 @@ const handleFileDownload = (file) => {
   window.open(file.url, '_blank');
 };
 
-const FileHistoryTable = memo(({ files }) => (
+const FileHistoryTable = memo(({ files = [] }) => (
   <TableContainer component={Paper} style={{ marginTop: '20px' }}>
     <Table size="small">
       <TableHead>
@@ -177,41 +108,12 @@ const displayLabels = {
   status: 'สถานะ',
 };
 
-// Mock data for file revisions
-const generateMockFileRevisions = (componentName, projectCode) => {
-  let fileName;
-  if (projectCode === 'PRJ-A' || projectCode === 'PRJ-B') {
-    const match = componentName.match(/COMP-(A|B)(\d+)-(\d+)/);
-    if (match) {
-      const [, project, section, component] = match;
-      if (section === '1' && component >= '1' && component <= '8') {
-        fileName = `${project}${component.padStart(2, '0')}.pdf`;
-      }
-    }
-  }
-
-  if (fileName) {
-    return [
-      { id: 1, fileName, revision: 'Rev 1', uploadedBy: 'System', uploadDate: '2024-07-04', url: `https://sfcmes.github.io/downloadfile/${fileName}` },
-    ];
-  }
-
-  // Generate mock data for other projects
-  return [
-    { id: 1, fileName: `COMP-${componentName}_Rev1.pdf`, revision: 'Rev 1', uploadedBy: 'John Doe', uploadDate: '2023-01-15', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev1.pdf` },
-    { id: 2, fileName: `COMP-${componentName}_Rev2.pdf`, revision: 'Rev 2', uploadedBy: 'Jane Smith', uploadDate: '2023-03-22', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev2.pdf` },
-    { id: 3, fileName: `COMP-${componentName}_Rev3.pdf`, revision: 'Rev 3', uploadedBy: 'Mike Johnson', uploadDate: '2023-06-10', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev3.pdf` },
-  ];
-};
-
-const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
+const ComponentDialog = memo(({ open, onClose, component = {}, projectCode }) => {
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
-
-  const mockFileRevisions = generateMockFileRevisions(component.name, projectCode);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -234,7 +136,7 @@ const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
           </Table>
         )}
         {tabValue === 1 && (
-          <FileHistoryTable files={mockFileRevisions} />
+          <FileHistoryTable files={component.fileHistory} />
         )}
       </DialogContent>
       <DialogActions>
@@ -270,18 +172,17 @@ const StatusChip = ({ status, count }) => {
   return <StyledChip label={`${status}: ${count}`} />;
 };
 
-const SectionRow = memo(({ section, projectCode }) => {
+const SectionRow = memo(({ section = {}, projectCode }) => {
   const [open, setOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
 
-  // Calculate status counts for the section
-  const statusCounts = section.components.reduce((acc, component) => {
+  const statusCounts = section.components ? section.components.reduce((acc, component) => {
     if (!acc[component.status]) {
       acc[component.status] = 0;
     }
     acc[component.status]++;
     return acc;
-  }, {});
+  }, {}) : {};
 
   return (
     <>
@@ -292,7 +193,7 @@ const SectionRow = memo(({ section, projectCode }) => {
           </IconButton>
         </TableCell>
         <TableCell colSpan={2}>ชั้น {section.id}</TableCell>
-        <TableCell align="right">{section.components.length} ชิ้นงาน</TableCell>
+        <TableCell align="right">{section.components ? section.components.length : 0} ชิ้นงาน</TableCell>
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
@@ -302,19 +203,13 @@ const SectionRow = memo(({ section, projectCode }) => {
                 ชิ้นงาน
               </Typography>
               <Box display="flex" justifyContent="space-between" mb={2}>
-                {[
-                  'ผลิตแล้ว',
-                  'อยู่ระหว่างขนส่ง',
-                  'ขนส่งสำเร็จ',
-                  'ติดตั้งแล้ว',
-                  'Rejected',
-                ].map((status) => (
+                {['ผลิตแล้ว', 'อยู่ระหว่างขนส่ง', 'ขนส่งสำเร็จ', 'ติดตั้งแล้ว', 'Rejected'].map((status) => (
                   <StatusChip key={status} status={status} count={statusCounts[status] || 0} />
                 ))}
               </Box>
               <Box style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 <Grid container spacing={1}>
-                  {section.components.map((component) => (
+                  {section.components ? section.components.map((component) => (
                     <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={component.id}>
                       <Card
                         style={{
@@ -352,7 +247,7 @@ const SectionRow = memo(({ section, projectCode }) => {
                         </CardContent>
                       </Card>
                     </Grid>
-                  ))}
+                  )) : <Typography>ไม่พบข้อมูล</Typography>}
                 </Grid>
               </Box>
             </Box>
@@ -373,15 +268,22 @@ const SectionRow = memo(({ section, projectCode }) => {
 
 const ProjectRow = memo(({ project, onRowClick }) => {
   const [open, setOpen] = useState(false);
+  const [sections, setSections] = useState([]);
 
-  const totalComponents = project.sections.reduce((acc, section) => acc + section.components.length, 0);
+  const totalComponents = sections.reduce((acc, section) => acc + (section.components ? section.components.length : 0), 0);
 
-  const handleRowClick = () => {
-    onRowClick(project);
+  const handleRowClick = async () => {
+    const fetchedSections = await fetchSectionsByProjectId(project.id);
+    setSections(fetchedSections);
+    onRowClick({ ...project, sections: fetchedSections });
   };
 
-  const handleIconClick = (event) => {
+  const handleIconClick = async (event) => {
     event.stopPropagation(); // Prevent the row click event from firing
+    if (!open) {
+      const fetchedSections = await fetchSectionsByProjectId(project.id);
+      setSections(fetchedSections);
+    }
     setOpen(!open);
   };
 
@@ -395,7 +297,7 @@ const ProjectRow = memo(({ project, onRowClick }) => {
         </TableCell>
         <TableCell>{project.code}</TableCell>
         <TableCell>{project.name}</TableCell>
-        <TableCell align="right">{project.sections.length}</TableCell>
+        <TableCell align="right">{sections.length}</TableCell>
         <TableCell align="right">{totalComponents}</TableCell>
       </TableRow>
       <TableRow>
@@ -407,7 +309,7 @@ const ProjectRow = memo(({ project, onRowClick }) => {
               </Typography>
               <Table size="small">
                 <TableBody>
-                  {project.sections.map((section) => (
+                  {sections.map((section) => (
                     <SectionRow key={section.id} section={section} projectCode={project.code} />
                   ))}
                 </TableBody>
@@ -459,7 +361,21 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 const TopPerformers = ({ onRowClick }) => {
+  const [projects, setProjects] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const getProjects = async () => {
+      try {
+        const data = await fetchProjects();
+        setProjects(data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
+    };
+
+    getProjects();
+  }, []);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -468,7 +384,7 @@ const TopPerformers = ({ onRowClick }) => {
   return (
     <Paper elevation={3} style={{ padding: '16px' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" style={{ fontWeight: 'bold' }}>Projects</Typography>
+        <Typography variant="h5" style={{ fontWeight: 'bold' }}>โครงการ</Typography>
         <Search>
           <SearchIconWrapper>
             <SearchIcon />
@@ -486,10 +402,10 @@ const TopPerformers = ({ onRowClick }) => {
           <TableHead>
             <TableRow>
               <StyledTableCell />
-              <StyledTableCell>Project Code</StyledTableCell>
-              <StyledTableCell>Project Name</StyledTableCell>
-              <StyledTableCell align="right">Sections</StyledTableCell>
-              <StyledTableCell align="right">Total Components</StyledTableCell>
+              <StyledTableCell>รหัสโครงการ</StyledTableCell>
+              <StyledTableCell>ชื่อโครงการ</StyledTableCell>
+              <StyledTableCell align="right">จำนวนชั้น</StyledTableCell>
+              <StyledTableCell align="right">จำนวนชิ้นงานทั้งหมด</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -506,8 +422,5 @@ const TopPerformers = ({ onRowClick }) => {
     </Paper>
   );
 };
-
-
-
 
 export default TopPerformers;

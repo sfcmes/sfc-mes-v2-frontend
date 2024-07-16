@@ -1,10 +1,8 @@
-// src/components/forms/form-validation/FVComponent.js
 import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { Box, Button, Stack, Select, MenuItem, FormControl, InputLabel, Modal, Typography } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
-import CustomFormLabel from '../theme-elements/CustomFormLabel';
 import QRCode from 'qrcode.react';
 import html2canvas from 'html2canvas';
 
@@ -82,6 +80,7 @@ const FVComponent = ({
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [qrCodeData, setQrCodeData] = useState(null);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const formik = useFormik({
     initialValues: {
@@ -100,33 +99,84 @@ const FVComponent = ({
       sectionId: '',
     },
     validationSchema: validationSchema,
-    onSubmit: (values) => {
+    onSubmit: async (values) => {
       // Generate QR code data
       const qrCodeData = JSON.stringify(values);
       setQrCodeData(qrCodeData);
       setIsModalOpen(true);
+
+      // Create and save JSON file
+      await createAndSaveJSON(values);
     },
   });
 
-  const handleSave = () => {
+  const createAndSaveJSON = async (data) => {
+    // Add a timestamp to simulate a database record
+    const record = {
+      ...data,
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  
+    try {
+      const response = await fetch('http://localhost:3033/save-json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(record),
+      });
+  
+      if (response.ok) {
+        setSaveMessage('JSON file saved successfully');
+        setTimeout(() => setSaveMessage(''), 1000); // Clear the message after 3 seconds
+      } else {
+        setSaveMessage('Error saving JSON file');
+        setTimeout(() => setSaveMessage(''), 1000);
+      }
+    } catch (error) {
+      console.error('Error saving JSON file:', error);
+      setSaveMessage('Error saving JSON file. Please check the console for details.');
+      setTimeout(() => setSaveMessage(''), 1000);
+    }
+  };
+
+  const handleSave = async () => {
     // Save QR code image
-    const canvas = document.getElementById('qr-code');
-    canvas.toBlob((blob) => {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'qr-code.png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }, 'image/png');
+    const qrCodeElement = document.getElementById('qr-code');
+    if (!qrCodeElement) {
+      console.error('QR code element not found');
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(qrCodeElement);
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'qr-code.png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error saving QR code image:', error);
+    }
+
     setIsModalOpen(false);
   };
 
   const handlePrint = () => {
     // Print QR code
-    const canvas = document.getElementById('qr-code');
-    html2canvas(canvas).then((canvas) => {
+    const qrCodeElement = document.getElementById('qr-code');
+    if (!qrCodeElement) {
+      console.error('QR code element not found');
+      return;
+    }
+
+    html2canvas(qrCodeElement).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
       const printWindow = window.open('', '', 'height=400,width=600');
       printWindow.document.write('<html><head><title>QR Code</title>');
@@ -136,211 +186,225 @@ const FVComponent = ({
       printWindow.document.close();
       printWindow.print();
     });
+
     setIsModalOpen(false);
   };
 
   return (
     <form onSubmit={formik.handleSubmit}>
-      <Stack>
-        <Box>
-          <CustomFormLabel>ชื่อส่วนประกอบ</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="componentName"
-            name="componentName"
-            value={formik.values.componentName}
+      <Stack spacing={3}>
+        <CustomTextField
+          fullWidth
+          id="componentName"
+          name="componentName"
+          label="ชื่อชิ้นงาน"
+          value={formik.values.componentName}
+          onChange={formik.handleChange}
+          error={formik.touched.componentName && Boolean(formik.errors.componentName)}
+          helperText={formik.touched.componentName && formik.errors.componentName}
+          placeholder={componentNamePlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="componentNumber"
+          name="componentNumber"
+          label="หมายเลขชิ้นงาน"
+          type="number"
+          value={formik.values.componentNumber}
+          onChange={formik.handleChange}
+          error={formik.touched.componentNumber && Boolean(formik.errors.componentNumber)}
+          helperText={formik.touched.componentNumber && formik.errors.componentNumber}
+          placeholder={componentNumberPlaceholder}
+        />
+        <FormControl fullWidth>
+          <InputLabel id="component-type-label">ประเภทชิ้นงาน</InputLabel>
+          <Select
+            labelId="component-type-label"
+            id="componentType"
+            name="componentType"
+            value={formik.values.componentType}
             onChange={formik.handleChange}
-            error={formik.touched.componentName && Boolean(formik.errors.componentName)}
-            helperText={formik.touched.componentName && formik.errors.componentName}
-            placeholder={componentNamePlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>หมายเลขส่วนประกอบ</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="componentNumber"
-            name="componentNumber"
-            type="number"
-            value={formik.values.componentNumber}
+            error={formik.touched.componentType && Boolean(formik.errors.componentType)}
+          >
+            <MenuItem value="">เลือกประเภทชิ้นงาน</MenuItem>
+            <MenuItem value="Type A">Type A-Precast</MenuItem>
+            <MenuItem value="Type B">Type B-เสาเอ็น</MenuItem>
+            <MenuItem value="Type C">Type C-ลูกขั้นบันได</MenuItem>
+            <MenuItem value="Type D">Type D-ท่อ</MenuItem>
+          </Select>
+        </FormControl>
+        <CustomTextField
+          fullWidth
+          id="width"
+          name="width"
+          label="ความกว้าง (มม.)"
+          type="number"
+          value={formik.values.width}
+          onChange={formik.handleChange}
+          error={formik.touched.width && Boolean(formik.errors.width)}
+          helperText={formik.touched.width && formik.errors.width}
+          placeholder={widthPlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="height"
+          name="height"
+          label="ความสูง (มม.)"
+          type="number"
+          value={formik.values.height}
+          onChange={formik.handleChange}
+          error={formik.touched.height && Boolean(formik.errors.height)}
+          helperText={formik.touched.height && formik.errors.height}
+          placeholder={heightPlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="thickness"
+          name="thickness"
+          label="ความหนา (มม.)"
+          type="number"
+          value={formik.values.thickness}
+          onChange={formik.handleChange}
+          error={formik.touched.thickness && Boolean(formik.errors.thickness)}
+          helperText={formik.touched.thickness && formik.errors.thickness}
+          placeholder={thicknessPlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="extension"
+          name="extension"
+          label="ส่วนขยาย (ตร.ม.)"
+          type="number"
+          value={formik.values.extension}
+          onChange={formik.handleChange}
+          error={formik.touched.extension && Boolean(formik.errors.extension)}
+          helperText={formik.touched.extension && formik.errors.extension}
+          placeholder={extensionPlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="reduction"
+          name="reduction"
+          label="ส่วนลด (ตร.ม.)"
+          type="number"
+          value={formik.values.reduction}
+          onChange={formik.handleChange}
+          error={formik.touched.reduction && Boolean(formik.errors.reduction)}
+          helperText={formik.touched.reduction && formik.errors.reduction}
+          placeholder={reductionPlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="area"
+          name="area"
+          label="พื้นที่ (ตร.ม.)"
+          type="number"
+          value={formik.values.area}
+          onChange={formik.handleChange}
+          error={formik.touched.area && Boolean(formik.errors.area)}
+          helperText={formik.touched.area && formik.errors.area}
+          placeholder={areaPlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="volume"
+          name="volume"
+          label="ปริมาตร (ลบ.ม.)"
+          type="number"
+          value={formik.values.volume}
+          onChange={formik.handleChange}
+          error={formik.touched.volume && Boolean(formik.errors.volume)}
+          helperText={formik.touched.volume && formik.errors.volume}
+          placeholder={volumePlaceholder}
+        />
+        <CustomTextField
+          fullWidth
+          id="weight"
+          name="weight"
+          label="น้ำหนัก (ตัน)"
+          type="number"
+          value={formik.values.weight}
+          onChange={formik.handleChange}
+          error={formik.touched.weight && Boolean(formik.errors.weight)}
+          helperText={formik.touched.weight && formik.errors.weight}
+          placeholder={weightPlaceholder}
+        />
+        <FormControl fullWidth>
+          <InputLabel id="status-label">Status</InputLabel>
+          <Select
+            labelId="status-label"
+            id="status"
+            name="status"
+            value={formik.values.status}
             onChange={formik.handleChange}
-            error={formik.touched.componentNumber && Boolean(formik.errors.componentNumber)}
-            helperText={formik.touched.componentNumber && formik.errors.componentNumber}
-            placeholder={componentNumberPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>ประเภทส่วนประกอบ</CustomFormLabel>
-          <FormControl fullWidth>
-            <InputLabel id="component-type-label"></InputLabel>
-            <Select
-              labelId="component-type-label"
-              id="componentType"
-              name="componentType"
-              value={formik.values.componentType}
-              onChange={formik.handleChange}
-              error={formik.touched.componentType && Boolean(formik.errors.componentType)}
-            >
-              <MenuItem value="">เลือกประเภทส่วนประกอบ</MenuItem>
-              <MenuItem value="Type A">{componentTypePlaceholder}</MenuItem>
-              <MenuItem value="Type B">Type B</MenuItem>
-              <MenuItem value="Type C">Type C</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        <Box>
-          <CustomFormLabel>ความกว้าง (มม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="width"
-            name="width"
-            type="number"
-            value={formik.values.width}
-            onChange={formik.handleChange}
-            error={formik.touched.width && Boolean(formik.errors.width)}
-            helperText={formik.touched.width && formik.errors.width}
-            placeholder={widthPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>ความสูง (มม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="height"
-            name="height"
-            type="number"
-            value={formik.values.height}
-            onChange={formik.handleChange}
-            error={formik.touched.height && Boolean(formik.errors.height)}
-            helperText={formik.touched.height && formik.errors.height}
-            placeholder={heightPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>ความหนา (มม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="thickness"
-            name="thickness"
-            type="number"
-            value={formik.values.thickness}
-            onChange={formik.handleChange}
-            error={formik.touched.thickness && Boolean(formik.errors.thickness)}
-            helperText={formik.touched.thickness && formik.errors.thickness}
-            placeholder={thicknessPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>ส่วนขยาย (ตร.ม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="extension"
-            name="extension"
-            type="number"
-            value={formik.values.extension}
-            onChange={formik.handleChange}
-            error={formik.touched.extension && Boolean(formik.errors.extension)}
-            helperText={formik.touched.extension && formik.errors.extension}
-            placeholder={extensionPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>ส่วนลด (ตร.ม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="reduction"
-            name="reduction"
-            type="number"
-            value={formik.values.reduction}
-            onChange={formik.handleChange}
-            error={formik.touched.reduction && Boolean(formik.errors.reduction)}
-            helperText={formik.touched.reduction && formik.errors.reduction}
-            placeholder={reductionPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>พื้นที่ (ตร.ม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="area"
-            name="area"
-            type="number"
-            value={formik.values.area}
-            onChange={formik.handleChange}
-            error={formik.touched.area && Boolean(formik.errors.area)}
-            helperText={formik.touched.area && formik.errors.area}
-            placeholder={areaPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>ปริมาตร (ลบ.ม.)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="volume"
-            name="volume"
-            type="number"
-            value={formik.values.volume}
-            onChange={formik.handleChange}
-            error={formik.touched.volume && Boolean(formik.errors.volume)}
-            helperText={formik.touched.volume && formik.errors.volume}
-            placeholder={volumePlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>น้ำหนัก (ตัน)</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="weight"
-            name="weight"
-            type="number"
-            value={formik.values.weight}
-            onChange={formik.handleChange}
-            error={formik.touched.weight && Boolean(formik.errors.weight)}
-            helperText={formik.touched.weight && formik.errors.weight}
-            placeholder={weightPlaceholder}
-          />
-        </Box>
-        <Box>
-          <CustomFormLabel>สถานะ</CustomFormLabel>
-          <FormControl fullWidth>
-            <InputLabel id="status-label"></InputLabel>
-            <Select
-              labelId="status-label"
-              id="status"
-              name="status"
-              value={formik.values.status}
-              onChange={formik.handleChange}
-              error={formik.touched.status && Boolean(formik.errors.status)}
-            >
-              <MenuItem value="">เลือกสถานะ</MenuItem>
-              <MenuItem value="Planning">{statusPlaceholder}</MenuItem>
-              <MenuItem value="Fabrication">กำลังผลิต</MenuItem>
-              <MenuItem value="Installed">ติดตั้งแล้ว</MenuItem>
-              <MenuItem value="Completed">เสร็จสมบูรณ์</MenuItem>
-              <MenuItem value="Reject">ปฏิเสธ</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        <Box>
-          <CustomFormLabel>รหัสส่วน</CustomFormLabel>
-          <CustomTextField
-            fullWidth
-            id="sectionId"
-            name="sectionId"
-            type="number"
-            value={formik.values.sectionId}
-            onChange={formik.handleChange}
-            error={formik.touched.sectionId && Boolean(formik.errors.sectionId)}
-            helperText={formik.touched.sectionId && formik.errors.sectionId}
-            placeholder={sectionIdPlaceholder}
-          />
-        </Box>
+            error={formik.touched.status && Boolean(formik.errors.status)}
+          >
+            <MenuItem value="">เลือกสถานะ</MenuItem>
+            <MenuItem value="Planning">แผนผลิต</MenuItem>
+            <MenuItem value="Fabrication">ผลิตแล้ว</MenuItem>
+            <MenuItem value="Transpotation">กำลังขนส่ง</MenuItem>
+            <MenuItem value="Accept">ตรวจรับแล้ว</MenuItem>
+            <MenuItem value="Completed">ติดตั้งแล้ว</MenuItem>
+            <MenuItem value="Reject">Reject</MenuItem>
+          </Select>
+        </FormControl>
+        <CustomTextField
+          fullWidth
+          id="sectionId"
+          name="sectionId"
+          label="รหัสชิ้นงาน"
+          type="number"
+          value={formik.values.sectionId}
+          onChange={formik.handleChange}
+          error={formik.touched.sectionId && Boolean(formik.errors.sectionId)}
+          helperText={formik.touched.sectionId && formik.errors.sectionId}
+          placeholder={sectionIdPlaceholder}
+        />
       </Stack>
-      <Button color="primary" variant="contained" type="submit">
-        บันทึกส่วนประกอบ
-      </Button>
+      <Box mt={3}>
+        <Button color="primary" variant="contained" type="submit">
+          บันทึกชิ้นงาน
+        </Button>
+      </Box>
+      {saveMessage && (
+        <Box mt={2}>
+          <Typography color="primary">{saveMessage}</Typography>
+        </Box>
+      )}
 
-      {/* Keep the Modal as it was */}
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        aria-labelledby="qr-code-modal"
+        aria-describedby="qr-code-description"
+      >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 400,
+          bgcolor: 'background.paper',
+          border: '2px solid #000',
+          boxShadow: 24,
+          p: 4,
+        }}>
+          <Typography id="qr-code-modal" variant="h6" component="h2">
+            QR Code
+          </Typography>
+          <Box id="qr-code" sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+            <QRCode value={qrCodeData} size={256} />
+          </Box>
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+            <Button onClick={handleSave} variant="contained" color="primary">
+              Save
+            </Button>
+            <Button onClick={handlePrint} variant="contained" color="secondary">
+              Print
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </form>
   );
 };

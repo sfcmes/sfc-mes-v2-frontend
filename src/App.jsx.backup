@@ -5,7 +5,8 @@ import RTL from './layouts/full/shared/customizer/RTL';
 import ScrollToTop from './components/shared/ScrollToTop';
 import Router from './routes/Router';
 import { CssBaseline, ThemeProvider } from '@mui/material';
-import { AuthProvider } from './contexts/AuthContext'; // Import AuthProvider
+import dotenv from 'dotenv';
+dotenv.config();
 
 function App() {
   const routing = useRoutes(Router);
@@ -16,12 +17,10 @@ function App() {
     <ThemeProvider theme={theme}>
       <RTL direction={customizer.activeDir}>
         <CssBaseline />
-        <AuthProvider> {/* Wrap the routing with AuthProvider */}
-          <ScrollToTop>{routing}</ScrollToTop>
-        </AuthProvider>
+        <ScrollToTop>{routing}</ScrollToTop>
       </RTL>
     </ThemeProvider>
   );
 }
 
-export default App;
+export default App

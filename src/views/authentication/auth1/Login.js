@@ -2,7 +2,7 @@ import React from 'react';
 import { Grid, Box, Typography } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
 import Logo from 'src/layouts/full/shared/logo/Logo';
-import AuthLogin from '../authForms/AuthLogin';
+import AuthLogin from './AuthLogin'
 import videoBg from 'src/assets/videos/video.mov';
 
 const Login = () => (
