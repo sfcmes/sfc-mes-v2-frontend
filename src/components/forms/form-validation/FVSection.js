@@ -28,20 +28,25 @@ const validationSchema = yup.object({
 
 const FVSection = ({ onAddSection }) => {
   const [projects, setProjects] = useState([]);
+  const token = localStorage.getItem('token'); // Assuming the token is stored in localStorage
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await fetch('http://localhost:3033/projects');
+        const response = await fetch('http://localhost:3000/api/projects', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         const data = await response.json();
-        setProjects(data);
+        setProjects(Array.isArray(data) ? data : []); // Ensure data is an array
       } catch (error) {
         console.error('Error fetching projects:', error);
       }
     };
 
     fetchProjects();
-  }, []);
+  }, [token]);
 
   const formik = useFormik({
     initialValues: {
@@ -53,8 +58,8 @@ const FVSection = ({ onAddSection }) => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       const newSection = {
-        projectCode: values.projectCode,
-        sectionName: values.sectionName,
+        project_id: values.projectCode,
+        name: values.sectionName,
         components: values.components,
         status: values.status,
       };
@@ -79,8 +84,8 @@ const FVSection = ({ onAddSection }) => {
               error={formik.touched.projectCode && Boolean(formik.errors.projectCode)}
             >
               <MenuItem value="">เลือกโครงการ</MenuItem>
-              {projects.map((project) => (
-                <MenuItem key={project.code} value={project.code}>
+              {projects.length > 0 && projects.map((project) => (
+                <MenuItem key={project.id} value={project.id}>
                   {project.name}
                 </MenuItem>
               ))}

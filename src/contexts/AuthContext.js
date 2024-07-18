@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }) => {
     api.setToken(token);
     setUser(user);
   };
-  
 
   const logout = () => {
     console.log('Logging out');
@@ -56,3 +55,5 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+export { AuthContext }; // Ensure that AuthContext is exported

@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/';
 
 const getAuthToken = () => {
   // Assuming the token is stored in localStorage
@@ -34,6 +34,16 @@ export const fetchSectionsByProjectId = async (projectId) => {
     return response.data;
   } catch (error) {
     console.error(`Error fetching sections for project ID ${projectId}:`, error);
+    throw error;
+  }
+};
+
+export const createProject = async (data) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/projects`, data, createAuthHeaders());
+    return response.data;
+  } catch (error) {
+    console.error('Error creating project:', error);
     throw error;
   }
 };

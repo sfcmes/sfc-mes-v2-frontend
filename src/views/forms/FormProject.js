@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { CardContent, Grid, Typography, TableContainer, Paper, Table, TableHead, TableRow, TableCell, TableBody, Chip } from '@mui/material';
+import {
+  CardContent,
+  Grid,
+  Typography,
+  TableContainer,
+  Paper,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Chip,
+  Button,
+  Stack,
+} from '@mui/material';
 import PageContainer from '../../components/container/PageContainer';
 import Breadcrumb from '../../layouts/full/shared/breadcrumb/Breadcrumb';
 import ParentCard from 'src/components/shared/ParentCard';
 import FVProject from '../../components/forms/form-validation/FVProject';
+import ProjectModal from './ProjectModal'; // import the modal component
 
-const BCrumb = [
-  { to: '/', title: 'Home' },
-  { title: 'สร้างโครงการใหม่' },
-];
+const BCrumb = [{ to: '/', title: 'Home' }, { title: 'สร้างโครงการใหม่' }];
 
-const ProjectTable = ({ projects }) => (
+const ProjectTable = ({ projects, onView, onEdit }) => (
   <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 440 }}>
     <Table stickyHeader aria-label="project table">
       <TableHead>
@@ -18,6 +30,11 @@ const ProjectTable = ({ projects }) => (
           <TableCell>
             <Typography variant="h6" fontWeight="500">
               Project Name
+            </Typography>
+          </TableCell>
+          <TableCell>
+            <Typography variant="h6" fontWeight="500">
+              Project Code
             </Typography>
           </TableCell>
           <TableCell>
@@ -40,7 +57,12 @@ const ProjectTable = ({ projects }) => (
               Components
             </Typography>
           </TableCell>
-        </TableRow> {/* Corrected closing tag */}
+          <TableCell>
+            <Typography variant="h6" fontWeight="500">
+              Actions
+            </Typography>
+          </TableCell>
+        </TableRow>
       </TableHead>
       <TableBody>
         {projects.map((project) => (
@@ -49,8 +71,10 @@ const ProjectTable = ({ projects }) => (
               <Typography variant="subtitle2" fontWeight="600">
                 {project.name}
               </Typography>
-              <Typography color="textSecondary" variant="body2">
-                {project.code}
+            </TableCell>
+            <TableCell>
+              <Typography variant="subtitle2" fontWeight="600">
+                {project.project_code}
               </Typography>
             </TableCell>
             <TableCell>
@@ -80,7 +104,7 @@ const ProjectTable = ({ projects }) => (
             </TableCell>
             <TableCell>
               <Typography color="textSecondary" variant="subtitle2">
-                {project.progress}%
+                {typeof project.progress === 'number' && !isNaN(project.progress) ? project.progress.toFixed(2) : 'N/A'}%
               </Typography>
             </TableCell>
             <TableCell>
@@ -93,6 +117,16 @@ const ProjectTable = ({ projects }) => (
                 {project.components}
               </Typography>
             </TableCell>
+            <TableCell>
+              <Stack direction="row" spacing={1}>
+                <Button onClick={() => onView(project)} variant="contained" color="primary" size="small">
+                  View
+                </Button>
+                <Button onClick={() => onEdit(project)} variant="contained" color="secondary" size="small">
+                  Edit
+                </Button>
+              </Stack>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -102,43 +136,90 @@ const ProjectTable = ({ projects }) => (
 
 const FormProject = () => {
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // Add isEditing state
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://localhost:3033/projects');
-      const data = await response.json();
-      setProjects(data);
+        const response = await fetch('http://localhost:3000/api/projects', {
+            headers: {
+                Authorization: 'Bearer ' + localStorage.getItem('token'), // Assuming token is stored in localStorage
+            },
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch projects: ${errorText}`);
+        }
+        const data = await response.json();
+        setProjects(data); // Ensure the state is updated with the fetched data
     } catch (error) {
-      console.error('Error fetching projects:', error);
+        console.error('Error fetching projects:', error);
     }
-  };
+};
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
   const handleAddProject = async (newProject) => {
-    setProjects([...projects, newProject]);
-
     try {
-      const response = await fetch('http://localhost:3033/save-project', {
+      const response = await fetch('http://localhost:3000/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token'), // Assuming token is stored in localStorage
         },
-        body: JSON.stringify({ projectName: newProject.name, data: newProject }),
+        body: JSON.stringify(newProject),
       });
 
       if (!response.ok) {
-        console.error('Error saving project:', response.statusText);
-      } else {
-        console.log('Project saved successfully');
-        fetchProjects(); // Refresh the project list after adding a new project
+        const errorText = await response.text();
+        throw new Error(`Failed to save project: ${errorText}`);
       }
+
+      fetchProjects(); // Refresh the project list after adding a new project
     } catch (error) {
       console.error('Error saving project:', error);
+      alert('Error saving project: ' + error.message);
     }
   };
+
+  const handleViewProject = (project) => {
+    setSelectedProject(project);
+    setIsEditing(false); // Set editing state to false
+    setModalOpen(true);
+  };
+
+  const handleEditProject = (project) => {
+    setSelectedProject(project);
+    setIsEditing(true); // Set editing state to true
+    setModalOpen(true);
+  };
+
+  const handleUpdateProject = async (updatedProject) => {
+    try {
+        const response = await fetch(`http://localhost:3000/api/projects/${updatedProject.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token'), // Assuming token is stored in localStorage
+            },
+            body: JSON.stringify(updatedProject),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update project: ${errorText}`);
+        }
+
+        await fetchProjects(); // Refresh the project list after updating a project
+        setModalOpen(false);
+    } catch (error) {
+        console.error('Error updating project:', error);
+        alert('Error updating project: ' + error.message);
+    }
+};
 
   return (
     <PageContainer title="สร้างโครงการใหม่" description="This is the form to create a new project.">
@@ -146,7 +227,7 @@ const FormProject = () => {
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
           <ParentCard title="Projects Overview">
-            <ProjectTable projects={projects} />
+            <ProjectTable projects={projects} onView={handleViewProject} onEdit={handleEditProject} />
           </ParentCard>
         </Grid>
         <Grid item xs={12} lg={6}>
@@ -157,6 +238,13 @@ const FormProject = () => {
           </ParentCard>
         </Grid>
       </Grid>
+      <ProjectModal
+        open={isModalOpen}
+        project={selectedProject}
+        onClose={() => setModalOpen(false)}
+        onSave={handleUpdateProject}
+        isEditing={isEditing} // Pass isEditing state to ProjectModal
+      />
     </PageContainer>
   );
 };
