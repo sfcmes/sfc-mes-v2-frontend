@@ -1,3 +1,4 @@
+// FVProject.js
 import React from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -39,13 +40,10 @@ const FVProject = ({ onAddProject }) => {
     validationSchema: validationSchema,
     onSubmit: (values) => {
       const newProject = {
-        id: `${values.projectCode}-${Date.now()}`,
-        code: values.projectCode,
         name: values.projectName,
-        status: values.status,
-        progress: 0, // default progress
+        project_code: values.projectCode,
         sections: values.section,
-        components: 0, // default components
+        status: values.status,
       };
       onAddProject(newProject);
       formik.resetForm();

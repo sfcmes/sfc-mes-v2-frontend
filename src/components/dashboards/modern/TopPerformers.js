@@ -26,13 +26,12 @@ import {
   Tabs,
   InputBase,
 } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import SearchIcon from '@mui/icons-material/Search';
 
-// Utility function to generate mock data
 const generateMockProjects = (numProjects, numSections, numComponents) => {
   return Array.from({ length: numProjects }, (_, projectIndex) => {
     const projectCode = `PRJ-${String.fromCharCode(65 + projectIndex)}`;
@@ -72,7 +71,6 @@ const generateMockProjects = (numProjects, numSections, numComponents) => {
       };
     }
 
-    // Default handling for other projects
     return {
       id: `${projectIndex + 1}`,
       code: projectCode,
@@ -102,7 +100,6 @@ const generateMockProjects = (numProjects, numSections, numComponents) => {
   });
 };
 
-// Example usage
 const projects = generateMockProjects(5, 10, 50);
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -133,36 +130,39 @@ const handleFileDownload = (file) => {
   window.open(file.url, '_blank');
 };
 
-const FileHistoryTable = memo(({ files }) => (
-  <TableContainer component={Paper} style={{ marginTop: '20px' }}>
-    <Table size="small">
-      <TableHead>
-        <TableRow>
-          <TableCell>ชื่อไฟล์</TableCell>
-          <TableCell>เวอร์ชั่น</TableCell>
-          <TableCell>อัพโหลดโดย</TableCell>
-          <TableCell>วันที่อัพโหลด</TableCell>
-          <TableCell>ดาวน์โหลด</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {files.map((file) => (
-          <TableRow key={file.id}>
-            <TableCell>{file.fileName}</TableCell>
-            <TableCell>{file.revision}</TableCell>
-            <TableCell>{file.uploadedBy}</TableCell>
-            <TableCell>{file.uploadDate}</TableCell>
-            <TableCell>
-              <IconButton size="small" onClick={() => handleFileDownload(file)}>
-                <GetAppIcon />
-              </IconButton>
-            </TableCell>
+const FileHistoryTable = memo(({ files }) => {
+  const theme = useTheme();
+  return (
+    <TableContainer component={Paper} style={{ marginTop: '20px' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell style={{ color: theme.palette.text.primary }}>ชื่อไฟล์</TableCell>
+            <TableCell style={{ color: theme.palette.text.primary }}>เวอร์ชั่น</TableCell>
+            <TableCell style={{ color: theme.palette.text.primary }}>อัพโหลดโดย</TableCell>
+            <TableCell style={{ color: theme.palette.text.primary }}>วันที่อัพโหลด</TableCell>
+            <TableCell style={{ color: theme.palette.text.primary }}>ดาวน์โหลด</TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </TableContainer>
-));
+        </TableHead>
+        <TableBody>
+          {files.map((file) => (
+            <TableRow key={file.id}>
+              <TableCell>{file.fileName}</TableCell>
+              <TableCell>{file.revision}</TableCell>
+              <TableCell>{file.uploadedBy}</TableCell>
+              <TableCell>{file.uploadDate}</TableCell>
+              <TableCell>
+                <IconButton size="small" onClick={() => handleFileDownload(file)}>
+                  <GetAppIcon />
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+});
 
 const displayLabels = {
   id: 'รหัสชิ้นงาน',
@@ -177,7 +177,6 @@ const displayLabels = {
   status: 'สถานะ',
 };
 
-// Mock data for file revisions
 const generateMockFileRevisions = (componentName, projectCode) => {
   let fileName;
   if (projectCode === 'PRJ-A' || projectCode === 'PRJ-B') {
@@ -196,7 +195,6 @@ const generateMockFileRevisions = (componentName, projectCode) => {
     ];
   }
 
-  // Generate mock data for other projects
   return [
     { id: 1, fileName: `COMP-${componentName}_Rev1.pdf`, revision: 'Rev 1', uploadedBy: 'John Doe', uploadDate: '2023-01-15', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev1.pdf` },
     { id: 2, fileName: `COMP-${componentName}_Rev2.pdf`, revision: 'Rev 2', uploadedBy: 'Jane Smith', uploadDate: '2023-03-22', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev2.pdf` },
@@ -274,7 +272,6 @@ const SectionRow = memo(({ section, projectCode }) => {
   const [open, setOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
 
-  // Calculate status counts for the section
   const statusCounts = section.components.reduce((acc, component) => {
     if (!acc[component.status]) {
       acc[component.status] = 0;
@@ -381,7 +378,7 @@ const ProjectRow = memo(({ project, onRowClick }) => {
   };
 
   const handleIconClick = (event) => {
-    event.stopPropagation(); // Prevent the row click event from firing
+    event.stopPropagation(); 
     setOpen(!open);
   };
 
@@ -460,15 +457,16 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 const TopPerformers = ({ onRowClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const theme = useTheme();
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
   return (
-    <Paper elevation={3} style={{ padding: '16px' }}>
+    <Paper elevation={3} sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" style={{ fontWeight: 'bold' }}>Projects</Typography>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>ข้อมูลโครงการ</Typography>
         <Search>
           <SearchIconWrapper>
             <SearchIcon />
@@ -486,10 +484,10 @@ const TopPerformers = ({ onRowClick }) => {
           <TableHead>
             <TableRow>
               <StyledTableCell />
-              <StyledTableCell>Project Code</StyledTableCell>
-              <StyledTableCell>Project Name</StyledTableCell>
-              <StyledTableCell align="right">Sections</StyledTableCell>
-              <StyledTableCell align="right">Total Components</StyledTableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}>รหัสโครงการ</TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}>ชื่อโครงการ</TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} align="right">จำนวนชั้น</TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} align="right">จำนวนชิ้นงาน</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -506,8 +504,5 @@ const TopPerformers = ({ onRowClick }) => {
     </Paper>
   );
 };
-
-
-
 
 export default TopPerformers;

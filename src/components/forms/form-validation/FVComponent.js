@@ -1,66 +1,27 @@
 import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { Box, Button, Stack, Select, MenuItem, FormControl, InputLabel, Modal, Typography } from '@mui/material';
+import { Box, Button, Stack, Select, MenuItem, FormControl, InputLabel, Modal, Typography, Paper, Grid } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
 import QRCode from 'qrcode.react';
 import html2canvas from 'html2canvas';
 
 const validationSchema = yup.object({
-  componentName: yup
-    .string()
-    .min(2, 'Too Short!')
-    .max(255, 'Too Long!')
-    .required('Please enter a component name'),
-  componentNumber: yup
-    .number()
-    .integer('Component number must be an integer')
-    .min(1, 'Component number must be at least 1')
-    .required('Please enter a component number'),
-  componentType: yup
-    .string()
-    .required('Please select a component type'),
-  width: yup
-    .number()
-    .positive('Width must be a positive number')
-    .required('Please enter the component width'),
-  height: yup
-    .number()
-    .positive('Height must be a positive number')
-    .required('Please enter the component height'),
-  thickness: yup
-    .number()
-    .positive('Thickness must be a positive number')
-    .required('Please enter the component thickness'),
-  extension: yup
-    .number()
-    .positive('Extension must be a positive number')
-    .required('Please enter the component extension'),
-  reduction: yup
-    .number()
-    .positive('Reduction must be a positive number')
-    .required('Please enter the component reduction'),
-  area: yup
-    .number()
-    .positive('Area must be a positive number')
-    .required('Please enter the component area'),
-  volume: yup
-    .number()
-    .positive('Volume must be a positive number')
-    .required('Please enter the component volume'),
-  weight: yup
-    .number()
-    .positive('Weight must be a positive number')
-    .required('Please enter the component weight'),
-  status: yup
-    .string()
-    .oneOf(["Planning", "Fabrication", "Installed", "Completed", "Reject"])
-    .required('Please select a component status'),
-  sectionId: yup
-    .number()
-    .integer('Section ID must be an integer')
-    .min(1, 'Section ID must be at least 1')
-    .required('Please select a section'),
+  projectName: yup.string().required('Please enter a project name'),
+  floor: yup.string().required('Please enter the floor'),
+  componentName: yup.string().required('Please enter a component name'),
+  componentNumber: yup.number().integer('Component number must be an integer').min(1, 'Component number must be at least 1').required('Please enter a component number'),
+  componentType: yup.string().required('Please select a component type'),
+  width: yup.number().positive('Width must be a positive number').required('Please enter the component width'),
+  height: yup.number().positive('Height must be a positive number').required('Please enter the component height'),
+  thickness: yup.number().positive('Thickness must be a positive number').required('Please enter the component thickness'),
+  extension: yup.number().positive('Extension must be a positive number').required('Please enter the component extension'),
+  reduction: yup.number().positive('Reduction must be a positive number').required('Please enter the component reduction'),
+  area: yup.number().positive('Area must be a positive number').required('Please enter the component area'),
+  volume: yup.number().positive('Volume must be a positive number').required('Please enter the component volume'),
+  weight: yup.number().positive('Weight must be a positive number').required('Please enter the component weight'),
+  status: yup.string().oneOf(["Planning", "Fabrication", "Installed", "Completed", "Reject"]).required('Please select a component status'),
+  sectionId: yup.number().integer('Section ID must be an integer').min(1, 'Section ID must be at least 1').required('Please select a section'),
 });
 
 const FVComponent = ({
@@ -84,6 +45,8 @@ const FVComponent = ({
 
   const formik = useFormik({
     initialValues: {
+      projectName: '',
+      floor: '',
       componentName: '',
       componentNumber: '',
       componentType: '',
@@ -100,9 +63,8 @@ const FVComponent = ({
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
-      // Generate QR code data
-      const qrCodeData = JSON.stringify(values);
-      setQrCodeData(qrCodeData);
+      const qrCodeDetails = `ชื่อโครงการ: ${values.projectName}, ชั้น: ${values.floor}, ชื่อชิ้นงาน: ${values.componentName}`;
+      setQrCodeData(qrCodeDetails);
       setIsModalOpen(true);
 
       // Create and save JSON file
@@ -111,14 +73,13 @@ const FVComponent = ({
   });
 
   const createAndSaveJSON = async (data) => {
-    // Add a timestamp to simulate a database record
     const record = {
       ...data,
       id: Date.now(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
-  
+
     try {
       const response = await fetch('http://localhost:3033/save-json', {
         method: 'POST',
@@ -127,10 +88,10 @@ const FVComponent = ({
         },
         body: JSON.stringify(record),
       });
-  
+
       if (response.ok) {
         setSaveMessage('JSON file saved successfully');
-        setTimeout(() => setSaveMessage(''), 1000); // Clear the message after 3 seconds
+        setTimeout(() => setSaveMessage(''), 1000);
       } else {
         setSaveMessage('Error saving JSON file');
         setTimeout(() => setSaveMessage(''), 1000);
@@ -143,7 +104,6 @@ const FVComponent = ({
   };
 
   const handleSave = async () => {
-    // Save QR code image
     const qrCodeElement = document.getElementById('qr-code');
     if (!qrCodeElement) {
       console.error('QR code element not found');
@@ -169,7 +129,6 @@ const FVComponent = ({
   };
 
   const handlePrint = () => {
-    // Print QR code
     const qrCodeElement = document.getElementById('qr-code');
     if (!qrCodeElement) {
       console.error('QR code element not found');
@@ -180,7 +139,7 @@ const FVComponent = ({
       const imgData = canvas.toDataURL('image/png');
       const printWindow = window.open('', '', 'height=400,width=600');
       printWindow.document.write('<html><head><title>QR Code</title>');
-      printWindow.document.write('</head><body >');
+      printWindow.document.write('</head><body>');
       printWindow.document.write(`<img src="${imgData}" />`);
       printWindow.document.write('</body></html>');
       printWindow.document.close();
@@ -195,9 +154,29 @@ const FVComponent = ({
       <Stack spacing={3}>
         <CustomTextField
           fullWidth
+          id="projectName"
+          name="projectName"
+          label="Project Name"
+          value={formik.values.projectName}
+          onChange={formik.handleChange}
+          error={formik.touched.projectName && Boolean(formik.errors.projectName)}
+          helperText={formik.touched.projectName && formik.errors.projectName}
+        />
+        <CustomTextField
+          fullWidth
+          id="floor"
+          name="floor"
+          label="Floor"
+          value={formik.values.floor}
+          onChange={formik.handleChange}
+          error={formik.touched.floor && Boolean(formik.errors.floor)}
+          helperText={formik.touched.floor && formik.errors.floor}
+        />
+        <CustomTextField
+          fullWidth
           id="componentName"
           name="componentName"
-          label="ชื่อชิ้นงาน"
+          label="Component Name"
           value={formik.values.componentName}
           onChange={formik.handleChange}
           error={formik.touched.componentName && Boolean(formik.errors.componentName)}
@@ -208,7 +187,7 @@ const FVComponent = ({
           fullWidth
           id="componentNumber"
           name="componentNumber"
-          label="หมายเลขชิ้นงาน"
+          label="Component Number"
           type="number"
           value={formik.values.componentNumber}
           onChange={formik.handleChange}
@@ -217,7 +196,7 @@ const FVComponent = ({
           placeholder={componentNumberPlaceholder}
         />
         <FormControl fullWidth>
-          <InputLabel id="component-type-label">ประเภทชิ้นงาน</InputLabel>
+          <InputLabel id="component-type-label">Component Type</InputLabel>
           <Select
             labelId="component-type-label"
             id="componentType"
@@ -226,7 +205,7 @@ const FVComponent = ({
             onChange={formik.handleChange}
             error={formik.touched.componentType && Boolean(formik.errors.componentType)}
           >
-            <MenuItem value="">เลือกประเภทชิ้นงาน</MenuItem>
+            <MenuItem value="">Select Component Type</MenuItem>
             <MenuItem value="Type A">Type A-Precast</MenuItem>
             <MenuItem value="Type B">Type B-เสาเอ็น</MenuItem>
             <MenuItem value="Type C">Type C-ลูกขั้นบันได</MenuItem>
@@ -237,7 +216,7 @@ const FVComponent = ({
           fullWidth
           id="width"
           name="width"
-          label="ความกว้าง (มม.)"
+          label="Width (mm)"
           type="number"
           value={formik.values.width}
           onChange={formik.handleChange}
@@ -249,7 +228,7 @@ const FVComponent = ({
           fullWidth
           id="height"
           name="height"
-          label="ความสูง (มม.)"
+          label="Height (mm)"
           type="number"
           value={formik.values.height}
           onChange={formik.handleChange}
@@ -261,7 +240,7 @@ const FVComponent = ({
           fullWidth
           id="thickness"
           name="thickness"
-          label="ความหนา (มม.)"
+          label="Thickness (mm)"
           type="number"
           value={formik.values.thickness}
           onChange={formik.handleChange}
@@ -273,7 +252,7 @@ const FVComponent = ({
           fullWidth
           id="extension"
           name="extension"
-          label="ส่วนขยาย (ตร.ม.)"
+          label="Extension (sq.m)"
           type="number"
           value={formik.values.extension}
           onChange={formik.handleChange}
@@ -285,7 +264,7 @@ const FVComponent = ({
           fullWidth
           id="reduction"
           name="reduction"
-          label="ส่วนลด (ตร.ม.)"
+          label="Reduction (sq.m)"
           type="number"
           value={formik.values.reduction}
           onChange={formik.handleChange}
@@ -297,7 +276,7 @@ const FVComponent = ({
           fullWidth
           id="area"
           name="area"
-          label="พื้นที่ (ตร.ม.)"
+          label="Area (sq.m)"
           type="number"
           value={formik.values.area}
           onChange={formik.handleChange}
@@ -309,7 +288,7 @@ const FVComponent = ({
           fullWidth
           id="volume"
           name="volume"
-          label="ปริมาตร (ลบ.ม.)"
+          label="Volume (cu.m)"
           type="number"
           value={formik.values.volume}
           onChange={formik.handleChange}
@@ -321,7 +300,7 @@ const FVComponent = ({
           fullWidth
           id="weight"
           name="weight"
-          label="น้ำหนัก (ตัน)"
+          label="Weight (tons)"
           type="number"
           value={formik.values.weight}
           onChange={formik.handleChange}
@@ -339,12 +318,11 @@ const FVComponent = ({
             onChange={formik.handleChange}
             error={formik.touched.status && Boolean(formik.errors.status)}
           >
-            <MenuItem value="">เลือกสถานะ</MenuItem>
-            <MenuItem value="Planning">แผนผลิต</MenuItem>
-            <MenuItem value="Fabrication">ผลิตแล้ว</MenuItem>
-            <MenuItem value="Transpotation">กำลังขนส่ง</MenuItem>
-            <MenuItem value="Accept">ตรวจรับแล้ว</MenuItem>
-            <MenuItem value="Completed">ติดตั้งแล้ว</MenuItem>
+            <MenuItem value="">Select Status</MenuItem>
+            <MenuItem value="Planning">Planning</MenuItem>
+            <MenuItem value="Fabrication">Fabrication</MenuItem>
+            <MenuItem value="Installed">Installed</MenuItem>
+            <MenuItem value="Completed">Completed</MenuItem>
             <MenuItem value="Reject">Reject</MenuItem>
           </Select>
         </FormControl>
@@ -352,7 +330,7 @@ const FVComponent = ({
           fullWidth
           id="sectionId"
           name="sectionId"
-          label="รหัสชิ้นงาน"
+          label="Section ID"
           type="number"
           value={formik.values.sectionId}
           onChange={formik.handleChange}
@@ -363,7 +341,7 @@ const FVComponent = ({
       </Stack>
       <Box mt={3}>
         <Button color="primary" variant="contained" type="submit">
-          บันทึกชิ้นงาน
+          Generate QR Code
         </Button>
       </Box>
       {saveMessage && (
@@ -389,20 +367,25 @@ const FVComponent = ({
           boxShadow: 24,
           p: 4,
         }}>
-          <Typography id="qr-code-modal" variant="h6" component="h2">
+          <Typography id="qr-code-modal" variant="h6" component="h2" align="center">
             QR Code
           </Typography>
-          <Box id="qr-code" sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+          <Paper id="qr-code" elevation={3} sx={{ mt: 2, p: 2, textAlign: 'center', backgroundColor: 'white' }}>
             <QRCode value={qrCodeData} size={256} />
-          </Box>
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-            <Button onClick={handleSave} variant="contained" color="primary">
-              Save
-            </Button>
-            <Button onClick={handlePrint} variant="contained" color="secondary">
-              Print
-            </Button>
-          </Box>
+            <Typography mt={2} variant="body1">{qrCodeData}</Typography>
+          </Paper>
+          <Grid container spacing={2} justifyContent="center" mt={2}>
+            <Grid item>
+              <Button onClick={handleSave} variant="contained" color="primary">
+                Save
+              </Button>
+            </Grid>
+            <Grid item>
+              <Button onClick={handlePrint} variant="contained" color="secondary">
+                Print
+              </Button>
+            </Grid>
+          </Grid>
         </Box>
       </Modal>
     </form>

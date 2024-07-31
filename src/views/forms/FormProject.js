@@ -18,7 +18,8 @@ import PageContainer from '../../components/container/PageContainer';
 import Breadcrumb from '../../layouts/full/shared/breadcrumb/Breadcrumb';
 import ParentCard from 'src/components/shared/ParentCard';
 import FVProject from '../../components/forms/form-validation/FVProject';
-import ProjectModal from './ProjectModal'; // import the modal component
+import ProjectModal from './ProjectModal';
+import api, { fetchProjects, createProject, updateProject } from 'src/utils/api';
 
 const BCrumb = [{ to: '/', title: 'Home' }, { title: 'สร้างโครงการใหม่' }];
 
@@ -138,47 +139,30 @@ const FormProject = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isModalOpen, setModalOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // Add isEditing state
+  const [isEditing, setIsEditing] = useState(false);
 
-  const fetchProjects = async () => {
+  const fetchProjectsData = async () => {
     try {
-        const response = await fetch('http://localhost:3000/api/projects', {
-            headers: {
-                Authorization: 'Bearer ' + localStorage.getItem('token'), // Assuming token is stored in localStorage
-            },
-        });
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch projects: ${errorText}`);
-        }
-        const data = await response.json();
-        setProjects(data); // Ensure the state is updated with the fetched data
+      const token = localStorage.getItem('token');
+      console.log('Fetching projects with token:', token);
+      api.setToken(token);
+      const response = await fetchProjects();
+      setProjects(response.data);
     } catch (error) {
-        console.error('Error fetching projects:', error);
+      console.error('Error fetching projects:', error);
     }
-};
+  };
 
   useEffect(() => {
-    fetchProjects();
+    fetchProjectsData();
   }, []);
 
   const handleAddProject = async (newProject) => {
     try {
-      const response = await fetch('http://localhost:3000/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + localStorage.getItem('token'), // Assuming token is stored in localStorage
-        },
-        body: JSON.stringify(newProject),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to save project: ${errorText}`);
-      }
-
-      fetchProjects(); // Refresh the project list after adding a new project
+      const token = localStorage.getItem('token');
+      api.setToken(token);
+      await createProject(newProject);
+      fetchProjectsData();
     } catch (error) {
       console.error('Error saving project:', error);
       alert('Error saving project: ' + error.message);
@@ -187,39 +171,28 @@ const FormProject = () => {
 
   const handleViewProject = (project) => {
     setSelectedProject(project);
-    setIsEditing(false); // Set editing state to false
+    setIsEditing(false);
     setModalOpen(true);
   };
 
   const handleEditProject = (project) => {
     setSelectedProject(project);
-    setIsEditing(true); // Set editing state to true
+    setIsEditing(true);
     setModalOpen(true);
   };
 
   const handleUpdateProject = async (updatedProject) => {
     try {
-        const response = await fetch(`http://localhost:3000/api/projects/${updatedProject.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + localStorage.getItem('token'), // Assuming token is stored in localStorage
-            },
-            body: JSON.stringify(updatedProject),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to update project: ${errorText}`);
-        }
-
-        await fetchProjects(); // Refresh the project list after updating a project
-        setModalOpen(false);
+      const token = localStorage.getItem('token');
+      api.setToken(token);
+      await updateProject(updatedProject.id, updatedProject);
+      fetchProjectsData();
+      setModalOpen(false);
     } catch (error) {
-        console.error('Error updating project:', error);
-        alert('Error updating project: ' + error.message);
+      console.error('Error updating project:', error);
+      alert('Error updating project: ' + error.message);
     }
-};
+  };
 
   return (
     <PageContainer title="สร้างโครงการใหม่" description="This is the form to create a new project.">
@@ -243,7 +216,7 @@ const FormProject = () => {
         project={selectedProject}
         onClose={() => setModalOpen(false)}
         onSave={handleUpdateProject}
-        isEditing={isEditing} // Pass isEditing state to ProjectModal
+        isEditing={isEditing}
       />
     </PageContainer>
   );

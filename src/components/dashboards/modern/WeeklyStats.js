@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTheme } from '@mui/material/styles';
-import { Stack, Typography, Box, Card } from '@mui/material';
+import { Stack, Typography, Avatar, Box, Card } from '@mui/material';
 import DashboardCard from '../../shared/DashboardCard';
 import ProductCarousel from '../../apps/ecommerce/productDetail/ProductCarousel';
+import { IconGridDots } from '@tabler/icons';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -24,6 +25,18 @@ const getStatusColor = (status) => {
 const WeeklyStats = ({ stats, projectName }) => {
   const theme = useTheme();
 
+  const iconStyles = {
+    width: 18,
+    height: 18,
+  };
+
+  const updatedStats = stats.map((stat) => ({
+    ...stat,
+    icon: <IconGridDots style={iconStyles} />,
+    color: getStatusColor(stat.title),
+    lightcolor: theme.palette.grey[200],
+  }));
+
   return (
     <DashboardCard title="ความคืบหน้าโครงการ" subtitle={projectName}>
       <>
@@ -31,11 +44,11 @@ const WeeklyStats = ({ stats, projectName }) => {
           <ProductCarousel />
         </Stack>
         <Stack spacing={3} mt={3}>
-          {stats.map((stat, i) => (
+          {updatedStats.map((stat, i) => (
             <Card
               key={i}
-              style={{
-                backgroundColor: getStatusColor(stat.title),
+              sx={{
+                backgroundColor: stat.lightcolor,
                 padding: theme.spacing(2),
                 borderRadius: theme.shape.borderRadius,
               }}
@@ -46,17 +59,35 @@ const WeeklyStats = ({ stats, projectName }) => {
                 justifyContent="space-between"
                 alignItems="center"
               >
-                <Box>
-                  <Typography variant="h6" mb="4px">
-                    {stat.title}
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Avatar
+                    variant="rounded"
+                    sx={{ bgcolor: stat.lightcolor, color: stat.color, width: 40, height: 40 }}
+                  >
+                    {stat.icon}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h6" mb="4px">
+                      {stat.title}
+                    </Typography>
+                    <Typography variant="subtitle2" color="textSecondary">
+                      {stat.subtitle}
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Avatar
+                  sx={{
+                    bgcolor: stat.lightcolor,
+                    color: stat.color,
+                    width: 42,
+                    height: 24,
+                    borderRadius: '4px',
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight="600">
+                    {stat.percent}%
                   </Typography>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    {stat.subtitle}
-                  </Typography>
-                </Box>
-                <Typography variant="subtitle2" fontWeight="600">
-                  {stat.percent}%
-                </Typography>
+                </Avatar>
               </Stack>
             </Card>
           ))}

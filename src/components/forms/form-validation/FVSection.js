@@ -13,7 +13,7 @@ const validationSchema = yup.object({
     .string()
     .min(2, 'Too Short!')
     .max(50, 'Too Long!')
-    .required('กรุณาใส่ชื่อ Section'),
+    .required('กรุณาใส่ชื่อชั้น'),
   components: yup
     .number()
     .integer('Components must be an integer')
@@ -74,7 +74,7 @@ const FVSection = ({ onAddSection }) => {
         <Box>
           <CustomFormLabel>ชื่อโครงการ</CustomFormLabel>
           <FormControl fullWidth>
-            <InputLabel id="projectCode-label">ชื่อโครงการ</InputLabel>
+            <InputLabel id="projectCode-label">เลือกชื่อโครงการ</InputLabel>
             <Select
               labelId="projectCode-label"
               id="projectCode"
@@ -93,7 +93,7 @@ const FVSection = ({ onAddSection }) => {
           </FormControl>
         </Box>
         <Box>
-          <CustomFormLabel>ชื่อ Section</CustomFormLabel>
+          <CustomFormLabel>ชื่อชั้นในโครงการ</CustomFormLabel>
           <CustomTextField
             fullWidth
             id="sectionName"
@@ -105,7 +105,7 @@ const FVSection = ({ onAddSection }) => {
           />
         </Box>
         <Box>
-          <CustomFormLabel>จำนวน Component</CustomFormLabel>
+          <CustomFormLabel>จำนวนชั้นของโครงการ</CustomFormLabel>
           <CustomTextField
             fullWidth
             id="components"
@@ -119,9 +119,9 @@ const FVSection = ({ onAddSection }) => {
           />
         </Box>
         <Box>
-          <CustomFormLabel>สถานะของ Section</CustomFormLabel>
+          <CustomFormLabel>สถานะของชั้นในโครงการ</CustomFormLabel>
           <FormControl fullWidth>
-            <InputLabel id="status-label">สถานะของ Section</InputLabel>
+            <InputLabel id="status-label">เลือกสถานะของชั้นในโครงการ</InputLabel>
             <Select
               labelId="status-label"
               id="status"

@@ -55,3 +55,6 @@ const FormComponent = () => {
 };
 
 export default FormComponent;
+FormComponent.js
+
+
