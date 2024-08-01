@@ -80,7 +80,7 @@ const QRCodePage = () => {
 
       const projectName = projectResponse.data.name;
 
-      const qrCodeDetails = `โครงการ: ${projectName}\nชั้น: ${sectionName}\nชื่อชิ้นงาน: ${component.name}`;
+      const qrCodeDetails = `SANGFAH CONSTRUCTION\nโครงการ: ${projectName}\nชั้น: ${sectionName}\nชื่อชิ้นงาน: ${component.name}`;
       setQrCodeDetails(qrCodeDetails);
       const qrCodeData = {
         project: projectName,
@@ -127,6 +127,7 @@ const QRCodePage = () => {
   
   const handlePrint = async (component, sectionName, projectName) => {
     try {
+      console.log('handlePrint:', { component, sectionName, projectName }); // Logging for debugging
       const qrCodeElement = await createQRCodeElement(component, sectionName, projectName);
       if (!qrCodeElement) {
         console.error('Failed to create QR code element');
@@ -137,28 +138,30 @@ const QRCodePage = () => {
       const canvas = await html2canvas(qrCodeElement, { useCORS: true });
       const imgData = canvas.toDataURL('image/png');
   
-      const windowContent = `
+      const printWindow = window.open('', '', 'width=600,height=600');
+      if (!printWindow) {
+        console.error('Failed to open print window');
+        return;
+      }
+  
+      printWindow.document.open();
+      printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head><title>Print QR Code</title></head>
         <body>
-          <img src="${imgData}">
+          <img src="${imgData}" onload="window.focus(); window.print();">
         </body>
         </html>
-      `;
-      const printWin = window.open('', '', 'width=600,height=600');
-      printWin.document.open();
-      printWin.document.write(windowContent);
-      printWin.document.close();
-      printWin.focus();
-      printWin.print();
-      printWin.close();
+      `);
+      printWindow.document.close();
   
       document.body.removeChild(qrCodeElement); // Remove the element after capturing
     } catch (error) {
       console.error('Error generating QR code: ', error);
     }
   };
+  
   
 
   const createQRCodeElement = (component, sectionName, projectName) => {
@@ -204,6 +207,7 @@ const QRCodePage = () => {
     qrCodeText.style.textAlign = 'center';
     qrCodeText.style.marginTop = '10px';
     qrCodeText.innerHTML = `
+      SANGFAH CONTRUCTION<br />
       โครงการ: ${projectName}<br />
       ชั้น: ${sectionName || 'N/A'}<br />
       ชื่อชิ้นงาน: ${component.name}
@@ -285,7 +289,7 @@ const QRCodePage = () => {
               onChange={(e) => setFilterSection(e.target.value)}
               label="Filter by Section"
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="">ทั้งหมด</MenuItem>
               {sections.map((section) => (
                 <MenuItem key={section.id} value={section.name}>
                   {section.name}
@@ -302,7 +306,7 @@ const QRCodePage = () => {
               onChange={(e) => setFilterType(e.target.value)}
               label="Filter by Type"
             >
-              <MenuItem value="">All</MenuItem>
+              <MenuItem value="">ทั้งหมด</MenuItem>
               {components
                 .map((component) => component.type)
                 .filter((value, index, self) => self.indexOf(value) === index)
@@ -396,7 +400,7 @@ const QRCodePage = () => {
           }}
         >
           <Typography id="qr-code-modal" variant="h6" component="h2" align="center" gutterBottom>
-            QR Code
+            SANGFAH CONSTRUCTION
           </Typography>
           <div>{renderQRCode(qrCodeData, qrCodeDetails)}</div>
           <Grid container spacing={2} justifyContent="center" mt={2}>
