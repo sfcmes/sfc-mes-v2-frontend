@@ -1,45 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Box, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import React, { useState } from 'react';
+import { Button, Box, Typography, TextField } from '@mui/material';
 import * as XLSX from 'xlsx';
-import { v4 as uuidv4 } from 'uuid';
-import { createComponent, fetchProjects, addComponentHistory, fetchSectionsByProjectId } from 'src/utils/api'; // Adjust the path based on your file structure
 import DataTable from './DataTable';
 
 const ExcelUploadForm = () => {
   const [data, setData] = useState([]);
+  const [jsonData, setJsonData] = useState(null);
   const [error, setError] = useState(null);
   const [saveMessage, setSaveMessage] = useState('');
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState('');
-  const [sections, setSections] = useState([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const projectResponse = await fetchProjects();
-        setProjects(projectResponse.data);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-        setError('Error fetching projects. Please check the console for details.');
-      }
-    };
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    const fetchSections = async () => {
-      if (selectedProject) {
-        try {
-          const sectionResponse = await fetchSectionsByProjectId(selectedProject);
-          setSections(sectionResponse.data);
-        } catch (error) {
-          console.error('Error fetching sections:', error);
-          setError('Error fetching sections. Please check the console for details.');
-        }
-      }
-    };
-    fetchSections();
-  }, [selectedProject]);
+  const [projectName, setProjectName] = useState('');
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -72,6 +41,7 @@ const ExcelUploadForm = () => {
           });
           console.log('Converted JSON data (first item):', formattedData[0]);
           setData(formattedData);
+          setJsonData(formattedData);  // Store JSON data
           setError(null);
         } else {
           setError('No data found in the Excel file.');
@@ -91,56 +61,39 @@ const ExcelUploadForm = () => {
   };
 
   const handleSaveToDatabase = async () => {
-    if (!data.length) {
+    if (!jsonData) {
       setError('No data available to save.');
       return;
     }
 
-    if (!selectedProject) {
-      setError('Please select a project name.');
+    if (!projectName) {
+      setError('Please enter a project name.');
       return;
     }
 
     try {
-      const savePromises = data.map(async (component) => {
-        // Map section name to UUID
-        const section = sections.find(sec => sec.name === component['Section Name']);
-        const section_id = section ? section.id : null;
-
-        if (!section_id) {
-          throw new Error(`Section Name ${component['Section Name']} not found in the selected project.`);
-        }
-
-        const componentData = {
-          id: uuidv4(),
-          section_id: section_id, // Ensure section_id is a UUID
-          name: component['Component Name'] || '',
-          type: component['Component Type'] || '',
-          width: component['Width'] || 0,
-          height: component['Height'] || 0,
-          thickness: component['Thickness'] || 0,
-          extension: component['Extension'] || 0,
-          reduction: component['Reduction'] || 0,
-          area: component['Area'] || 0,
-          volume: component['Volume'] || 0,
-          weight: component['Weight'] || 0,
-          status: component['Status'] || 'Pending',
-        };
-        return createComponent(componentData);
+      const response = await fetch('http://localhost:3033/save-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projectName, data: jsonData }),
       });
 
-      await Promise.all(savePromises);
-
-      setSaveMessage('Data saved successfully');
-      setTimeout(() => {
-        setSaveMessage('');
-      }, 3000);
+      if (response.ok) {
+        setSaveMessage('Data saved successfully');
+        setTimeout(() => {
+          setSaveMessage('');
+        }, 3000);  // Clear message after 3 seconds
+      } else {
+        setSaveMessage('Error saving data');
+        setTimeout(() => {
+          setSaveMessage('');
+        }, 3000);  // Clear message after 3 seconds
+      }
     } catch (error) {
       console.error('Error saving data:', error);
       setSaveMessage('Error saving data. Please check the console for details.');
-      setTimeout(() => {
-        setSaveMessage('');
-      }, 3000);
     }
   };
 
@@ -149,21 +102,13 @@ const ExcelUploadForm = () => {
       <Typography variant="h6" gutterBottom>
         อัปโหลดไฟล์ Excel สำหรับการอัปเดตข้อมูลจำนวนมาก
       </Typography>
-      <FormControl fullWidth margin="normal">
-        <InputLabel id="project-select-label">เลือกโครงการ</InputLabel>
-        <Select
-          labelId="project-select-label"
-          id="project-select"
-          value={selectedProject}
-          onChange={(e) => setSelectedProject(e.target.value)}
-        >
-          {projects.map((project) => (
-            <MenuItem key={project.id} value={project.id}>
-              {project.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <TextField
+        label="Project Name"
+        value={projectName}
+        onChange={(e) => setProjectName(e.target.value)}
+        fullWidth
+        margin="normal"
+      />
       <input
         accept=".xlsx, .xls"
         style={{ display: 'none' }}
@@ -193,7 +138,7 @@ const ExcelUploadForm = () => {
             style={{ marginTop: '10px' }}
             onClick={handleSaveToDatabase}
           >
-            บันทึกในฐานข้อมูล
+            Save to Database
           </Button>
           {saveMessage && (
             <Typography style={{ marginTop: '10px', color: 'green' }}>

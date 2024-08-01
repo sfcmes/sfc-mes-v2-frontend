@@ -26,7 +26,16 @@ const updateUserById = (userId, data) => api.put(`/users/${userId}`, data);
 const deleteUserById = (userId) => api.delete(`/users/${userId}`);
 
 // Projects API
-const fetchProjects = () => api.get('/projects');
+const fetchProjects = async () => {
+  try {
+    const response = await api.get('/projects');
+    console.log('Fetched projects:', response.data);
+    return response;
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    throw error;
+  }
+};
 const fetchProjectById = (projectId) => api.get(`/projects/${projectId}`);
 const createProject = (data) => api.post('/projects', data);
 const updateProject = (projectId, data) => api.put(`/projects/${projectId}`, data);
@@ -34,7 +43,7 @@ const deleteProject = (projectId) => api.delete(`/projects/${projectId}`);
 
 // Sections API
 const fetchSectionsByProjectId = (projectId) => api.get(`/sections/projects/${projectId}/sections`);
-const fetchSectionById = (sectionId) => api.get(`/sections/${sectionId}`);  // Add this line
+const fetchSectionById = (sectionId) => api.get(`/sections/${sectionId}`);
 const createSection = (data) => api.post('/sections', data);
 const updateSection = (sectionId, data) => api.put(`/sections/${sectionId}`, data);
 const deleteSection = (sectionId) => api.delete(`/sections/${sectionId}`);
@@ -42,7 +51,27 @@ const deleteSection = (sectionId) => api.delete(`/sections/${sectionId}`);
 // Components API
 const fetchComponentsBySectionId = (sectionId) => api.get(`/components/section/${sectionId}`);
 const fetchComponentsByProjectId = (projectId) => api.get(`/components/project/${projectId}`);
-const createComponent = (data) => api.post('/components', data);
+const createComponent = async (data) => {
+  try {
+    console.log('Creating component with data:', data);
+    const response = await api.post('/components', data);
+    console.log('Component created successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating component:', error.response ? error.response.data : error);
+    throw error;
+  }
+};
+const addComponentHistory = async (data) => {
+  try {
+    const response = await api.post('/component-history', data);
+    console.log('Component history added successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding component history:', error.response ? error.response.data : error);
+    throw error;
+  }
+};
 const updateComponent = (componentId, data) => api.put(`/components/${componentId}`, data);
 const deleteComponent = (componentId) => api.delete(`/components/${componentId}`);
 
@@ -56,12 +85,12 @@ export {
   updateUserById,
   deleteUserById,
   fetchProjects,
-  fetchProjectById,  // Ensure this is exported
+  fetchProjectById,
   createProject,
   updateProject,
   deleteProject,
   fetchSectionsByProjectId,
-  fetchSectionById,  // Ensure this is exported
+  fetchSectionById,
   createSection,
   updateSection,
   deleteSection,
@@ -70,4 +99,5 @@ export {
   createComponent,
   updateComponent,
   deleteComponent,
+  addComponentHistory,
 };
