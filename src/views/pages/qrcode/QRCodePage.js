@@ -165,6 +165,7 @@ const QRCodePage = () => {
   
 
   const createQRCodeElement = (component, sectionName, projectName) => {
+    console.log('createQRCodeElement:', { component, sectionName, projectName }); // Add logging
     const qrCodeData = {
       project: projectName,
       section: sectionName,
@@ -178,9 +179,9 @@ const QRCodePage = () => {
       area: component.area,
       volume: component.volume,
       weight: component.weight,
-      status: component.status,
+      status: component.status
     };
-
+  
     let qrCodeValue;
     try {
       qrCodeValue = JSON.stringify(qrCodeData);
@@ -188,23 +189,23 @@ const QRCodePage = () => {
       console.error('Error stringifying QR code data: ', error);
       return null;
     }
-
+  
     const qrCodeElement = document.createElement('div');
     qrCodeElement.style.backgroundColor = 'white';
     qrCodeElement.style.padding = '20px';
     qrCodeElement.style.display = 'inline-block';
-    qrCodeElement.style.textAlign = 'center';
+    qrCodeElement.style.textAlign = 'left'; // Align content to the left
     qrCodeElement.id = 'qrCodeElement';
-
+  
     const qrCodeContainer = document.createElement('div');
     qrCodeElement.appendChild(qrCodeContainer);
-
+  
     // Use createRoot to render the QRCode component into the qrCodeContainer
     const qrCodeRoot = createRoot(qrCodeContainer);
     qrCodeRoot.render(<QRCode value={qrCodeValue} size={256} />);
-
+  
     const qrCodeText = document.createElement('p');
-    qrCodeText.style.textAlign = 'center';
+    qrCodeText.style.textAlign = 'left'; // Align text to the left
     qrCodeText.style.marginTop = '10px';
     qrCodeText.innerHTML = `
       SANGFAH CONTRUCTION<br />
@@ -212,14 +213,15 @@ const QRCodePage = () => {
       ชั้น: ${sectionName || 'N/A'}<br />
       ชื่อชิ้นงาน: ${component.name}
     `;
-
+  
     qrCodeElement.appendChild(qrCodeText);
-
+  
     // Ensure QRCode component is rendered before returning the element
     return new Promise((resolve) => {
       setTimeout(() => resolve(qrCodeElement), 100);
     });
   };
+  
 
   const renderQRCode = (qrCodeValue, qrCodeDetails, size = 256) => {
     let parsedQRCodeValue = {};
