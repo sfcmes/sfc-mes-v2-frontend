@@ -33,8 +33,7 @@ const updateProject = (projectId, data) => api.put(`/projects/${projectId}`, dat
 const deleteProject = (projectId) => api.delete(`/projects/${projectId}`);
 
 // Sections API
-const fetchSectionsByProjectId = (projectId) => api.get(`/sections/projects/${projectId}/sections`);
-const fetchSectionById = (sectionId) => api.get(`/sections/${sectionId}`);  // Add this line
+const fetchSectionsByProjectId = (projectId) => api.get(`/sections/projects/${projectId}/sections`);  // Corrected URL
 const createSection = (data) => api.post('/sections', data);
 const updateSection = (sectionId, data) => api.put(`/sections/${sectionId}`, data);
 const deleteSection = (sectionId) => api.delete(`/sections/${sectionId}`);
@@ -56,12 +55,11 @@ export {
   updateUserById,
   deleteUserById,
   fetchProjects,
-  fetchProjectById,  // Ensure this is exported
+  fetchProjectById,
   createProject,
   updateProject,
   deleteProject,
   fetchSectionsByProjectId,
-  fetchSectionById,  // Ensure this is exported
   createSection,
   updateSection,
   deleteSection,

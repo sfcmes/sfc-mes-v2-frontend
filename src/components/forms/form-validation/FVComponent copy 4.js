@@ -1,45 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
-import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
-import {
-  Box,
-  Button,
-  Stack,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Modal,
-  Typography,
-  Paper,
-  Grid,
-} from '@mui/material';
+import { Box, Button, Stack, Select, MenuItem, FormControl, InputLabel, Modal, Typography, Paper, Grid } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
 import QRCode from 'qrcode.react';
 import html2canvas from 'html2canvas';
-import {
-  fetchProjects,
-  fetchSectionsByProjectId,
-  fetchProjectById,
-  fetchSectionById,
-  createComponent,
-} from 'src/utils/api';
+import { fetchProjects, fetchSectionsByProjectId } from 'src/utils/api';
 
 const validationSchema = yup.object({
-  projectName: yup.string().required('กรุณาใส่ชื่อโครงการ'),
-  sectionId: yup.string().required('กรุณาเลือกส่วน'),
-  componentName: yup.string().required('กรุณาใส่ชื่อชิ้นงาน'),
-  componentType: yup.string().required('กรุณาเลือกประเภทชิ้นงาน'),
-  width: yup.number().positive('ความกว้างต้องเป็นตัวเลขบวก').required('กรุณาใส่ความกว้างของชิ้นงาน'),
-  height: yup.number().positive('ความสูงต้องเป็นตัวเลขบวก').required('กรุณาใส่ความสูงของชิ้นงาน'),
-  thickness: yup.number().positive('ความหนาต้องเป็นตัวเลขบวก').required('กรุณาใส่ความหนาของชิ้นงาน'),
-  extension: yup.number().positive('การขยายต้องเป็นตัวเลขบวก').required('กรุณาใส่การขยายของชิ้นงาน'),
-  reduction: yup.number().positive('การลดต้องเป็นตัวเลขบวก').required('กรุณาใส่การลดของชิ้นงาน'),
-  area: yup.number().positive('พื้นที่ต้องเป็นตัวเลขบวก').required('กรุณาใส่พื้นที่ของชิ้นงาน'),
-  volume: yup.number().positive('ปริมาตรต้องเป็นตัวเลขบวก').required('กรุณาใส่ปริมาตรของชิ้นงาน'),
-  weight: yup.number().positive('น้ำหนักต้องเป็นตัวเลขบวก').required('กรุณาใส่น้ำหนักของชิ้นงาน'),
-  status: yup.string().oneOf(['Planning', 'Fabrication', 'Installed', 'Completed', 'Reject']).required('กรุณาเลือกสถานะของชิ้นงาน'),
+  projectName: yup.string().required('Please enter a project name'),
+  sectionId: yup.string().required('Please select a section'),
+  componentName: yup.string().required('Please enter a component name'),
+  componentNumber: yup.number().integer('Component number must be an integer').min(1, 'Component number must be at least 1').required('Please enter a component number'),
+  componentType: yup.string().required('Please select a component type'),
+  width: yup.number().positive('Width must be a positive number').required('Please enter the component width'),
+  height: yup.number().positive('Height must be a positive number').required('Please enter the component height'),
+  thickness: yup.number().positive('Thickness must be a positive number').required('Please enter the component thickness'),
+  extension: yup.number().positive('Extension must be a positive number').required('Please enter the component extension'),
+  reduction: yup.number().positive('Reduction must be a positive number').required('Please enter the component reduction'),
+  area: yup.number().positive('Area must be a positive number').required('Please enter the component area'),
+  volume: yup.number().positive('Volume must be a positive number').required('Please enter the component volume'),
+  weight: yup.number().positive('Weight must be a positive number').required('Please enter the component weight'),
+  status: yup.string().oneOf(["Planning", "Fabrication", "Installed", "Completed", "Reject"]).required('Please select a component status'),
 });
 
 const FVComponent = () => {
@@ -48,7 +30,6 @@ const FVComponent = () => {
   const [saveMessage, setSaveMessage] = useState('');
   const [projects, setProjects] = useState([]);
   const [sections, setSections] = useState([]);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,6 +40,7 @@ const FVComponent = () => {
         console.error('Error fetching projects:', error);
       }
     };
+
     fetchData();
   }, []);
 
@@ -79,6 +61,7 @@ const FVComponent = () => {
       projectName: '',
       sectionId: '',
       componentName: '',
+      componentNumber: '',
       componentType: '',
       width: '',
       height: '',
@@ -92,44 +75,44 @@ const FVComponent = () => {
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
-      setError('');
-      console.log('Submitting form with values:', values);
-      try {
-        const response = await createComponent({
-          id: uuidv4(), // Ensure id is generated and included
-          section_id: values.sectionId,
-          name: values.componentName,
-          type: values.componentType,
-          width: values.width,
-          height: values.height,
-          thickness: values.thickness,
-          extension: values.extension,
-          reduction: values.reduction,
-          area: values.area,
-          volume: values.volume,
-          weight: values.weight,
-          status: values.status,
-        });
+      const qrCodeDetails = `Project: ${values.projectName}, Section/Floor: ${values.sectionId}, Component: ${values.componentName}`;
+      setQrCodeData(qrCodeDetails);
+      setIsModalOpen(true);
 
-        const component = response.data;
-
-        const projectResponse = await fetchProjectById(values.projectName);
-        const sectionResponse = await fetchSectionById(values.sectionId);
-
-        const qrCodeDetails = `โครงการ: ${projectResponse.data.name}\nชั้น: ${sectionResponse.data.name}\nชื่อชิ้นงาน: ${values.componentName}\n`;
-        setQrCodeData(qrCodeDetails);
-        setIsModalOpen(true);
-
-      } catch (error) {
-        console.error('Error creating component or fetching project/section details:', error);
-        if (error.response && error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
-        } else {
-          setError('An unexpected error occurred. Please try again.');
-        }
-      }
+      await createAndSaveJSON(values);
     },
   });
+
+  const createAndSaveJSON = async (data) => {
+    const record = {
+      ...data,
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch('http://localhost:3033/save-json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(record),
+      });
+
+      if (response.ok) {
+        setSaveMessage('JSON file saved successfully');
+        setTimeout(() => setSaveMessage(''), 1000);
+      } else {
+        setSaveMessage('Error saving JSON file');
+        setTimeout(() => setSaveMessage(''), 1000);
+      }
+    } catch (error) {
+      console.error('Error saving JSON file:', error);
+      setSaveMessage('Error saving JSON file. Please check the console for details.');
+      setTimeout(() => setSaveMessage(''), 1000);
+    }
+  };
 
   const handleSave = async () => {
     const qrCodeElement = document.getElementById('qr-code');
@@ -180,9 +163,8 @@ const FVComponent = () => {
   return (
     <form onSubmit={formik.handleSubmit}>
       <Stack spacing={3}>
-        {error && <Typography color="error">{error}</Typography>}
         <FormControl fullWidth>
-          <InputLabel id="project-name-label">โครงการ</InputLabel>
+          <InputLabel id="project-name-label">Project Name</InputLabel>
           <Select
             labelId="project-name-label"
             id="projectName"
@@ -191,6 +173,7 @@ const FVComponent = () => {
             onChange={handleProjectChange}
             error={formik.touched.projectName && Boolean(formik.errors.projectName)}
           >
+            <MenuItem value="">Select Project</MenuItem>
             {projects.map((project) => (
               <MenuItem key={project.id} value={project.id}>
                 {project.name}
@@ -199,7 +182,7 @@ const FVComponent = () => {
           </Select>
         </FormControl>
         <FormControl fullWidth>
-          <InputLabel id="section-id-label">ชั้น</InputLabel>
+          <InputLabel id="section-id-label">Section/Floor</InputLabel>
           <Select
             labelId="section-id-label"
             id="sectionId"
@@ -208,6 +191,7 @@ const FVComponent = () => {
             onChange={formik.handleChange}
             error={formik.touched.sectionId && Boolean(formik.errors.sectionId)}
           >
+            <MenuItem value="">Select Section/Floor</MenuItem>
             {sections.map((section) => (
               <MenuItem key={section.id} value={section.id}>
                 {section.name}
@@ -219,7 +203,7 @@ const FVComponent = () => {
           fullWidth
           id="componentName"
           name="componentName"
-          label="ชื่อชิ้นงาน"
+          label="Component Name"
           value={formik.values.componentName}
           onChange={formik.handleChange}
           error={formik.touched.componentName && Boolean(formik.errors.componentName)}
@@ -227,19 +211,37 @@ const FVComponent = () => {
         />
         <CustomTextField
           fullWidth
-          id="componentType"
-          name="componentType"
-          label="ประเภทของชิ้นงาน"
-          value={formik.values.componentType}
+          id="componentNumber"
+          name="componentNumber"
+          label="Component Number"
+          type="number"
+          value={formik.values.componentNumber}
           onChange={formik.handleChange}
-          error={formik.touched.componentType && Boolean(formik.errors.componentType)}
-          helperText={formik.touched.componentType && formik.errors.componentType}
+          error={formik.touched.componentNumber && Boolean(formik.errors.componentNumber)}
+          helperText={formik.touched.componentNumber && formik.errors.componentNumber}
         />
+        <FormControl fullWidth>
+          <InputLabel id="component-type-label">Component Type</InputLabel>
+          <Select
+            labelId="component-type-label"
+            id="componentType"
+            name="componentType"
+            value={formik.values.componentType}
+            onChange={formik.handleChange}
+            error={formik.touched.componentType && Boolean(formik.errors.componentType)}
+          >
+            <MenuItem value="">Select Component Type</MenuItem>
+            <MenuItem value="Type A">Type A-Precast</MenuItem>
+            <MenuItem value="Type B">Type B-เสาเอ็น</MenuItem>
+            <MenuItem value="Type C">Type C-ลูกขั้นบันได</MenuItem>
+            <MenuItem value="Type D">Type D-ท่อ</MenuItem>
+          </Select>
+        </FormControl>
         <CustomTextField
           fullWidth
           id="width"
           name="width"
-          label="ความกว้าง (mm)"
+          label="Width (mm)"
           type="number"
           value={formik.values.width}
           onChange={formik.handleChange}
@@ -250,7 +252,7 @@ const FVComponent = () => {
           fullWidth
           id="height"
           name="height"
-          label="ความสูง (mm)"
+          label="Height (mm)"
           type="number"
           value={formik.values.height}
           onChange={formik.handleChange}
@@ -261,7 +263,7 @@ const FVComponent = () => {
           fullWidth
           id="thickness"
           name="thickness"
-          label="ความหนา (mm)"
+          label="Thickness (mm)"
           type="number"
           value={formik.values.thickness}
           onChange={formik.handleChange}
@@ -272,7 +274,7 @@ const FVComponent = () => {
           fullWidth
           id="extension"
           name="extension"
-          label="ส่วนขยาย (sq.m)"
+          label="Extension (sq.m)"
           type="number"
           value={formik.values.extension}
           onChange={formik.handleChange}
@@ -283,7 +285,7 @@ const FVComponent = () => {
           fullWidth
           id="reduction"
           name="reduction"
-          label="ส่วนลด (sq.m)"
+          label="Reduction (sq.m)"
           type="number"
           value={formik.values.reduction}
           onChange={formik.handleChange}
@@ -294,7 +296,7 @@ const FVComponent = () => {
           fullWidth
           id="area"
           name="area"
-          label="พื้นที่ (sq.m)"
+          label="Area (sq.m)"
           type="number"
           value={formik.values.area}
           onChange={formik.handleChange}
@@ -305,7 +307,7 @@ const FVComponent = () => {
           fullWidth
           id="volume"
           name="volume"
-          label="ปริมาตร (cu.m)"
+          label="Volume (cu.m)"
           type="number"
           value={formik.values.volume}
           onChange={formik.handleChange}
@@ -316,7 +318,7 @@ const FVComponent = () => {
           fullWidth
           id="weight"
           name="weight"
-          label="น้ำหนัก (tons)"
+          label="Weight (tons)"
           type="number"
           value={formik.values.weight}
           onChange={formik.handleChange}
@@ -334,13 +336,14 @@ const FVComponent = () => {
             error={formik.touched.status && Boolean(formik.errors.status)}
           >
             <MenuItem value="">Select Status</MenuItem>
-            <MenuItem value="Planning">แผนผลิต</MenuItem>
-            {/* <MenuItem value="Manufactured">Manufactured</MenuItem>
+            <MenuItem value="Planning">Planning</MenuItem>
+            <MenuItem value="Fabrication">Fabrication</MenuItem>
             <MenuItem value="Installed">Installed</MenuItem>
             <MenuItem value="Completed">Completed</MenuItem>
-            <MenuItem value="Rejected">Rejected</MenuItem> */}
+            <MenuItem value="Reject">Reject</MenuItem>
           </Select>
         </FormControl>
+        
       </Stack>
       <Box mt={3}>
         <Button color="primary" variant="contained" type="submit">
@@ -359,31 +362,23 @@ const FVComponent = () => {
         aria-labelledby="qr-code-modal"
         aria-describedby="qr-code-description"
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 400,
-            bgcolor: 'background.paper',
-            border: '2px solid #000',
-            boxShadow: 24,
-            p: 4,
-          }}
-        >
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 400,
+          bgcolor: 'background.paper',
+          border: '2px solid #000',
+          boxShadow: 24,
+          p: 4,
+        }}>
           <Typography id="qr-code-modal" variant="h6" component="h2" align="center">
             QR Code
           </Typography>
-          <Paper
-            id="qr-code"
-            elevation={3}
-            sx={{ mt: 2, p: 2, textAlign: 'center', backgroundColor: 'white' }}
-          >
+          <Paper id="qr-code" elevation={3} sx={{ mt: 2, p: 2, textAlign: 'center', backgroundColor: 'white' }}>
             <QRCode value={qrCodeData} size={256} />
-            <Typography mt={2} variant="body1">
-              {qrCodeData}
-            </Typography>
+            <Typography mt={2} variant="body1">{qrCodeData}</Typography>
           </Paper>
           <Grid container spacing={2} justifyContent="center" mt={2}>
             <Grid item>
