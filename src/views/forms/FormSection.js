@@ -20,12 +20,12 @@ const SectionTable = ({ sections }) => {
           <TableRow>
             <TableCell>
               <Typography variant="h6" fontWeight="500">
-                Project Name
+                ชื่อโครงการ
               </Typography>
             </TableCell>
             <TableCell>
               <Typography variant="h6" fontWeight="500">
-                Section Name
+                ชั้น
               </Typography>
             </TableCell>
             <TableCell>
@@ -35,7 +35,7 @@ const SectionTable = ({ sections }) => {
             </TableCell>
             <TableCell>
               <Typography variant="h6" fontWeight="500">
-                Components
+                จำนวนชิ้นงาน
               </Typography>
             </TableCell>
           </TableRow>
@@ -118,16 +118,16 @@ const FormSection = () => {
   };
 
   return (
-    <PageContainer title="สร้าง Section แต่ละโครงการ" description="this is Form create new project page">
-      <Breadcrumb title="สร้าง Section แต่ละโครงการ" items={BCrumb} />
+    <PageContainer title="สร้างชั้นของแต่ละโครงการ" description="this is Form create new project page">
+      <Breadcrumb title="สร้างชั้นของแต่ละโครงการ" items={BCrumb} />
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
-          <ParentCard title="Sections Overview">
+          <ParentCard title="ภาพรวมแต่ละชั้นของแต่ละโครงการ">
             <SectionTable sections={sections} />
           </ParentCard>
         </Grid>
         <Grid item xs={12} lg={6}>
-          <ParentCard title="สร้าง Section แต่ละโครงการ">
+          <ParentCard title="สร้างชั้นของแต่ละโครงการ">
             <FVSection onAddSection={handleAddSection} />
           </ParentCard>
         </Grid>

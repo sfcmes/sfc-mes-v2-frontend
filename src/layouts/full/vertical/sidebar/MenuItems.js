@@ -94,6 +94,12 @@ const Menuitems = [
     icon: IconZoomCode,
     href: '/forms/form-qr-code-reader',
   },
+  {
+    id: uniqueId(),
+    title: 'QR Code Print',
+    icon: IconZoomCode,
+    href: '/pages/qr-code',
+  },
   // {
   //   id: uniqueId(),
   //   title: 'Form Elements',

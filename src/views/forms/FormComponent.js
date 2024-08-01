@@ -13,7 +13,7 @@ import ExcelUploadForm from '../../components/forms/form-validation/ExcelUploadF
 
 const BCrumb = [
   { to: '/', title: 'Home' },
-  { title: 'Component Management' },
+  { title: 'จัดการชิ้นงาน' },
 ];
 
 const FormComponent = () => {
@@ -24,14 +24,14 @@ const FormComponent = () => {
   };
 
   return (
-    <PageContainer title="Component Management" description="Manage components individually or in bulk">
-      <Breadcrumb title="Component Management" items={BCrumb} />
-      <ParentCard title="Component Management">
+    <PageContainer title="จัดการชิ้นงานของแต่ละโครงการ" description="Manage components individually or in bulk">
+      <Breadcrumb title="จัดการชิ้นงานของแต่ละโครงการ" items={BCrumb} />
+      <ParentCard title="จัดการชิ้นงานของแต่ละโครงการ">
         <TabContext value={value}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <TabList onChange={handleChange} aria-label="component management tabs">
-              <Tab label="Single Update" value="1" />
-              <Tab label="Bulk Update from Excel" value="2" />
+              <Tab label="เพิ่มชิ้นงานเข้าระบบรายชิ้น" value="1" />
+              <Tab label="เพิ่มชิ้นงานเข้าระบบด้วย Excel" value="2" />
             </TabList>
           </Box>
           <TabPanel value="1">

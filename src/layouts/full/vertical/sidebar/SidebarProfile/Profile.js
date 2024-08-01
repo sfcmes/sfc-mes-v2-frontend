@@ -21,7 +21,7 @@ export const Profile = () => {
           <Avatar alt="Remy Sharp" src={img1} />
 
           <Box>
-            <Typography variant="h6"  color="textPrimary">Mathew</Typography>
+            <Typography variant="h6"  color="textPrimary">New User</Typography>
             <Typography variant="caption" color="textSecondary">Designer</Typography>
           </Box>
           <Box sx={{ ml: 'auto' }}>

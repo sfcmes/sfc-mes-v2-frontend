@@ -41,6 +41,7 @@ const AccountSetting = Loadable(
   lazy(() => import('../views/pages/account-setting/AccountSetting')),
 );
 const Faq = Loadable(lazy(() => import('../views/pages/faq/Faq')));
+const QRCodePage = Loadable(lazy(() => import('../views/pages/qrcode/QRCodePage')));
 
 // widget
 const WidgetCards = Loadable(lazy(() => import('../views/widgets/cards/WidgetCards')));
@@ -198,6 +199,7 @@ const Router = [
       { path: '/widgets/cards', element: <WidgetCards /> },
       { path: '/widgets/banners', element: <WidgetBanners /> },
       { path: '/widgets/charts', element: <WidgetCharts /> },
+      { path: '/pages/qr-code', element: <QRCodePage /> },
 
       { path: '*', element: <Navigate to="/auth/404" /> },
     ],

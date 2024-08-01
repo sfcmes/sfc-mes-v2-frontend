@@ -105,7 +105,7 @@ const FVSection = ({ onAddSection }) => {
           />
         </Box>
         <Box>
-          <CustomFormLabel>จำนวนชั้นของโครงการ</CustomFormLabel>
+          <CustomFormLabel>จำนวนชิ้นงาน</CustomFormLabel>
           <CustomTextField
             fullWidth
             id="components"

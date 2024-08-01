@@ -50,7 +50,16 @@ const deleteSection = (sectionId) => api.delete(`/sections/${sectionId}`);
 
 // Components API
 const fetchComponentsBySectionId = (sectionId) => api.get(`/components/section/${sectionId}`);
-const fetchComponentsByProjectId = (projectId) => api.get(`/components/project/${projectId}`);
+const fetchComponentsByProjectId = async (projectId) => {
+  try {
+    const response = await api.get(`/components/project/${projectId}`);
+    console.log('Fetched components:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching components:', error);
+    throw error;
+  }
+};
 const createComponent = async (data) => {
   try {
     console.log('Creating component with data:', data);
