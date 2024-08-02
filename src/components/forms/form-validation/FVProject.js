@@ -16,17 +16,17 @@ const validationSchema = yup.object({
     .string()
     .min(2, 'Too Short!')
     .max(50, 'Too Long!')
-    .required('กรุณาใส่รหัส Section'),
+    .required('กรุณาใส่รหัสของโครงการ'),
   section: yup
     .number()
     .integer('Section must be an integer')
     .min(1, 'Section must be at least 1')
     .max(100, 'Section must be less than or equal to 100')
-    .required('กรุณาใส่จำนวน Component'),
+    .required('กรุณาใส่จำนวนชั้นทั้งหมด'),
   status: yup
     .string()
     .oneOf(["Planning", "In Progress", "Completed", "On Hold"])
-    .required('กรุณาเลือกสถานะSection'),
+    .required('กรุณาใส่จำนวนชั้นของโครงการ'),
 });
 
 const FVProject = ({ onAddProject }) => {
@@ -59,7 +59,7 @@ const FVProject = ({ onAddProject }) => {
             fullWidth
             id="projectName"
             name="projectName"
-            label="ชื่อโครงการ"
+            label="กรอกชื่อโครงการ"
             value={formik.values.projectName}
             onChange={formik.handleChange}
             error={formik.touched.projectName && Boolean(formik.errors.projectName)}
@@ -68,15 +68,16 @@ const FVProject = ({ onAddProject }) => {
         </Box>
         <Box>
           <CustomFormLabel>รหัสโครงการ</CustomFormLabel>
-          <CustomTextField
+          <TextField
             fullWidth
             id="projectCode"
             name="projectCode"
+            label="กรอกรหัสของโครงการ"
             value={formik.values.projectCode}
             onChange={formik.handleChange}
             error={formik.touched.projectCode && Boolean(formik.errors.projectCode)}
             helperText={formik.touched.projectCode && formik.errors.projectCode}
-            placeholder="SKD"
+            // placeholder="รหัสของโครงการ"
           />
         </Box>
         <Box>
@@ -85,12 +86,13 @@ const FVProject = ({ onAddProject }) => {
             fullWidth
             id="section"
             name="section"
+            label="กรอกจำนวนชั้นทั้งหมดของโครงการ"
             type="number"
             value={formik.values.section}
             onChange={formik.handleChange}
             error={formik.touched.section && Boolean(formik.errors.section)}
             helperText={formik.touched.section && formik.errors.section}
-            placeholder="99"
+            // placeholder="จำนวนชั้นทั้งหมดในโครงการ"
           />
         </Box>
         <Box>

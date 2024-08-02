@@ -7,19 +7,30 @@ import { IconGridDots } from '@tabler/icons';
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'ผลิตแล้ว':
-      return '#FFC107';
-    case 'อยู่ระหว่างขนส่ง':
-      return '#2196F3';
-    case 'ขนส่งสำเร็จ':
-      return '#C2AFF0';
-    case 'ติดตั้งแล้ว':
-      return '#18F2B2';
+    case 'Manufactured':
+      return '#53b3cb'; // Light blue: Indicates completion of manufacturing
+    case 'In Transit':
+      return '#e9eb9e'; // Light orange: Represents movement and transportation
+    case 'Transported':
+      return '#a1869e'; // Light green: Signifies arrival at destination
+    case 'Accepted':
+      return '#32d2a2'; // Light purple: Denotes approval and acceptance
+    case 'Installed':
+      return '#adfc92'; // Light cyan: Represents final installation and readiness
     case 'Rejected':
-      return '#F44336';
+      return '#ed8209'; // Light red: Indicates issues or rejection
     default:
-      return '#9E9E9E';
+      return '#fefefe'; // Light grey: For unknown or default states
   }
+};
+
+const statusDisplayMap = {
+  'Manufactured': 'ผลิตแล้ว',
+  'In Transit': 'อยู่ระหว่างขนส่ง',
+  'Transported': 'ขนส่งสำเร็จ',
+  'Accepted': 'ตรวจรับแล้ว',
+  'Installed': 'ติดตั้งแล้ว',
+  'Rejected': 'ถูกปฏิเสธ'
 };
 
 const WeeklyStats = ({ stats, projectName }) => {
@@ -33,8 +44,9 @@ const WeeklyStats = ({ stats, projectName }) => {
   const updatedStats = stats.map((stat) => ({
     ...stat,
     icon: <IconGridDots style={iconStyles} />,
-    color: getStatusColor(stat.title),
+    color: getStatusColor(stat.status),
     lightcolor: theme.palette.grey[200],
+    displayTitle: statusDisplayMap[stat.status] || stat.status
   }));
 
   return (
@@ -62,13 +74,13 @@ const WeeklyStats = ({ stats, projectName }) => {
                 <Stack direction="row" alignItems="center" spacing={2}>
                   <Avatar
                     variant="rounded"
-                    sx={{ bgcolor: stat.lightcolor, color: stat.color, width: 40, height: 40 }}
+                    sx={{ bgcolor: stat.color, color: theme.palette.getContrastText(stat.color), width: 40, height: 40 }}
                   >
                     {stat.icon}
                   </Avatar>
                   <Box>
                     <Typography variant="h6" mb="4px">
-                      {stat.title}
+                      {stat.displayTitle}
                     </Typography>
                     <Typography variant="subtitle2" color="textSecondary">
                       {stat.subtitle}
@@ -77,11 +89,14 @@ const WeeklyStats = ({ stats, projectName }) => {
                 </Stack>
                 <Avatar
                   sx={{
-                    bgcolor: stat.lightcolor,
-                    color: stat.color,
-                    width: 42,
+                    bgcolor: stat.color,
+                    color: theme.palette.getContrastText(stat.color),
+                    width: 60,
                     height: 24,
                     borderRadius: '4px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                   }}
                 >
                   <Typography variant="subtitle2" fontWeight="600">

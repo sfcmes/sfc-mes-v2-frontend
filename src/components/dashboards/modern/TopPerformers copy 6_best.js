@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, memo } from 'react';
 import {
   Box,
   Paper,
@@ -20,17 +20,87 @@ import {
   Grid,
   Card,
   CardContent,
+  Select,
+  MenuItem,
   Tab,
   Tabs,
   InputBase,
-  CircularProgress,
 } from '@mui/material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import SearchIcon from '@mui/icons-material/Search';
-import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
+
+const generateMockProjects = (numProjects, numSections, numComponents) => {
+  return Array.from({ length: numProjects }, (_, projectIndex) => {
+    const projectCode = `PRJ-${String.fromCharCode(65 + projectIndex)}`;
+
+    if (projectCode === 'PRJ-A' || projectCode === 'PRJ-B') {
+      const realFiles = Array.from({ length: 8 }, (_, componentIndex) => ({
+        id: componentIndex + 1,
+        name: `COMP-${String.fromCharCode(65 + projectIndex)}1-${componentIndex + 1}`,
+        width: (Math.random() * 2 + 1).toFixed(2),
+        height: (Math.random() * 3 + 2).toFixed(2),
+        thickness: (Math.random() * 0.2 + 0.1).toFixed(2),
+        weight: Math.floor(Math.random() * 500 + 300),
+        coating: (Math.random() * 0.5 + 0.1).toFixed(2),
+        addition: (Math.random() * 0.1).toFixed(2),
+        squareMeters: (Math.random() * 10 + 2).toFixed(2),
+        status: [
+          'ผลิตแล้ว',
+          'อยู่ระหว่างขนส่ง',
+          'ขนส่งสำเร็จ',
+          'ติดตั้งแล้ว',
+          'Rejected',
+        ][Math.floor(Math.random() * 5)],
+        fileName: `${String.fromCharCode(65 + projectIndex)}0${componentIndex + 1}.pdf`,
+        fileUrl: `https://sfcmes.github.io/downloadfile/${String.fromCharCode(65 + projectIndex)}0${componentIndex + 1}.pdf`
+      }));
+
+      return {
+        id: `${projectIndex + 1}`,
+        code: projectCode,
+        name: `Project ${String.fromCharCode(65 + projectIndex)}`,
+        sections: [
+          {
+            id: 1,
+            components: realFiles
+          },
+        ],
+      };
+    }
+
+    return {
+      id: `${projectIndex + 1}`,
+      code: projectCode,
+      name: `Project ${String.fromCharCode(65 + projectIndex)}`,
+      sections: Array.from({ length: numSections }, (_, sectionIndex) => ({
+        id: sectionIndex + 1,
+        components: Array.from({ length: numComponents }, (_, componentIndex) => ({
+          id: sectionIndex * numComponents + componentIndex + 1,
+          name: `COMP-${String.fromCharCode(65 + projectIndex)}${sectionIndex + 1}-${componentIndex + 1}`,
+          width: (Math.random() * 2 + 1).toFixed(2),
+          height: (Math.random() * 3 + 2).toFixed(2),
+          thickness: (Math.random() * 0.2 + 0.1).toFixed(2),
+          weight: Math.floor(Math.random() * 500 + 300),
+          coating: (Math.random() * 0.5 + 0.1).toFixed(2),
+          addition: (Math.random() * 0.1).toFixed(2),
+          squareMeters: (Math.random() * 10 + 2).toFixed(2),
+          status: [
+            'ผลิตแล้ว',
+            'อยู่ระหว่างขนส่ง',
+            'ขนส่งสำเร็จ',
+            'ติดตั้งแล้ว',
+            'Rejected',
+          ][Math.floor(Math.random() * 5)],
+        })),
+      })),
+    };
+  });
+};
+
+const projects = generateMockProjects(5, 10, 50);
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -38,39 +108,21 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   color: theme.palette.common.white,
 }));
 
-const statusDisplayMap = {
-  Manufactured: 'ผลิตแล้ว',
-  'In Transit': 'อยู่ระหว่างขนส่ง',
-  Transported: 'ขนส่งสำเร็จ',
-  Accepted: 'ตรวจรับแล้ว',
-  Installed: 'ติดตั้งแล้ว',
-  Rejected: 'ถูกปฏิเสธ',
-};
-
 const getStatusColor = (status) => {
   switch (status) {
-    case 'Manufactured':
-      return '#53b3cb'; // Light blue: Indicates completion of manufacturing
-    case 'In Transit':
-      return '#e9eb9e'; // Light orange: Represents movement and transportation
-    case 'Transported':
-      return '#a1869e'; // Light green: Signifies arrival at destination
-    case 'Accepted':
-      return '#32d2a2'; // Light purple: Denotes approval and acceptance
-    case 'Installed':
-      return '#adfc92'; // Light cyan: Represents final installation and readiness
+    case 'ผลิตแล้ว':
+      return '#FFC107';
+    case 'อยู่ระหว่างขนส่ง':
+      return '#2196F3';
+    case 'ขนส่งสำเร็จ':
+      return '#C2AFF0';
+    case 'ติดตั้งแล้ว':
+      return '#18F2B2';
     case 'Rejected':
-      return '#ed8209'; // Light red: Indicates issues or rejection
+      return '#F44336';
     default:
-      return '#fefefe'; // Light grey: For unknown or default states
+      return '#9E9E9E';
   }
-};
-
-// Function to determine text color based on background color for better contrast
-const getTextColor = (backgroundColor) => {
-  // Colors that need white text
-  const darkColors = ['#365486', '#79AC78'];
-  return darkColors.includes(backgroundColor) ? '#FFFFFF' : '#000000';
 };
 
 const handleFileDownload = (file) => {
@@ -125,36 +177,39 @@ const displayLabels = {
   status: 'สถานะ',
 };
 
+const generateMockFileRevisions = (componentName, projectCode) => {
+  let fileName;
+  if (projectCode === 'PRJ-A' || projectCode === 'PRJ-B') {
+    const match = componentName.match(/COMP-(A|B)(\d+)-(\d+)/);
+    if (match) {
+      const [, project, section, component] = match;
+      if (section === '1' && component >= '1' && component <= '8') {
+        fileName = `${project}${component.padStart(2, '0')}.pdf`;
+      }
+    }
+  }
+
+  if (fileName) {
+    return [
+      { id: 1, fileName, revision: 'Rev 1', uploadedBy: 'System', uploadDate: '2024-07-04', url: `https://sfcmes.github.io/downloadfile/${fileName}` },
+    ];
+  }
+
+  return [
+    { id: 1, fileName: `COMP-${componentName}_Rev1.pdf`, revision: 'Rev 1', uploadedBy: 'John Doe', uploadDate: '2023-01-15', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev1.pdf` },
+    { id: 2, fileName: `COMP-${componentName}_Rev2.pdf`, revision: 'Rev 2', uploadedBy: 'Jane Smith', uploadDate: '2023-03-22', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev2.pdf` },
+    { id: 3, fileName: `COMP-${componentName}_Rev3.pdf`, revision: 'Rev 3', uploadedBy: 'Mike Johnson', uploadDate: '2023-06-10', url: `https://sfcmes.github.io/downloadfile/COMP-${componentName}_Rev3.pdf` },
+  ];
+};
+
 const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [fileHistory, setFileHistory] = useState([]);
-
-  useEffect(() => {
-    // TODO: Replace with actual API call to fetch file history
-    const mockFileHistory = [
-      {
-        id: 1,
-        fileName: `${component.name}_Rev1.pdf`,
-        revision: 'Rev 1',
-        uploadedBy: 'John Doe',
-        uploadDate: '2023-01-15',
-        url: '#',
-      },
-      {
-        id: 2,
-        fileName: `${component.name}_Rev2.pdf`,
-        revision: 'Rev 2',
-        uploadedBy: 'Jane Smith',
-        uploadDate: '2023-03-22',
-        url: '#',
-      },
-    ];
-    setFileHistory(mockFileHistory);
-  }, [component.name]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
+
+  const mockFileRevisions = generateMockFileRevisions(component.name, projectCode);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -169,21 +224,19 @@ const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
             <TableBody>
               {Object.entries(component).map(([key, value]) => (
                 <TableRow key={key}>
-                  <TableCell component="th" scope="row">
-                    {displayLabels[key] || key}
-                  </TableCell>
+                  <TableCell component="th" scope="row">{displayLabels[key]}</TableCell>
                   <TableCell align="right">{value}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
-        {tabValue === 1 && <FileHistoryTable files={fileHistory} />}
+        {tabValue === 1 && (
+          <FileHistoryTable files={mockFileRevisions} />
+        )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Close
-        </Button>
+        <Button onClick={onClose} color="primary">Close</Button>
       </DialogActions>
     </Dialog>
   );
@@ -212,8 +265,7 @@ const StatusChip = ({ status, count }) => {
     },
   }));
 
-  // Use the statusDisplayMap here
-  return <StyledChip label={`${statusDisplayMap[status] || status}: ${count}`} />;
+  return <StyledChip label={`${status}: ${count}`} />;
 };
 
 const SectionRow = memo(({ section, projectCode }) => {
@@ -248,11 +300,10 @@ const SectionRow = memo(({ section, projectCode }) => {
               </Typography>
               <Box display="flex" justifyContent="space-between" mb={2}>
                 {[
-                  'Manufactured',
-                  'In Transit',
-                  'Transported',
-                  'Accepted',
-                  'Installed',
+                  'ผลิตแล้ว',
+                  'อยู่ระหว่างขนส่ง',
+                  'ขนส่งสำเร็จ',
+                  'ติดตั้งแล้ว',
                   'Rejected',
                 ].map((status) => (
                   <StatusChip key={status} status={status} count={statusCounts[status] || 0} />
@@ -320,17 +371,14 @@ const SectionRow = memo(({ section, projectCode }) => {
 const ProjectRow = memo(({ project, onRowClick }) => {
   const [open, setOpen] = useState(false);
 
-  const totalComponents = project.sections.reduce(
-    (acc, section) => acc + section.components.length,
-    0,
-  );
+  const totalComponents = project.sections.reduce((acc, section) => acc + section.components.length, 0);
 
   const handleRowClick = () => {
     onRowClick(project);
   };
 
   const handleIconClick = (event) => {
-    event.stopPropagation();
+    event.stopPropagation(); 
     setOpen(!open);
   };
 
@@ -408,68 +456,17 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 const TopPerformers = ({ onRowClick }) => {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const theme = useTheme();
-
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await fetchProjects();
-        const projectsWithComponents = await Promise.all(
-          response.data.map(async (project) => {
-            const components = await fetchComponentsByProjectId(project.id);
-            return {
-              ...project,
-              sections: [{ id: 1, components }], // Assuming one section per project for simplicity
-            };
-          }),
-        );
-        setProjects(projectsWithComponents);
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-        setError('Failed to load projects. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProjects();
-  }, []);
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-        <Typography color="error">{error}</Typography>
-      </Box>
-    );
-  }
-
-  const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   return (
     <Paper elevation={3} sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-          ข้อมูลโครงการ
-        </Typography>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>ข้อมูลโครงการ</Typography>
         <Search>
           <SearchIconWrapper>
             <SearchIcon />
@@ -487,38 +484,23 @@ const TopPerformers = ({ onRowClick }) => {
           <TableHead>
             <TableRow>
               <StyledTableCell />
-              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}>
-                รหัสโครงการ
-              </TableCell>
-              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}>
-                ชื่อโครงการ
-              </TableCell>
-              <TableCell
-                style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}
-                align="right"
-              >
-                จำนวนชั้น
-              </TableCell>
-              <TableCell
-                style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}
-                align="right"
-              >
-                จำนวนชิ้นงาน
-              </TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}>รหัสโครงการ</TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }}>ชื่อโครงการ</TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} align="right">จำนวนชั้น</TableCell>
+              <TableCell style={{ color: theme.palette.text.primary, fontSize: '1.2rem' }} align="right">จำนวนชิ้นงาน</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredProjects.map((project) => (
-              <ProjectRow key={project.id} project={project} onRowClick={onRowClick} />
-            ))}
+            {projects
+              .filter((project) =>
+                project.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((project) => (
+                <ProjectRow key={project.id} project={project} onRowClick={onRowClick} />
+              ))}
           </TableBody>
         </Table>
       </TableContainer>
-      {filteredProjects.length === 0 && (
-        <Box display="flex" justifyContent="center" alignItems="center" height="100px">
-          <Typography>No projects found matching your search.</Typography>
-        </Box>
-      )}
     </Paper>
   );
 };

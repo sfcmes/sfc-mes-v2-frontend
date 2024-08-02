@@ -14,6 +14,7 @@ import {
   Typography,
   Paper,
   Grid,
+  TextField,
 } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
 import QRCode from 'qrcode.react';
@@ -40,6 +41,7 @@ const validationSchema = yup.object({
   volume: yup.number().positive('ปริมาตรต้องเป็นตัวเลขบวก').required('กรุณาใส่ปริมาตรของชิ้นงาน'),
   weight: yup.number().positive('น้ำหนักต้องเป็นตัวเลขบวก').required('กรุณาใส่น้ำหนักของชิ้นงาน'),
   status: yup.string().oneOf(['Planning', 'Fabrication', 'Installed', 'Completed', 'Reject']).required('กรุณาเลือกสถานะของชิ้นงาน'),
+  file: yup.mixed().required('กรุณาอัปโหลดไฟล์ PDF')
 });
 
 const FVComponent = () => {
@@ -74,62 +76,68 @@ const FVComponent = () => {
     }
   };
 
-  const formik = useFormik({
-    initialValues: {
-      projectName: '',
-      sectionId: '',
-      componentName: '',
-      componentType: '',
-      width: '',
-      height: '',
-      thickness: '',
-      extension: '',
-      reduction: '',
-      area: '',
-      volume: '',
-      weight: '',
-      status: '',
-    },
-    validationSchema: validationSchema,
-    onSubmit: async (values) => {
-      setError('');
-      console.log('Submitting form with values:', values);
-      try {
-        const response = await createComponent({
-          id: uuidv4(), // Ensure id is generated and included
-          section_id: values.sectionId,
-          name: values.componentName,
-          type: values.componentType,
-          width: values.width,
-          height: values.height,
-          thickness: values.thickness,
-          extension: values.extension,
-          reduction: values.reduction,
-          area: values.area,
-          volume: values.volume,
-          weight: values.weight,
-          status: values.status,
-        });
+  const handleFileChange = (event) => {
+    formik.setFieldValue('file', event.currentTarget.files[0]);
+};
 
-        const component = response.data;
+const formik = useFormik({
+  initialValues: {
+    projectName: '',
+    sectionId: '',
+    componentName: '',
+    componentType: '',
+    width: '',
+    height: '',
+    thickness: '',
+    extension: '',
+    reduction: '',
+    area: '',
+    volume: '',
+    weight: '',
+    status: '',
+    file: null
+  },
+  validationSchema: validationSchema,
+  onSubmit: async (values) => {
+    setError('');
+    console.log('Submitting form with values:', values);
+    try {
+      const formData = new FormData();
+      formData.append('section_id', values.sectionId);
+      formData.append('name', values.componentName);
+      formData.append('type', values.componentType);
+      formData.append('width', values.width);
+      formData.append('height', values.height);
+      formData.append('thickness', values.thickness);
+      formData.append('extension', values.extension);
+      formData.append('reduction', values.reduction);
+      formData.append('area', values.area);
+      formData.append('volume', values.volume);
+      formData.append('weight', values.weight);
+      formData.append('status', values.status);
+      formData.append('file', values.file);
 
-        const projectResponse = await fetchProjectById(values.projectName);
-        const sectionResponse = await fetchSectionById(values.sectionId);
+      const response = await createComponent(formData);
+      const component = response.data;
 
-        const qrCodeDetails = `โครงการ: ${projectResponse.data.name}\nชั้น: ${sectionResponse.data.name}\nชื่อชิ้นงาน: ${values.componentName}\n`;
-        setQrCodeData(qrCodeDetails);
-        setIsModalOpen(true);
+      const projectResponse = await fetchProjectById(values.projectName);
+      const sectionResponse = await fetchSectionById(values.sectionId);
 
-      } catch (error) {
-        console.error('Error creating component or fetching project/section details:', error);
-        if (error.response && error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
-        } else {
-          setError('An unexpected error occurred. Please try again.');
-        }
+      const qrCodeDetails = `โครงการ: ${projectResponse.data.name}\nชั้น: ${sectionResponse.data.name}\nชื่อชิ้นงาน: ${values.componentName}\n`;
+      setQrCodeData(qrCodeDetails);
+      setIsModalOpen(true);
+
+    } catch (error) {
+      console.error('Error creating component or fetching project/section details:', error);
+      if (error.response && error.response.data && error.response.data.error) {
+        setError(error.response.data.error);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
       }
-    },
-  });
+    }
+  },
+});
+
 
   const handleSave = async () => {
     const qrCodeElement = document.getElementById('qr-code');
@@ -335,12 +343,20 @@ const FVComponent = () => {
           >
             <MenuItem value="">Select Status</MenuItem>
             <MenuItem value="Planning">แผนผลิต</MenuItem>
-            {/* <MenuItem value="Manufactured">Manufactured</MenuItem>
+            <MenuItem value="Fabrication">Fabrication</MenuItem>
             <MenuItem value="Installed">Installed</MenuItem>
             <MenuItem value="Completed">Completed</MenuItem>
-            <MenuItem value="Rejected">Rejected</MenuItem> */}
+            <MenuItem value="Reject">Reject</MenuItem>
           </Select>
         </FormControl>
+        <TextField
+          id="file"
+          name="file"
+          type="file"
+          onChange={handleFileChange}
+          error={formik.touched.file && Boolean(formik.errors.file)}
+          helperText={formik.touched.file && formik.errors.file}
+        />
       </Stack>
       <Box mt={3}>
         <Button color="primary" variant="contained" type="submit">

@@ -30,7 +30,19 @@ import {
 } from 'src/utils/api';
 import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/CloudDownload';
+import Breadcrumb from '../../../layouts/full/shared/breadcrumb/Breadcrumb';
+import PageContainer from '../../../components/container/PageContainer';
 import { createRoot } from 'react-dom/client';
+
+const BCrumb = [
+  {
+    to: '/',
+    title: 'Home',
+  },
+  {
+    title: 'สร้าง QR CODE',
+  },
+];
 
 const QRCodePage = () => {
   const [projects, setProjects] = useState([]);
@@ -255,6 +267,8 @@ const QRCodePage = () => {
   });
 
   return (
+    <PageContainer title="QRCODE" description="สร้าง QR CODE">
+    <Breadcrumb title="สร้าง QR CODE" items={BCrumb} />
     <Box p={3}>
       <Typography variant="h4" gutterBottom>
         สร้างและค้นหา QR CODE สำหรับพิมพ์
@@ -440,6 +454,7 @@ const QRCodePage = () => {
         </Box>
       </Modal>
     </Box>
+    </PageContainer>
   );
 };
 

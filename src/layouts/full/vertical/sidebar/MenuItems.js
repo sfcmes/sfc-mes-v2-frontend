@@ -206,34 +206,34 @@ const Menuitems = [
     navlabel: true,
     subheader: 'Auth',
   },
-  {
-    id: uniqueId(),
-    title: 'Login',
-    icon: IconLogin,
-    href: '/auth/login',
-    children: [
-      {
-        id: uniqueId(),
-        title: 'Boxed Login',
-        icon: IconPoint,
-        href: '/auth/login',
-      },
-    ],
-  },
   // {
   //   id: uniqueId(),
-  //   title: 'Register',
-  //   icon: IconUserPlus,
-  //   href: '/auth/register',
+  //   title: 'Login',
+  //   icon: IconLogin,
+  //   href: '/auth/login',
   //   children: [
   //     {
   //       id: uniqueId(),
-  //       title: 'Boxed Register',
+  //       title: 'Boxed Login',
   //       icon: IconPoint,
-  //       href: '/auth/register2',
+  //       href: '/auth/login',
   //     },
   //   ],
   // },
+  {
+    id: uniqueId(),
+    title: 'ลงทะเบียนผู้ใช้งาน',
+    icon: IconUserPlus,
+    href: '/auth/register',
+    children: [
+      {
+        id: uniqueId(),
+        title: 'ลงทะเบียนผู้ใช้งาน',
+        icon: IconPoint,
+        href: '/auth/register',
+      },
+    ],
+  },
   // {
   //   id: uniqueId(),
   //   title: 'Account Setting',

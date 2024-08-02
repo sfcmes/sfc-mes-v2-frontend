@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api, { loginUser } from 'src/utils/api';
+import api from 'src/utils/api';
 
 const AuthContext = createContext();
 
@@ -19,9 +19,8 @@ export const AuthProvider = ({ children }) => {
           console.error('Error initializing auth:', error);
           setError('Failed to initialize authentication');
         }
-      } else {
-        setLoading(false); // Ensure loading is set to false if no token is found
       }
+      setLoading(false);
     };
 
     initializeAuth();
@@ -30,29 +29,24 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       console.log('Fetching user');
-      const response = await api.get('/users/me');
+      const response = await api.get('/users/profile');
       console.log('User fetched:', response.data);
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user:', error);
-      setError('Failed to fetch user');
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async (email, password) => {
-    try {
-      const response = await loginUser({ email, password });
-      localStorage.setItem('token', response.data.token);
-      api.setToken(response.data.token);
-      await fetchUser();
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.response?.data?.message || 'Failed to login');
-      return false;
-    }
+  const login = async (username, password) => {
+    console.log('Logging in with:', { email: username, password }); // Change username to email
+    const response = await api.post('/auth/login', { email: username, password }); // Change username to email
+    console.log('Login response:', response.data);
+    const { token, user } = response.data;
+    localStorage.setItem('token', token);
+    api.setToken(token);
+    setUser(user);
   };
 
   const logout = () => {
@@ -63,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, error }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

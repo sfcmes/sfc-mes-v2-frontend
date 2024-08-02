@@ -7,6 +7,19 @@ import {
 import { IconMapPin, IconUpload } from '@tabler/icons';
 import { QrReader } from 'react-qr-reader';
 import jsQR from 'jsqr';
+import Breadcrumb from '../../layouts/full/shared/breadcrumb/Breadcrumb';
+import PageContainer from '../../components/container/PageContainer';
+import { createRoot } from 'react-dom/client';
+
+const BCrumb = [
+  {
+    to: '/',
+    title: 'Home',
+  },
+  {
+    title: 'สร้าง QR CODE',
+  },
+];
 
 const FVQRCodeReader = () => {
   const theme = useTheme();

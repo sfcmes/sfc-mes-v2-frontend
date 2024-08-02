@@ -30,12 +30,12 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
         <TableRow>
           <TableCell>
             <Typography variant="h6" fontWeight="500">
-              Project Name
+              ชื่อโครงการ
             </Typography>
           </TableCell>
           <TableCell>
             <Typography variant="h6" fontWeight="500">
-              Project Code
+              รหัสโครงการ
             </Typography>
           </TableCell>
           <TableCell>
@@ -43,19 +43,19 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
               Status
             </Typography>
           </TableCell>
+          {/* <TableCell>
+            <Typography variant="h6" fontWeight="500">
+              ความคืบหน้า
+            </Typography>
+          </TableCell> */}
           <TableCell>
             <Typography variant="h6" fontWeight="500">
-              Progress
+              ชั้น
             </Typography>
           </TableCell>
           <TableCell>
             <Typography variant="h6" fontWeight="500">
-              Sections
-            </Typography>
-          </TableCell>
-          <TableCell>
-            <Typography variant="h6" fontWeight="500">
-              Components
+              ชิ้นงาน
             </Typography>
           </TableCell>
           <TableCell>
@@ -103,11 +103,11 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
                 label={project.status}
               />
             </TableCell>
-            <TableCell>
+            {/* <TableCell>
               <Typography color="textSecondary" variant="subtitle2">
                 {typeof project.progress === 'number' && !isNaN(project.progress) ? project.progress.toFixed(2) : 'N/A'}%
               </Typography>
-            </TableCell>
+            </TableCell> */}
             <TableCell>
               <Typography color="textSecondary" variant="subtitle2">
                 {project.sections}
@@ -199,7 +199,7 @@ const FormProject = () => {
       <Breadcrumb title="สร้างโครงการใหม่" items={BCrumb} />
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
-          <ParentCard title="Projects Overview">
+          <ParentCard title="ภาพรวมโครงการ">
             <ProjectTable projects={projects} onView={handleViewProject} onEdit={handleEditProject} />
           </ParentCard>
         </Grid>

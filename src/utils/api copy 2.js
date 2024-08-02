@@ -24,37 +24,7 @@ api.setToken = (token) => {
   }
 };
 
-const uploadFileToS3 = async (file, componentId) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('componentId', componentId); // Send component ID
-
-  try {
-    const response = await api.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data.fileUrl;
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    throw error;
-  }
-};
-export const createComponent = async (formData) => {
-  try {
-    const response = await api.post('/components', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response;
-  } catch (error) {
-    console.error('Error creating component:', error);
-    throw error;
-  }
-};
-
+// Authentication API
 // Authentication API
 const loginUser = async (data) => {
   const response = await api.post('/auth/login', data);
@@ -63,10 +33,7 @@ const loginUser = async (data) => {
   }
   return response;
 };
-// const registerUser = (data) => api.post('/auth/register', data);
-const registerUser = (data) => api.post('/users', data);
-
-const fetchRoles = () => api.get('/users/roles'); // Correct endpoint
+const registerUser = (data) => api.post('/auth/register', data);
 
 // User API
 // User API
@@ -129,17 +96,17 @@ const fetchComponentsByProjectId = async (projectId) => {
     throw error;
   }
 };
-// const createComponent = async (data) => {
-//   try {
-//     console.log('Creating component with data:', data);
-//     const response = await api.post('/components', data);
-//     console.log('Component created successfully:', response.data);
-//     return response.data;
-//   } catch (error) {
-//     console.error('Error creating component:', error.response ? error.response.data : error);
-//     throw error;
-//   }
-// };
+const createComponent = async (data) => {
+  try {
+    console.log('Creating component with data:', data);
+    const response = await api.post('/components', data);
+    console.log('Component created successfully:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating component:', error.response ? error.response.data : error);
+    throw error;
+  }
+};
 const addComponentHistory = async (data) => {
   try {
     const response = await api.post('/component-history', data);
@@ -174,11 +141,8 @@ export {
   deleteSection,
   fetchComponentsBySectionId,
   fetchComponentsByProjectId,
-  // createComponent,
+  createComponent,
   updateComponent,
   deleteComponent,
   addComponentHistory,
-  fetchRoles,
-  uploadFileToS3,
-  
 };

@@ -10,6 +10,7 @@ import ParentCard from '../../components/shared/ParentCard';
 // custom components
 import FVComponent from '../../components/forms/form-validation/FVComponent';
 import ExcelUploadForm from '../../components/forms/form-validation/ExcelUploadForm'; // Updated import path
+import { createComponent, fetchProjects, addComponentHistory, fetchSectionsByProjectId } from 'src/utils/api'; // Adjust the path based on your file structure
 
 const BCrumb = [
   { to: '/', title: 'Home' },

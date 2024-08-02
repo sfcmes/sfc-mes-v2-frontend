@@ -211,7 +211,7 @@ const Router = [
       { path: '/auth/404', element: <Error /> },
       { path: '/auth/login', element: <Login /> },
       // { path: '/auth/login2', element: <Login2 /> },
-      // { path: '/auth/register', element: <Register /> },
+      { path: '/auth/register', element: <Register /> },
       // { path: '/auth/register2', element: <Register2 /> },
       // { path: '/auth/forgot-password', element: <ForgotPassword /> },
       // { path: '/auth/forgot-password2', element: <ForgotPassword2 /> },
