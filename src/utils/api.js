@@ -89,7 +89,7 @@ const fetchUserProfile = async () => {
       console.error('Error fetching user profile:', error.response?.data || error.message);
   }
 };
-const fetchUserById = (userId) => api.get(`/users/${userId}`);
+// const fetchUserById = (userId) => api.get(`/users/${userId}`);
 const updateUserProfile = (data) => api.put('/users/me', data);
 const updateUserById = (userId, data) => api.put(`/users/${userId}`, data);
 const deleteUserById = (userId) => api.delete(`/users/${userId}`);
@@ -153,6 +153,27 @@ const addComponentHistory = async (data) => {
 const updateComponent = (componentId, data) => api.put(`/components/${componentId}`, data);
 const deleteComponent = (componentId) => api.delete(`/components/${componentId}`);
 
+const fetchComponentById = async (componentId) => {
+  try {
+    const response = await api.get(`/components/${componentId}`);
+    console.log('Fetched component details:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching component details:', error);
+    throw error;
+  }
+};
+
+const fetchUserById = async (userId) => {
+  try {
+    const response = await api.get(`/users/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw error;
+  }
+};
+
 export {
   api as default,
   loginUser,
@@ -180,5 +201,6 @@ export {
   addComponentHistory,
   fetchRoles,
   uploadFileToS3,
+  fetchComponentById,
   
 };

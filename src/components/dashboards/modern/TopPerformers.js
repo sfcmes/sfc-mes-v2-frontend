@@ -30,7 +30,12 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import GetAppIcon from '@mui/icons-material/GetApp';
 import SearchIcon from '@mui/icons-material/Search';
-import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
+import { 
+  fetchProjects, 
+  fetchComponentsByProjectId,
+  fetchComponentById,  // Add this import
+  fetchUserById
+} from 'src/utils/api';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -125,60 +130,197 @@ const displayLabels = {
   status: 'สถานะ',
 };
 
+// const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
+//   const [tabValue, setTabValue] = useState(0);
+//   const [fileHistory, setFileHistory] = useState([]);
+
+//   useEffect(() => {
+//     // TODO: Replace with actual API call to fetch file history
+//     const mockFileHistory = [
+//       {
+//         id: 1,
+//         fileName: `${component.name}_Rev1.pdf`,
+//         revision: 'Rev 1',
+//         uploadedBy: 'John Doe',
+//         uploadDate: '2023-01-15',
+//         url: '#',
+//       },
+//       {
+//         id: 2,
+//         fileName: `${component.name}_Rev2.pdf`,
+//         revision: 'Rev 2',
+//         uploadedBy: 'Jane Smith',
+//         uploadDate: '2023-03-22',
+//         url: '#',
+//       },
+//     ];
+//     setFileHistory(mockFileHistory);
+//   }, [component.name]);
+
+//   const handleTabChange = (event, newValue) => {
+//     setTabValue(newValue);
+//   };
+
+//   return (
+//     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+//       <DialogTitle>รายละเอียด: {component.name}</DialogTitle>
+//       <DialogContent>
+//         <Tabs value={tabValue} onChange={handleTabChange}>
+//           <Tab label="รายละเอียดชิ้นงาน" />
+//           <Tab label="ไฟล์และประวัติ" />
+//         </Tabs>
+//         {tabValue === 0 && (
+//           <Table size="small">
+//             <TableBody>
+//               {Object.entries(component).map(([key, value]) => (
+//                 <TableRow key={key}>
+//                   <TableCell component="th" scope="row">
+//                     {displayLabels[key] || key}
+//                   </TableCell>
+//                   <TableCell align="right">{value}</TableCell>
+//                 </TableRow>
+//               ))}
+//             </TableBody>
+//           </Table>
+//         )}
+//         {tabValue === 1 && <FileHistoryTable files={fileHistory} />}
+//       </DialogContent>
+//       <DialogActions>
+//         <Button onClick={onClose} color="primary">
+//           Close
+//         </Button>
+//       </DialogActions>
+//     </Dialog>
+//   );
+// });
+
 const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [fileHistory, setFileHistory] = useState([]);
+  const [componentDetails, setComponentDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: Replace with actual API call to fetch file history
-    const mockFileHistory = [
-      {
-        id: 1,
-        fileName: `${component.name}_Rev1.pdf`,
-        revision: 'Rev 1',
-        uploadedBy: 'John Doe',
-        uploadDate: '2023-01-15',
-        url: '#',
-      },
-      {
-        id: 2,
-        fileName: `${component.name}_Rev2.pdf`,
-        revision: 'Rev 2',
-        uploadedBy: 'Jane Smith',
-        uploadDate: '2023-03-22',
-        url: '#',
-      },
-    ];
-    setFileHistory(mockFileHistory);
-  }, [component.name]);
+    const fetchDetails = async () => {
+      try {
+        setLoading(true);
+        const details = await fetchComponentById(component.id);
+        
+        // Fetch usernames for each history item
+        const historyWithUsernames = await Promise.all(
+          details.history.map(async (item) => {
+            const user = await fetchUserById(item.updated_by);
+            return { ...item, username: user.username };
+          })
+        );
+        
+        setComponentDetails({ ...details, history: historyWithUsernames });
+      } catch (err) {
+        console.error('Error fetching component details:', err);
+        setError('Failed to load component details. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (open && component.id) {
+      fetchDetails();
+    }
+  }, [open, component.id]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
+  const handleFileDownload = () => {
+    if (componentDetails && componentDetails.file_path) {
+      window.open(componentDetails.file_path, '_blank');
+    }
+  };
+
+  if (loading) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+            <CircularProgress />
+          </Box>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent>
+          <Typography color="error">{error}</Typography>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>รายละเอียด: {component.name}</DialogTitle>
+      <DialogTitle>รายละเอียด: {componentDetails?.name}</DialogTitle>
       <DialogContent>
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="รายละเอียดชิ้นงาน" />
-          <Tab label="ไฟล์และประวัติ" />
+          <Tab label="ประวัติสถานะ" />
         </Tabs>
-        {tabValue === 0 && (
+        {tabValue === 0 && componentDetails && (
+          <>
+            <Table size="small">
+              <TableBody>
+                {Object.entries(componentDetails).map(([key, value]) => {
+                  if (key !== 'history' && typeof value !== 'object') {
+                    return (
+                      <TableRow key={key}>
+                        <TableCell component="th" scope="row">
+                          {displayLabels[key] || key}
+                        </TableCell>
+                        <TableCell align="right">{value.toString()}</TableCell>
+                      </TableRow>
+                    );
+                  }
+                  return null;
+                })}
+              </TableBody>
+            </Table>
+            {componentDetails.file_path && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<GetAppIcon />}
+                  onClick={handleFileDownload}
+                >
+                  ดาวน์โหลดไฟล์
+                </Button>
+              </Box>
+            )}
+          </>
+        )}
+        {tabValue === 1 && componentDetails && componentDetails.history && (
           <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>สถานะ</TableCell>
+                <TableCell>วันที่อัปเดต</TableCell>
+                <TableCell>อัปเดตโดย</TableCell>
+              </TableRow>
+            </TableHead>
             <TableBody>
-              {Object.entries(component).map(([key, value]) => (
-                <TableRow key={key}>
-                  <TableCell component="th" scope="row">
-                    {displayLabels[key] || key}
-                  </TableCell>
-                  <TableCell align="right">{value}</TableCell>
+              {componentDetails.history.map((historyItem, index) => (
+                <TableRow key={index}>
+                  <TableCell>{historyItem.status}</TableCell>
+                  <TableCell>{new Date(historyItem.updated_at).toLocaleString()}</TableCell>
+                  <TableCell>{historyItem.username}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
-        {tabValue === 1 && <FileHistoryTable files={fileHistory} />}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="primary">
@@ -188,7 +330,6 @@ const ComponentDialog = memo(({ open, onClose, component, projectCode }) => {
     </Dialog>
   );
 });
-
 const StatusChip = ({ status, count }) => {
   const StyledChip = styled(Chip)(({ theme }) => ({
     backgroundColor: getStatusColor(status),
