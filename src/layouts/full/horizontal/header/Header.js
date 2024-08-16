@@ -1,11 +1,8 @@
 import * as React from 'react';
-import { IconButton, Box, AppBar, useMediaQuery, Toolbar, styled, Stack } from '@mui/material';
+import { Box, AppBar, useMediaQuery, Toolbar, styled, Stack } from '@mui/material';
 import PropTypes from 'prop-types';
-import { useSelector, useDispatch } from 'react-redux';
-import { toggleMobileSidebar } from 'src/store/customizer/CustomizerSlice';
-import { IconMenu2 } from '@tabler/icons';
+import { useSelector } from 'react-redux';
 import Notifications from 'src/layouts/full/vertical/header/Notifications';
-import Cart from 'src/layouts/full/vertical/header/Cart';
 import Profile from 'src/layouts/full/vertical/header/Profile';
 import Search from 'src/layouts/full/vertical/header/Search';
 import Language from 'src/layouts/full/vertical/header/Language';
@@ -18,7 +15,6 @@ const Header = () => {
 
   // drawer
   const customizer = useSelector((state) => state.customizer);
-  const dispatch = useDispatch();
 
   const AppBarStyled = styled(AppBar)(({ theme }) => ({
     background: theme.palette.background.paper,
@@ -41,23 +37,7 @@ const Header = () => {
         <Box sx={{ width: lgDown ? '45px' : 'auto', overflow: 'hidden' }}>
           <Logo />
         </Box>
-        {/* ------------------------------------------- */}
-        {/* Toggle Button Sidebar */}
-        {/* ------------------------------------------- */}
-        {lgDown ? (
-          <IconButton
-            color="inherit"
-            aria-label="menu"
-            onClick={() => dispatch(toggleMobileSidebar())}
-          >
-            <IconMenu2 />
-          </IconButton>
-        ) : (
-          ''
-        )}
-        {/* ------------------------------------------- */}
         {/* Search Dropdown */}
-        {/* ------------------------------------------- */}
         <Search />
         {lgUp ? (
           <>
@@ -67,13 +47,6 @@ const Header = () => {
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
           <Language />
-          {/* ------------------------------------------- */}
-          {/* Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
-          <Cart />
-          {/* ------------------------------------------- */}
-          {/* End Ecommerce Dropdown */}
-          {/* ------------------------------------------- */}
           <Notifications />
           <Profile />
         </Stack>
@@ -84,7 +57,6 @@ const Header = () => {
 
 Header.propTypes = {
   sx: PropTypes.object,
-  toggleSidebar: PropTypes.func,
 };
 
 export default Header;

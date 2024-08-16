@@ -89,24 +89,24 @@ const profile = [
 // apps dropdown
 
 const appsLink = [
-  {
-    href: '/apps/chats',
-    title: 'Chat Application',
-    subtext: 'Messages & Emails',
-    avatar: ddIcon1,
-  },
-  {
-    href: '/apps/ecommerce/shop',
-    title: 'eCommerce App',
-    subtext: 'Messages & Emails',
-    avatar: ddIcon2,
-  },
-  {
-    href: '/',
-    title: 'Invoice App',
-    subtext: 'Messages & Emails',
-    avatar: ddIcon3,
-  },
+  // {
+  //   href: '/apps/chats',
+  //   title: 'Chat Application',
+  //   subtext: 'Messages & Emails',
+  //   avatar: ddIcon1,
+  // },
+  // {
+  //   href: '/apps/ecommerce/shop',
+  //   title: 'eCommerce App',
+  //   subtext: 'Messages & Emails',
+  //   avatar: ddIcon2,
+  // },
+  // {
+  //   href: '/',
+  //   title: 'Invoice App',
+  //   subtext: 'Messages & Emails',
+  //   avatar: ddIcon3,
+  // },
   {
     href: '/apps/calendar',
     title: 'Calendar App',

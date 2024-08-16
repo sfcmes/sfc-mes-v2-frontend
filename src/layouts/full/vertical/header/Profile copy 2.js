@@ -1,34 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Divider, 
-  Button, 
-  IconButton,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle
-} from '@mui/material';
+import { Link } from 'react-router-dom';
+import { Box, Menu, Avatar, Typography, Divider, Button, IconButton } from '@mui/material';
 import { IconMail } from '@tabler/icons';
 import { Stack } from '@mui/system';
 import BoringAvatar from 'boring-avatars';
 import Scrollbar from 'src/components/custom-scroll/Scrollbar';
-import { fetchUserProfile } from 'src/utils/api';
-import { useAuth } from 'src/contexts/AuthContext'; // Import useAuth hook
+import { fetchUserProfile } from 'src/utils/api'; // Adjust the path if necessary
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
-  const navigate = useNavigate();
-  const { logout } = useAuth(); // Use the logout function from AuthContext
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -37,47 +18,18 @@ const Profile = () => {
         setUser(userProfile);
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
-        setError('Failed to load user profile. Please try logging in again.');
-        if (error.response && error.response.status === 401) {
-          navigate('/auth/login');
-        }
       }
     };
     loadUserProfile();
-  }, [navigate]);
+  }, []);
 
   const handleClick2 = (event) => {
     setAnchorEl2(event.currentTarget);
   };
-
   const handleClose2 = () => {
     setAnchorEl2(null);
   };
 
-  const handleLogoutClick = () => {
-    setOpenLogoutDialog(true);
-  };
-
-  const handleLogoutCancel = () => {
-    setOpenLogoutDialog(false);
-  };
-
-  const handleLogoutConfirm = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await logout(); // Use the logout function from AuthContext
-      handleClose2();
-      setOpenLogoutDialog(false);
-      navigate('/auth/login');
-    } catch (err) {
-      console.error('Logout error:', err);
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   return (
     <Box>
       <IconButton
@@ -168,44 +120,18 @@ const Profile = () => {
             <Divider />
             <Box mt={2}>
               <Button
+                to="/auth/login"
                 variant="outlined"
                 color="primary"
+                component={Link}
                 fullWidth
-                onClick={handleLogoutClick}
-                disabled={isLoading}
               >
-                {isLoading ? 'Logging out...' : 'Logout'}
+                Logout
               </Button>
             </Box>
-            {error && (
-              <Typography color="error" mt={2}>
-                {error}
-              </Typography>
-            )}
           </Box>
         </Scrollbar>
       </Menu>
-      <Dialog
-        open={openLogoutDialog}
-        onClose={handleLogoutCancel}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{"Confirm Logout"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Are you sure you want to log out?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleLogoutCancel} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleLogoutConfirm} color="primary" autoFocus>
-            Logout
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

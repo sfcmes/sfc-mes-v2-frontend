@@ -8,62 +8,15 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // This is important for cookies to be sent with requests
+  withCredentials: true,
 });
-
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  
-  failedQueue = [];
-};
 
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({resolve, reject});
-        }).then(token => {
-          originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          return api(originalRequest);
-        }).catch(err => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      return new Promise((resolve, reject) => {
-        api.post('/auth/refresh', {
-          refreshToken: localStorage.getItem('refreshToken')
-        })
-          .then(({data}) => {
-            api.defaults.headers.common['Authorization'] = 'Bearer ' + data.token;
-            originalRequest.headers['Authorization'] = 'Bearer ' + data.token;
-            processQueue(null, data.token);
-            resolve(api(originalRequest));
-          })
-          .catch((err) => {
-            processQueue(err, null);
-            reject(err);
-          })
-          .finally(() => {
-            isRefreshing = false;
-          });
-      });
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.error('Authentication error. Redirecting to login...');
     }
-
     return Promise.reject(error);
   }
 );
@@ -75,6 +28,16 @@ api.setToken = (token) => {
     delete api.defaults.headers.common['Authorization'];
   }
 };
+
+api.interceptors.request.use(
+  (config) => {
+    console.log('Request headers:', config.headers);
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const uploadFileToS3 = async (file, componentId) => {
   const formData = new FormData();
@@ -118,17 +81,14 @@ const loginUser = async (data) => {
   try {
     const response = await api.post('/auth/login', data);
     if (response.data && response.data.token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      // Store refresh token in localStorage (consider more secure options in production)
-      localStorage.setItem('refreshToken', response.data.refreshToken);
+      api.setToken(response.data.token);
+      // Store token securely (consider using HttpOnly cookies instead)
+      localStorage.setItem('token', response.data.token);
     }
     return { success: true, data: response.data };
   } catch (error) {
     console.error('Login error:', error.response ? error.response.data : error.message);
-    return { 
-      success: false, 
-      error: error.response ? error.response.data.message : 'An unexpected error occurred. Please try again.'
-    };
+    return { success: false, error: error.response ? error.response.data.message : 'An unexpected error occurred' };
   }
 };
 
@@ -164,21 +124,6 @@ const fetchProjects = async () => {
   } catch (error) {
     console.error('Error fetching projects:', error);
     throw error;
-  }
-};
-
-const logoutUser = async () => {
-  try {
-    // Optionally, if you have a server-side logout endpoint:
-    // await api.post('/auth/logout');
-
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    delete api.defaults.headers.common['Authorization'];
-    return { success: true };
-  } catch (error) {
-    console.error('Logout error:', error);
-    return { success: false, error: 'Failed to logout' };
   }
 };
 
@@ -307,7 +252,6 @@ const fetchSectionByName = async (projectId, sectionName) => {
 export {
   api,
   loginUser,
-  logoutUser ,
   registerUser,
   fetchUserProfile,
   fetchUserById,

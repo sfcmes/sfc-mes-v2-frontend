@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid } from '@mui/material';
 import TopCards from '../../components/dashboards/modern/TopCards';
-import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
+import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
 import { fetchProjects } from 'src/utils/api';
 
 const statusDisplayMap = {
-  Planning: 'วางแผนผลิต',
-  Manufactured: 'ผลิตแล้ว',
+  'Manufactured': 'ผลิตแล้ว',
   'In Transit': 'อยู่ระหว่างขนส่ง',
-  Transported: 'ขนส่งสำเร็จ',
-  Accepted: 'ตรวจรับแล้ว',
-  Installed: 'ติดตั้งแล้ว',
-  Rejected: 'ถูกปฏิเสธ',
+  'Transported': 'ขนส่งสำเร็จ',
+  'Accepted': 'ตรวจรับแล้ว',
+  'Installed': 'ติดตั้งแล้ว',
+  'Rejected': 'ถูกปฏิเสธ'
 };
 
 const Modern = () => {
@@ -41,46 +40,34 @@ const Modern = () => {
     if (selectedProject) {
       const stats = calculateProjectStats(selectedProject);
       setProjectStats(stats);
-    } else {
-      setProjectStats([]);
     }
   }, [selectedProject]);
 
   const calculateProjectStats = (project) => {
-    if (!project || !project.sections) {
-      return [];
-    }
-
-    const totalComponents = project.sections.reduce(
-      (acc, section) => acc + (section.components ? section.components.length : 0),
-      0,
-    );
+    const totalComponents = project.sections.reduce((acc, section) => acc + section.components.length, 0);
     const statusCounts = {
-      Planning: 0,
-      Manufactured: 0,
+      'Manufactured': 0,
       'In Transit': 0,
-      Transported: 0,
-      Accepted: 0,
-      Installed: 0,
-      Rejected: 0,
+      'Transported': 0,
+      'Accepted': 0,
+      'Installed': 0,
+      'Rejected': 0
     };
-
+  
     project.sections.forEach((section) => {
-      if (section.components) {
-        section.components.forEach((component) => {
-          if (statusCounts.hasOwnProperty(component.status)) {
-            statusCounts[component.status]++;
-          }
-        });
-      }
+      section.components.forEach((component) => {
+        if (statusCounts.hasOwnProperty(component.status)) {
+          statusCounts[component.status]++;
+        }
+      });
     });
-
+  
     return Object.entries(statusCounts).map(([status, count]) => ({
       status: status,
       displayTitle: statusDisplayMap[status] || status,
       subtitle: '',
       percent: totalComponents > 0 ? Number(((count / totalComponents) * 100).toFixed(2)) : 0,
-      count: count,
+      count: count
     }));
   };
 
@@ -89,25 +76,21 @@ const Modern = () => {
   };
 
   return (
-    <Box>
+    <Box >
       <Grid container spacing={3}>
         <Grid item sm={12} lg={12}>
-          <TopCards
-            stats={projectStats}
-            projectName={selectedProject ? selectedProject.name : 'Not Selected'}
-          />
+          <TopCards stats={projectStats} />
         </Grid>
         <Grid item xs={12} lg={8}>
           <TopPerformers projects={projects} onRowClick={handleRowClick} />
         </Grid>
         <Grid item xs={12} lg={4}>
           <WeeklyStats
-            projectId={selectedProject ? selectedProject.id : null}
             projectName={selectedProject ? selectedProject.name : 'All Projects'}
           />
         </Grid>
       </Grid>
-      <Welcome />
+        <Welcome />
     </Box>
   );
 };

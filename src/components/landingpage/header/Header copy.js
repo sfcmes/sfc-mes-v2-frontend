@@ -11,6 +11,8 @@ import {
   Drawer,
 } from '@mui/material';
 import Logo from 'src/layouts/full/shared/logo/Logo';
+import Navigations from './Navigations';
+import MobileSidebar from './MobileSidebar';
 import { IconMenu2 } from '@tabler/icons';
 
 const LpHeader = () => {
@@ -29,6 +31,8 @@ const LpHeader = () => {
     color: theme.palette.text.secondary,
   }));
 
+  //   sidebar
+  const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
   const lgDown = useMediaQuery((theme) => theme.breakpoints.down('lg'));
 
   const [open, setOpen] = React.useState(false);
@@ -66,11 +70,16 @@ const LpHeader = () => {
         <ToolbarStyled>
           <Logo />
           <Box flexGrow={1} />
-          {/* {lgDown ? (
+          {lgDown ? (
             <IconButton color="inherit" aria-label="menu" onClick={handleDrawerOpen}>
               <IconMenu2 size="20" />
             </IconButton>
-          ) : null} */}
+          ) : null}
+          {lgUp ? (
+            <Stack spacing={1} direction="row" alignItems="center">
+              <Navigations />
+            </Stack>
+          ) : null}
         </ToolbarStyled>
       </Container>
       <Drawer
@@ -86,7 +95,7 @@ const LpHeader = () => {
           },
         }}
       >
-        {/* Mobile Sidebar removed */}
+        <MobileSidebar />
       </Drawer>
     </AppBarStyled>
   );

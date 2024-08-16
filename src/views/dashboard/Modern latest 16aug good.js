@@ -53,7 +53,7 @@ const Modern = () => {
 
     const totalComponents = project.sections.reduce(
       (acc, section) => acc + (section.components ? section.components.length : 0),
-      0,
+      0
     );
     const statusCounts = {
       Planning: 0,
@@ -92,8 +92,8 @@ const Modern = () => {
     <Box>
       <Grid container spacing={3}>
         <Grid item sm={12} lg={12}>
-          <TopCards
-            stats={projectStats}
+          <TopCards 
+            stats={projectStats} 
             projectName={selectedProject ? selectedProject.name : 'Not Selected'}
           />
         </Grid>
@@ -101,9 +101,9 @@ const Modern = () => {
           <TopPerformers projects={projects} onRowClick={handleRowClick} />
         </Grid>
         <Grid item xs={12} lg={4}>
-          <WeeklyStats
-            projectId={selectedProject ? selectedProject.id : null}
-            projectName={selectedProject ? selectedProject.name : 'All Projects'}
+          <WeeklyStats 
+            stats={projectStats} 
+            projectName={selectedProject ? selectedProject.name : 'All Projects'} 
           />
         </Grid>
       </Grid>

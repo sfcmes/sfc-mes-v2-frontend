@@ -5,7 +5,7 @@ import PageContainer from '../../components/container/PageContainer';
 import Breadcrumb from '../../layouts/full/shared/breadcrumb/Breadcrumb';
 import ParentCard from 'src/components/shared/ParentCard';
 import FVSection from '../../components/forms/form-validation/FVSection';
-import api, { createSection } from '../../utils/api';
+import api, { createSection, fetchSectionsByProjectId } from '../../utils/api';
 
 const BCrumb = [
   { to: '/', title: 'Home' },

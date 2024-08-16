@@ -1,7 +1,9 @@
 import { useMediaQuery, Box, Drawer, Container } from '@mui/material';
+import NavListing from './NavListing/NavListing';
 import Logo from '../../shared/logo/Logo';
 import { useSelector, useDispatch } from 'react-redux';
 import { toggleMobileSidebar } from 'src/store/customizer/CustomizerSlice';
+import SidebarItems from '../../vertical/sidebar/SidebarItems';
 
 const Navigation = () => {
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
@@ -19,8 +21,7 @@ const Navigation = () => {
             maxWidth: customizer.isLayout === 'boxed' ? 'lg' : '100%!important',
           }}
         >
-          {/* Removed NavListing */}
-          {/* <NavListing /> */}
+          <NavListing />
         </Container>
       </Box>
     );
@@ -54,8 +55,7 @@ const Navigation = () => {
       {/* ------------------------------------------- */}
       {/* Sidebar For Mobile */}
       {/* ------------------------------------------- */}
-      {/* Removed SidebarItems */}
-      {/* <SidebarItems /> */}
+      <SidebarItems />
     </Drawer>
   );
 };

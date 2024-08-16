@@ -11,7 +11,6 @@ import Profile from './Profile';
 import Cart from './Cart';
 import Search from './Search';
 import Language from './Language';
-import Navigation from './Navigation';
 import MobileRightSidebar from './MobileRightSidebar';
 
 const Header = () => {
@@ -53,11 +52,12 @@ const Header = () => {
         {/* Search Dropdown */}
         {/* ------------------------------------------- */}
         <Search />
-        {lgUp ? (
+        {/* Removed Navigation component */}
+        {/* {lgUp ? (
           <>
             <Navigation />
           </>
-        ) : null}
+        ) : null} */}
 
         <Box flexGrow={1} />
         <Stack spacing={1} direction="row" alignItems="center">
@@ -74,7 +74,7 @@ const Header = () => {
            {/* ------------------------------------------- */}
           {/* Toggle Right Sidebar for mobile */}
           {/* ------------------------------------------- */}
-          {lgDown ? <MobileRightSidebar /> : null}
+          {/* {lgDown ? <MobileRightSidebar /> : null} */}
           <Profile />
         </Stack>
       </ToolbarStyled>

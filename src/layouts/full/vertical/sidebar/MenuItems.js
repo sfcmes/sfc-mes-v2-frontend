@@ -84,19 +84,19 @@ const Menuitems = [
   },
   {
     id: uniqueId(),
-    title: 'สร้างข้อมูล Component',
+    title: 'สร้างข้อมูลชิ้นงาน',
     icon: IconBrandCodepen,
     href: '/forms/form-component',
   },
   {
     id: uniqueId(),
-    title: 'QR Code Reader',
+    title: 'โปรแกรมอ่าน QR Code',
     icon: IconZoomCode,
     href: '/forms/form-qr-code-reader',
   },
   {
     id: uniqueId(),
-    title: 'QR Code Print',
+    title: 'โปรแกรมสร้าง QR Code',
     icon: IconZoomCode,
     href: '/pages/qr-code',
   },
@@ -206,20 +206,20 @@ const Menuitems = [
     navlabel: true,
     subheader: 'Auth',
   },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Login',
-  //   icon: IconLogin,
-  //   href: '/auth/login',
-  //   children: [
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Boxed Login',
-  //       icon: IconPoint,
-  //       href: '/auth/login',
-  //     },
-  //   ],
-  // },
+  {
+    id: uniqueId(),
+    title: 'Login',
+    icon: IconLogin,
+    href: '/auth/login',
+    children: [
+      {
+        id: uniqueId(),
+        title: 'Boxed Login',
+        icon: IconPoint,
+        href: '/auth/login',
+      },
+    ],
+  },
   {
     id: uniqueId(),
     title: 'ลงทะเบียนผู้ใช้งาน',

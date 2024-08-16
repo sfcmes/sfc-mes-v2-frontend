@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
+import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
 import {
   Box,
@@ -15,10 +16,9 @@ import {
   Grid,
   TextField,
 } from '@mui/material';
-import { QRCodeCanvas } from 'qrcode.react';
-import html2canvas from 'html2canvas';
-import { createRoot } from 'react-dom/client';
 import CustomTextField from '../theme-elements/CustomTextField';
+import QRCode from 'qrcode.react';
+import html2canvas from 'html2canvas';
 import {
   fetchProjects,
   fetchSectionsByProjectId,
@@ -26,9 +26,6 @@ import {
   fetchSectionById,
   createComponent,
 } from 'src/utils/api';
-
-// Import your logo
-import logo from 'F:/project/sfc-mes/frontend/src/assets/images/logos/logo-main.svg'; // Import the logo
 
 const validationSchema = yup.object({
   projectName: yup.string().required('กรุณาใส่ชื่อโครงการ'),
@@ -50,11 +47,10 @@ const validationSchema = yup.object({
 const FVComponent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [qrCodeData, setQrCodeData] = useState(null);
-  const [qrCodeDetails, setQrCodeDetails] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
   const [projects, setProjects] = useState([]);
   const [sections, setSections] = useState([]);
   const [error, setError] = useState('');
-  const qrCodeRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,218 +78,112 @@ const FVComponent = () => {
 
   const handleFileChange = (event) => {
     formik.setFieldValue('file', event.currentTarget.files[0]);
-  };
+};
 
-  const handleQRCodeClick = async (formData) => {
+const formik = useFormik({
+  initialValues: {
+    projectName: '',
+    sectionId: '',
+    componentName: '',
+    componentType: '',
+    width: '',
+    height: '',
+    thickness: '',
+    extension: '',
+    reduction: '',
+    area: '',
+    volume: '',
+    weight: '',
+    status: '',
+    file: null
+  },
+  validationSchema: validationSchema,
+  onSubmit: async (values) => {
+    setError('');
+    console.log('Submitting form with values:', values);
     try {
-      const projectResponse = await fetchProjectById(formData.projectName);
-      const sectionResponse = await fetchSectionById(formData.sectionId);
-      const projectName = projectResponse.data.name;
-      const sectionName = sectionResponse.data ? sectionResponse.data.name : 'N/A';
+      const formData = new FormData();
+      formData.append('section_id', values.sectionId);
+      formData.append('name', values.componentName);
+      formData.append('type', values.componentType);
+      formData.append('width', values.width);
+      formData.append('height', values.height);
+      formData.append('thickness', values.thickness);
+      formData.append('extension', values.extension);
+      formData.append('reduction', values.reduction);
+      formData.append('area', values.area);
+      formData.append('volume', values.volume);
+      formData.append('weight', values.weight);
+      formData.append('status', values.status);
+      formData.append('file', values.file);
 
-      const qrCodeDetails = `บริษัทแสงฟ้าก่อสร้าง จำกัด\nโครงการ: ${projectName}\nชั้น: ${sectionName}\nชื่อชิ้นงาน: ${formData.componentName}`;
-      const qrCodeData = {
-        project: projectName,
-        section: sectionName,
-        name: formData.componentName,
-        type: formData.componentType,
-        status: formData.status,
-      };
-      setQrCodeData(JSON.stringify(qrCodeData));
-      setQrCodeDetails(qrCodeDetails);
+      const response = await createComponent(formData);
+      const component = response.data;
+
+      const projectResponse = await fetchProjectById(values.projectName);
+      const sectionResponse = await fetchSectionById(values.sectionId);
+
+      const qrCodeDetails = `โครงการ: ${projectResponse.data.name}\nชั้น: ${sectionResponse.data.name}\nชื่อชิ้นงาน: ${values.componentName}\n`;
+      setQrCodeData(qrCodeDetails);
       setIsModalOpen(true);
+
     } catch (error) {
-      console.error('Error fetching project/section details:', error);
+      console.error('Error creating component or fetching project/section details:', error);
+      if (error.response && error.response.data && error.response.data.error) {
+        setError(error.response.data.error);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
-  };
+  },
+});
+
 
   const handleSave = async () => {
-    try {
-      const qrCodeElement = await createQRCodeElement();
-      if (!qrCodeElement) {
-        console.error('Failed to create QR code element');
-        return;
-      }
-      document.body.appendChild(qrCodeElement);
-
-      const canvas = await html2canvas(qrCodeElement, { useCORS: true });
-      const link = document.createElement('a');
-      link.download = `qr-code-${formik.values.componentName}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-
-      document.body.removeChild(qrCodeElement);
-    } catch (error) {
-      console.error('Error generating QR code: ', error);
+    const qrCodeElement = document.getElementById('qr-code');
+    if (!qrCodeElement) {
+      console.error('QR code element not found');
+      return;
     }
+
+    try {
+      const canvas = await html2canvas(qrCodeElement);
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'qr-code.png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 'image/png');
+    } catch (error) {
+      console.error('Error saving QR code image:', error);
+    }
+
+    setIsModalOpen(false);
   };
 
-  const handlePrint = async () => {
-    try {
-      const qrCodeElement = await createQRCodeElement();
-      if (!qrCodeElement) {
-        console.error('Failed to create QR code element');
-        return;
-      }
-      document.body.appendChild(qrCodeElement);
+  const handlePrint = () => {
+    const qrCodeElement = document.getElementById('qr-code');
+    if (!qrCodeElement) {
+      console.error('QR code element not found');
+      return;
+    }
 
-      const canvas = await html2canvas(qrCodeElement, { useCORS: true });
+    html2canvas(qrCodeElement).then((canvas) => {
       const imgData = canvas.toDataURL('image/png');
-
-      const printWindow = window.open('', '', 'width=600,height=600');
-      if (!printWindow) {
-        console.error('Failed to open print window');
-        return;
-      }
-
-      printWindow.document.open();
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head><title>Print QR Code</title></head>
-        <body>
-          <img src="${imgData}" onload="window.focus(); window.print();">
-        </body>
-        </html>
-      `);
+      const printWindow = window.open('', '', 'height=400,width=600');
+      printWindow.document.write('<html><head><title>QR Code</title>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(`<img src="${imgData}" />`);
+      printWindow.document.write('</body></html>');
       printWindow.document.close();
-
-      document.body.removeChild(qrCodeElement);
-    } catch (error) {
-      console.error('Error generating QR code: ', error);
-    }
-  };
-
-  const createQRCodeElement = () => {
-    const qrCodeElement = document.createElement('div');
-    qrCodeElement.style.backgroundColor = 'white';
-    qrCodeElement.style.padding = '20px';
-    qrCodeElement.style.display = 'inline-block';
-    qrCodeElement.style.textAlign = 'left';
-    qrCodeElement.id = 'qrCodeElement';
-
-    const qrCodeContainer = document.createElement('div');
-    qrCodeElement.appendChild(qrCodeContainer);
-
-    const qrCodeRoot = createRoot(qrCodeContainer);
-    qrCodeRoot.render(
-      <QRCodeCanvas
-        value={qrCodeData}
-        size={256}
-        bgColor={"#ffffff"}
-        fgColor={"#000000"}
-        level={"L"}
-        includeMargin={false}
-        imageSettings={{
-          src: logo,
-          x: undefined,
-          y: undefined,
-          height: 48,
-          width: 48,
-          excavate: true,
-        }}
-      />
-    );
-
-    const qrCodeText = document.createElement('p');
-    qrCodeText.style.textAlign = 'center';
-    qrCodeText.style.marginTop = '10px';
-    qrCodeText.innerHTML = qrCodeDetails.replace(/\n/g, '<br />');
-
-    qrCodeElement.appendChild(qrCodeText);
-
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(qrCodeElement), 100);
+      printWindow.print();
     });
+
+    setIsModalOpen(false);
   };
-
-  const renderQRCode = (qrCodeValue, qrCodeDetails, size = 256) => {
-    let parsedQRCodeValue = {};
-    try {
-      parsedQRCodeValue = typeof qrCodeValue === 'string' ? JSON.parse(qrCodeValue) : qrCodeValue;
-    } catch (error) {
-      console.error('Error parsing QR code value:', error);
-    }
-
-    return (
-      <Box sx={{ textAlign: 'center', p: 2 }}>
-        <Paper elevation={3} sx={{ display: 'inline-block', p: 2 }} ref={qrCodeRef}>
-          <QRCodeCanvas
-            value={JSON.stringify(parsedQRCodeValue)}
-            size={size}
-            bgColor={"#ffffff"}
-            fgColor={"#000000"}
-            level={"L"}
-            includeMargin={false}
-            imageSettings={{
-              src: logo,
-              x: undefined,
-              y: undefined,
-              height: 48,
-              width: 48,
-              excavate: true,
-            }}
-          />
-          <Typography mt={2} variant="body1" whiteSpace="pre-line">
-            {qrCodeDetails}
-          </Typography>
-        </Paper>
-      </Box>
-    );
-  };
-
-  const formik = useFormik({
-    initialValues: {
-      projectName: '',
-      sectionId: '',
-      componentName: '',
-      componentType: '',
-      width: '',
-      height: '',
-      thickness: '',
-      extension: '',
-      reduction: '',
-      area: '',
-      volume: '',
-      weight: '',
-      status: '',
-      file: null
-    },
-    validationSchema: validationSchema,
-    onSubmit: async (values) => {
-      setError('');
-      try {
-        const formData = new FormData();
-        formData.append('section_id', values.sectionId);
-        formData.append('name', values.componentName);
-        formData.append('type', values.componentType);
-        formData.append('width', values.width);
-        formData.append('height', values.height);
-        formData.append('thickness', values.thickness);
-        formData.append('extension', values.extension);
-        formData.append('reduction', values.reduction);
-        formData.append('area', values.area);
-        formData.append('volume', values.volume);
-        formData.append('weight', values.weight);
-        formData.append('status', values.status);
-        formData.append('file', values.file);
-
-        const response = await createComponent(formData);
-        console.log('Component created:', response.data);
-
-        // Generate QR Code after successful submission
-        handleQRCodeClick(values);
-
-      } catch (error) {
-        console.error('Error creating component:', error);
-        if (error.response && error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
-        } else {
-          setError('An unexpected error occurred. Please try again.');
-        }
-      }
-    },
-  });
 
   return (
     <form onSubmit={formik.handleSubmit}>
@@ -470,9 +360,14 @@ const FVComponent = () => {
       </Stack>
       <Box mt={3}>
         <Button color="primary" variant="contained" type="submit">
-          บันทึกและสร้าง QR Code
+          Generate QR Code
         </Button>
       </Box>
+      {saveMessage && (
+        <Box mt={2}>
+          <Typography color="primary">{saveMessage}</Typography>
+        </Box>
+      )}
 
       <Modal
         open={isModalOpen}
@@ -488,24 +383,33 @@ const FVComponent = () => {
             transform: 'translate(-50%, -50%)',
             width: 400,
             bgcolor: 'background.paper',
+            border: '2px solid #000',
             boxShadow: 24,
             p: 4,
-            borderRadius: 2,
           }}
         >
-          <Typography id="qr-code-modal" variant="h6" component="h2" align="center" gutterBottom>
-            บริษัทแสงฟ้าก่อสร้าง จำกัด
+          <Typography id="qr-code-modal" variant="h6" component="h2" align="center">
+            QR Code
           </Typography>
-          <div>{renderQRCode(qrCodeData, qrCodeDetails)}</div>
+          <Paper
+            id="qr-code"
+            elevation={3}
+            sx={{ mt: 2, p: 2, textAlign: 'center', backgroundColor: 'white' }}
+          >
+            <QRCode value={qrCodeData} size={256} />
+            <Typography mt={2} variant="body1">
+              {qrCodeData}
+            </Typography>
+          </Paper>
           <Grid container spacing={2} justifyContent="center" mt={2}>
             <Grid item>
               <Button onClick={handleSave} variant="contained" color="primary">
-                บันทึก
+                Save
               </Button>
             </Grid>
             <Grid item>
               <Button onClick={handlePrint} variant="contained" color="secondary">
-                พิมพ์
+                Print
               </Button>
             </Grid>
           </Grid>

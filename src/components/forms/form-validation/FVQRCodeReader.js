@@ -1,17 +1,53 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { 
-  Stack, Typography, Avatar, Box, Button, Input, Paper, Divider,
-  Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions
+  Stack, Typography, Box, Button, Input, Paper, Dialog, DialogTitle, DialogContent, DialogActions,
+  Table, TableBody, TableCell, TableContainer, TableRow, Snackbar, Alert
 } from '@mui/material';
-import { IconMapPin, IconUpload } from '@tabler/icons';
+import { IconQrcode, IconUpload, IconDownload } from '@tabler/icons';
 import { QrReader } from 'react-qr-reader';
 import jsQR from 'jsqr';
+import { updateComponent, fetchComponentById } from 'src/utils/api';  // Adjust this import path as needed
+
+const statusFlow = {
+  Manufactured: 'In Transit',
+  'In Transit': 'Transported',
+  Transported: 'Accepted',
+  Accepted: 'Installed',
+  Installed: 'Installed',
+  Rejected: 'Rejected',
+  pending: 'Manufactured'
+};
+
+const statusDisplayMap = {
+  Manufactured: 'ผลิตแล้ว',
+  'In Transit': 'อยู่ระหว่างขนส่ง',
+  Transported: 'ขนส่งสำเร็จ',
+  Accepted: 'ตรวจรับแล้ว',
+  Installed: 'ติดตั้งแล้ว',
+  Rejected: 'ถูกปฏิเสธ',
+  pending: 'รอดำเนินการ'
+};
+
+const thaiTranslations = {
+  project: 'โครงการ',
+  section: 'ส่วน',
+  name: 'ชื่อ',
+  type: 'ประเภท',
+  width: 'ความกว้าง',
+  height: 'ความสูง',
+  thickness: 'ความหนา',
+  extension: 'ส่วนขยาย',
+  reduction: 'ส่วนลด',
+  area: 'พื้นที่',
+  volume: 'ปริมาตร',
+  weight: 'น้ำหนัก',
+  status: 'สถานะ'
+};
 
 const FVQRCodeReader = () => {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
-  const primarylight = theme.palette.primary.light;
 
   const [qrCodeData, setQrCodeData] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -22,44 +58,61 @@ const FVQRCodeReader = () => {
   const [debugInfo, setDebugInfo] = useState('');
   const fileInputRef = useRef(null);
 
-  // State variables for modal and alert
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [scanningMessage, setScanningMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [status, setStatus] = useState('');
+  const [componentData, setComponentData] = useState(null);
+  const [nextStatus, setNextStatus] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     setIsMobile(isMobileDevice);
-    setDebugInfo(`Device detected as ${isMobileDevice ? 'mobile' : 'desktop'}`);
+    setDebugInfo(`Detected device: ${isMobileDevice ? 'Mobile' : 'Desktop'}`);
   }, []);
 
   const handleScanClick = () => {
     setIsScanning(true);
     setFacingMode('environment');
     setScanningMessage('Scanning...');
+    setError(null);
   };
 
-  const handleScan = (result) => {
+  const handleScan = async (result) => {
     if (result) {
-      const scannedData = result.text;
-      setQrCodeData(scannedData);
-      setIsScanning(false);
-      setScanningMessage('');
-      setModalData(scannedData);
-      setShowModal(true);
-      setAlertMessage('QR Code scanned successfully!');
-      setShowAlert(true);
+      console.log('QR code scanned:', result);
+      try {
+        const scannedData = JSON.parse(result.text);
+        console.log('Parsed QR code data:', scannedData);
+        setQrCodeData(scannedData);
+        setIsScanning(false);
+        setScanningMessage('');
+
+        // Fetch component data from API
+        const component = await fetchComponentById(scannedData.id);
+        console.log('Fetched component data:', component);
+        setComponentData(component);
+        setNextStatus(statusFlow[component.status] || '');
+        setModalData(JSON.stringify(component, null, 2));
+        setShowModal(true);
+        setAlertMessage('QR Code scanned successfully!');
+        setShowAlert(true);
+      } catch (error) {
+        console.error('Error processing QR code data:', error);
+        setError(`Error processing QR code data: ${error.message}`);
+        setIsScanning(false);
+        setScanningMessage('');
+      }
     }
   };
 
   const handleError = (err) => {
-    console.error(err);
+    console.error('QR code scanning error:', err);
     setIsScanning(false);
     setScanningMessage('');
-    setAlertMessage(`Error: ${err.message}`);
+    setError(`Scanning error: ${err.message}`);
     setShowAlert(true);
   };
 
@@ -69,8 +122,9 @@ const FVQRCodeReader = () => {
 
     try {
       const data = await readQrCodeData(file);
-      setUploadedQrCodeData(data);
-      setModalData(data);
+      const parsedData = JSON.parse(data); // Assuming the data is a JSON string
+      setUploadedQrCodeData(parsedData);
+      setModalData(parsedData);
       setShowModal(true);
       setAlertMessage('QR Code uploaded and read successfully!');
       setShowAlert(true);
@@ -97,83 +151,65 @@ const FVQRCodeReader = () => {
           if (code) {
             resolve(code.data);
           } else {
-            reject(new Error('No QR code found in the image'));
+            reject(new Error('QR code not found in the image'));
           }
         };
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = () => reject(new Error('Unable to load image'));
         img.src = reader.result;
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => reject(new Error('Unable to read file'));
       reader.readAsDataURL(file);
     });
   };
 
   const handleAccept = async () => {
-    setShowModal(false);
-    try {
-      const response = await fetch('http://localhost:3033/update-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: modalData, status: status }),
-      });
+    if (!componentData || !nextStatus) {
+      setAlertMessage('No component data or next status');
+      setShowAlert(true);
+      return;
+    }
 
-      if (response.ok) {
-        setAlertMessage('Status updated successfully!');
-        setShowAlert(true);
-      } else {
-        setAlertMessage('Error updating status');
-        setShowAlert(true);
-      }
+    try {
+      const updatedComponent = await updateComponent(componentData.id, { status: nextStatus });
+      setComponentData(updatedComponent);
+      setNextStatus(statusFlow[updatedComponent.status] || '');
+      setAlertMessage(`Status updated to ${statusDisplayMap[updatedComponent.status]}`);
+      setShowAlert(true);
     } catch (error) {
-      console.error('Error updating status:', error);
-      setAlertMessage('Error updating status. Please check the console for details.');
+      console.error('Error updating component status:', error);
+      setAlertMessage('Error updating component status');
       setShowAlert(true);
     }
   };
 
-  const handleReject = () => {
-    setQrCodeData(null);
-    setUploadedQrCodeData(null);
-    setShowModal(false);
-  };
+  const handleReject = async () => {
+    if (!componentData) {
+      setAlertMessage('No component data');
+      setShowAlert(true);
+      return;
+    }
 
-  const isJsonString = (str) => {
     try {
-      JSON.parse(str);
-    } catch (e) {
-      return false;
+      const updatedComponent = await updateComponent(componentData.id, { status: 'Rejected' });
+      setComponentData(updatedComponent);
+      setNextStatus('');
+      setAlertMessage('Component status set to Rejected');
+      setShowAlert(true);
+    } catch (error) {
+      console.error('Error rejecting component:', error);
+      setAlertMessage('Error rejecting component');
+      setShowAlert(true);
     }
-    return true;
   };
 
-  const formatData = (data) => {
-    if (isJsonString(data)) {
-      return JSON.stringify(JSON.parse(data), null, 2);
+  const handleDownloadPDF = () => {
+    if (componentData && componentData.file_path) {
+      window.open(componentData.file_path, '_blank');
+    } else {
+      setAlertMessage('PDF file not found for download');
+      setShowAlert(true);
     }
-    return data;
   };
-
-  const stats = [
-    {
-      title: 'Scanned QR Code Data',
-      subtitle: qrCodeData || 'No data scanned',
-      time: qrCodeData ? qrCodeData.length : 0,
-      color: primary,
-      lightcolor: primarylight,
-      icon: <IconMapPin width={20} />,
-    },
-    {
-      title: 'Uploaded QR Code Data',
-      subtitle: uploadedQrCodeData || 'No data uploaded',
-      time: uploadedQrCodeData ? uploadedQrCodeData.length : 0,
-      color: primary,
-      lightcolor: primarylight,
-      icon: <IconUpload width={20} />,
-      image: uploadedQrCode ? URL.createObjectURL(uploadedQrCode) : null,
-    },
-  ];
 
   return (
     <Box sx={{
@@ -185,105 +221,118 @@ const FVQRCodeReader = () => {
       maxWidth: '100%',
       width: 600,
     }}>
-      <Paper elevation={3} sx={{ p: 3, width: '100%' }}>
-        <Stack spacing={3}>
-          {stats.map((stat, i) => (
-            <Box key={i}>
-              <Stack direction="row" spacing={3} justifyContent="space-between" alignItems="center">
-                <Stack direction="row" alignItems="center" spacing={2}>
-                  <Avatar variant="rounded" sx={{ bgcolor: stat.lightcolor, color: stat.color, width: 40, height: 40 }}>
-                    {stat.icon}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" mb="4px">
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      {stat.subtitle}
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Typography variant="subtitle2" color="textSecondary">
-                  {stat.time} chars
-                </Typography>
-              </Stack>
-              {stat.image && (
-                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                  <img src={stat.image} alt="Uploaded QR Code" style={{ maxWidth: '100%', maxHeight: 200 }} />
-                </Box>
-              )}
-              {i < stats.length - 1 && <Divider sx={{ my: 2 }} />}
-            </Box>
-          ))}
-        </Stack>
-      </Paper>
-
-      <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-        <Button color="primary" variant="contained" onClick={handleScanClick} disabled={!isMobile}>
-          Scan QR Code
-        </Button>
-        <Button color="primary" variant="contained" onClick={() => fileInputRef.current.click()}>
-          Upload QR Code
-        </Button>
-        <Input type="file" inputRef={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
-      </Stack>
-
-      {isMobile && isScanning && (
-        <Box sx={{ mt: 2, width: '100%' }}>
-          <QrReader
-            delay={300}
-            onResult={handleScan}
-            onError={handleError}
-            style={{ width: '100%' }}
-            constraints={{
-              facingMode: facingMode,
-              aspectRatio: 1,
-              width: { min: 360, ideal: 640, max: 1920 },
-              height: { min: 360, ideal: 640, max: 1080 },
-            }}
+      <Paper elevation={3} sx={{ p: 3, width: '100%', mb: 3 }}>
+        <Typography variant="h5" gutterBottom>QR Code Reader System</Typography>
+        <Typography variant="body2" color="textSecondary" paragraph>{debugInfo}</Typography>
+        
+        <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+          <Button 
+            startIcon={<IconQrcode />}
+            color="primary" 
+            variant="contained" 
+            onClick={handleScanClick} 
+            disabled={!isMobile}
+          >
+            Scan QR Code
+          </Button>
+          <Button 
+            startIcon={<IconUpload />}
+            color="secondary" 
+            variant="contained" 
+            onClick={() => fileInputRef.current.click()}
+          >
+            Upload QR Code
+          </Button>
+          <Input 
+            type="file" 
+            inputRef={fileInputRef} 
+            onChange={handleUpload} 
+            style={{ display: 'none' }} 
           />
-        </Box>
-      )}
-
-      <Box sx={{ mt: 2, width: '100%', whiteSpace: 'pre-wrap' }}>
-        <Typography variant="h6">Debug Information:</Typography>
-        <Typography variant="body2">{debugInfo}</Typography>
-        {scanningMessage && (
-          <Typography variant="body2" sx={{ mt: 1 }}>{scanningMessage}</Typography>
+        </Stack>
+  
+        {isMobile && isScanning && (
+          <Box sx={{ mt: 2, width: '100%' }}>
+            <QrReader
+              delay={300}
+              onResult={(result, error) => {
+                if (result) {
+                  console.log('Scan result:', result);
+                  handleScan(result);
+                }
+                if (error) {
+                  console.error('Scan error:', error);
+                  handleError(error);
+                }
+              }}
+              style={{ width: '100%' }}
+              constraints={{
+                facingMode: facingMode,
+                aspectRatio: 1,
+                width: { min: 360, ideal: 640, max: 1920 },
+                height: { min: 360, ideal: 640, max: 1080 },
+              }}
+            />
+          </Box>
         )}
-      </Box>
-
-      {/* Modal dialog for scanned/uploaded data */}
-      <Dialog open={showModal} onClose={() => setShowModal(false)}>
-        <DialogTitle>QR Code Data</DialogTitle>
-        <DialogContent>
-          <Typography variant="h6" gutterBottom>Raw Data:</Typography>
-          <Typography variant="body1" paragraph>{modalData || 'No data available'}</Typography>
-          <Typography variant="h6" gutterBottom>Formatted Data:</Typography>
-          <Typography variant="body1" component="pre" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {modalData ? formatData(modalData) : 'No data available'}
+  
+        {scanningMessage && (
+          <Typography variant="body2" sx={{ mt: 2 }}>{scanningMessage}</Typography>
+        )}
+  
+        {error && (
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            Error: {error}
           </Typography>
-          <Typography variant="h6" sx={{ mt: 2 }}>Update Status:</Typography>
-          <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-            {['Planning', 'Fabrication', 'Installed', 'Completed', 'Reject'].map((statusOption) => (
-              <Button
-                key={statusOption}
-                variant="outlined"
-                color={status === statusOption ? 'primary' : 'default'}
-                onClick={() => setStatus(statusOption)}
-              >
-                {statusOption}
-              </Button>
-            ))}
-          </Stack>
+        )}
+  
+        {qrCodeData && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6">Last Scanned Data:</Typography>
+            <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {JSON.stringify(qrCodeData, null, 2)}
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+  
+      <Dialog open={showModal} onClose={() => setShowModal(false)}>
+        <DialogTitle>Component Information</DialogTitle>
+        <DialogContent>
+          <Typography variant="h6">Raw Data:</Typography>
+          <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {JSON.stringify(uploadedQrCodeData, null, 2)}
+          </Typography>
+          <Typography variant="h6">Formatted Data:</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableBody>
+                {modalData && Object.entries(modalData).map(([key, value]) => (
+                  <TableRow key={key}>
+                    <TableCell component="th" scope="row">
+                      {thaiTranslations[key] || key}
+                    </TableCell>
+                    <TableCell align="right">
+                      {key === 'status' ? statusDisplayMap[value] : value}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleReject} color="error">Reject</Button>
-          <Button onClick={handleAccept} color="primary">Accept</Button>
+          <Button onClick={handleReject} color="error">ปฏิเสธ</Button>
+          <Button 
+            onClick={handleAccept} 
+            color="primary" 
+            disabled={!nextStatus || componentData?.status === 'Installed'}
+          >
+            {nextStatus ? `ยอมรับ (${statusDisplayMap[nextStatus]})` : 'ยอมรับ'}
+          </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Alert for notifications */}
       <Snackbar open={showAlert} autoHideDuration={3000} onClose={() => setShowAlert(false)}>
         <Alert onClose={() => setShowAlert(false)} severity="info" sx={{ width: '100%' }}>
           {alertMessage}
@@ -291,6 +340,6 @@ const FVQRCodeReader = () => {
       </Snackbar>
     </Box>
   );
-};
+}
 
 export default FVQRCodeReader;

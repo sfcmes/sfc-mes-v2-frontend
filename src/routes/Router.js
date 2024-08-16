@@ -123,12 +123,30 @@ const Landingpage = Loadable(lazy(() => import('../views/pages/landingpage/Landi
 /* authentication */
 const Login = Loadable(lazy(() => import('../views/authentication/auth1/Login')));
 
+// New authentication wrapper component
+const AuthWrapper = ({ children }) => {
+  // Replace this with your actual authentication logic
+  const isAuthenticated = () => {
+    // Check if the user is logged in (e.g., by checking for a token in localStorage)
+    return localStorage.getItem('token') !== null;
+  };
+
+  if (!isAuthenticated()) {
+    // If not authenticated, only allow access to the Modern Dashboard or redirect to login
+    if (window.location.pathname !== '/dashboards/modern') {
+      return <Navigate to="/auth/login" />;
+    }
+  }
+
+  return children;
+};
+
 const Router = [
   {
     path: '/',
-    element: <FullLayout />,
+    element: <AuthWrapper><FullLayout /></AuthWrapper>,
     children: [
-      { path: '/', element: <Navigate to="/dashboards/modern" /> },  // Changed to redirect to /auth/login
+      { path: '/', element: <Navigate to="/dashboards/modern" /> },
       { path: '/dashboards/modern', exact: true, element: <ModernDash /> },
       // { path: '/dashboards/ecommerce', exact: true, element: <EcommerceDash /> },
       { path: '/apps/chats', element: <Chats /> },
@@ -210,15 +228,7 @@ const Router = [
     children: [
       { path: '/auth/404', element: <Error /> },
       { path: '/auth/login', element: <Login /> },
-      // { path: '/auth/login2', element: <Login2 /> },
       { path: '/auth/register', element: <Register /> },
-      // { path: '/auth/register2', element: <Register2 /> },
-      // { path: '/auth/forgot-password', element: <ForgotPassword /> },
-      // { path: '/auth/forgot-password2', element: <ForgotPassword2 /> },
-      // { path: '/auth/two-steps', element: <TwoSteps /> },
-      // { path: '/auth/two-steps2', element: <TwoSteps2 /> },
-      // { path: '/auth/maintenance', element: <Maintenance /> },
-      // { path: '/landingpage', element: <Landingpage /> },
       { path: '*', element: <Navigate to="/auth/404" /> },
     ],
   },
