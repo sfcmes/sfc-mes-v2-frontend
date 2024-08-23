@@ -405,7 +405,13 @@ const TopPerformers = ({ onRowClick }) => {
   );
 
   return (
-    <Paper elevation={3} sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+    <Paper 
+      elevation={3} 
+      sx={{ 
+        p: { xs: 1, sm: 2, md: 3 },
+        backgroundColor: alpha(theme.palette.background.paper, 0.9), // Semi-transparent background based on theme
+      }}
+    >
       <Box
         display="flex"
         flexDirection={{ xs: 'column', sm: 'row' }}
@@ -428,30 +434,32 @@ const TopPerformers = ({ onRowClick }) => {
           />
         </Search>
       </Box>
-      <TableContainer>
-        <Table aria-label="collapsible table" size={isSmallScreen ? 'small' : 'medium'}>
-          <TableHead>
-            <TableRow>
-              <StyledTableCell />
-              <StyledTableCell>รหัสโครงการ</StyledTableCell>
-              {!isSmallScreen && <StyledTableCell>ชื่อโครงการ</StyledTableCell>}
-              {!isSmallScreen && <StyledTableCell align="right">จำนวนชั้น</StyledTableCell>}
-              <StyledTableCell align="right">จำนวนชิ้นงาน</StyledTableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredProjects.map((project) => (
-              <ProjectRow
-                key={project.id}
-                project={project}
-                onRowClick={onRowClick}
-                isSmallScreen={isSmallScreen}
-                onProjectUpdate={handleProjectUpdate}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        <TableContainer>
+          <Table aria-label="collapsible table" size={isSmallScreen ? 'small' : 'medium'}>
+            <TableHead>
+              <TableRow>
+                <StyledTableCell />
+                <StyledTableCell>รหัสโครงการ</StyledTableCell>
+                {!isSmallScreen && <StyledTableCell>ชื่อโครงการ</StyledTableCell>}
+                {!isSmallScreen && <StyledTableCell align="right">จำนวนชั้น</StyledTableCell>}
+                <StyledTableCell align="right">จำนวนชิ้นงาน</StyledTableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredProjects.map((project) => (
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  onRowClick={onRowClick}
+                  isSmallScreen={isSmallScreen}
+                  onProjectUpdate={handleProjectUpdate}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
       {filteredProjects.length === 0 && (
         <Box display="flex" justifyContent="center" alignItems="center" height="100px">
           <Typography>ไม่พบโครงการที่คุณค้นหา.</Typography>

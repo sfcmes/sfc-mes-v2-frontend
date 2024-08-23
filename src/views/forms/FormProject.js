@@ -19,11 +19,11 @@ import Breadcrumb from '../../layouts/full/shared/breadcrumb/Breadcrumb';
 import ParentCard from 'src/components/shared/ParentCard';
 import FVProject from '../../components/forms/form-validation/FVProject';
 import ProjectModal from './ProjectModal';
-import api, { fetchProjects, createProject, updateProject } from 'src/utils/api';
+import api, { fetchProjects, createProject, updateProject, deleteProject } from 'src/utils/api';
 
 const BCrumb = [{ to: '/', title: 'Home' }, { title: 'สร้างโครงการใหม่' }];
 
-const ProjectTable = ({ projects, onView, onEdit }) => (
+const ProjectTable = ({ projects, onView, onEdit, onDelete }) => (
   <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 440 }}>
     <Table stickyHeader aria-label="project table">
       <TableHead>
@@ -43,11 +43,6 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
               Status
             </Typography>
           </TableCell>
-          {/* <TableCell>
-            <Typography variant="h6" fontWeight="500">
-              ความคืบหน้า
-            </Typography>
-          </TableCell> */}
           <TableCell>
             <Typography variant="h6" fontWeight="500">
               ชั้น
@@ -103,11 +98,6 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
                 label={project.status}
               />
             </TableCell>
-            {/* <TableCell>
-              <Typography color="textSecondary" variant="subtitle2">
-                {typeof project.progress === 'number' && !isNaN(project.progress) ? project.progress.toFixed(2) : 'N/A'}%
-              </Typography>
-            </TableCell> */}
             <TableCell>
               <Typography color="textSecondary" variant="subtitle2">
                 {project.sections}
@@ -126,6 +116,9 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
                 <Button onClick={() => onEdit(project)} variant="contained" color="secondary" size="small">
                   Edit
                 </Button>
+                <Button onClick={() => onDelete(project.id)} variant="contained" color="error" size="small">
+                  Delete
+                </Button>
               </Stack>
             </TableCell>
           </TableRow>
@@ -134,6 +127,7 @@ const ProjectTable = ({ projects, onView, onEdit }) => (
     </Table>
   </TableContainer>
 );
+
 
 const FormProject = () => {
   const [projects, setProjects] = useState([]);
@@ -194,13 +188,27 @@ const FormProject = () => {
     }
   };
 
+  const handleDeleteProject = async (projectId) => {
+    try {
+      if (window.confirm('Are you sure you want to delete this project and all associated data?')) {
+        const token = localStorage.getItem('token');
+        api.setToken(token);
+        await deleteProject(projectId);
+        fetchProjectsData(); // Refresh the project list
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Error deleting project: ' + error.message);
+    }
+  };
+
   return (
     <PageContainer title="สร้างโครงการใหม่" description="This is the form to create a new project.">
       <Breadcrumb title="สร้างโครงการใหม่" items={BCrumb} />
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
           <ParentCard title="ภาพรวมโครงการ">
-            <ProjectTable projects={projects} onView={handleViewProject} onEdit={handleEditProject} />
+            <ProjectTable projects={projects} onView={handleViewProject} onEdit={handleEditProject} onDelete={handleDeleteProject} />
           </ParentCard>
         </Grid>
         <Grid item xs={12} lg={6}>

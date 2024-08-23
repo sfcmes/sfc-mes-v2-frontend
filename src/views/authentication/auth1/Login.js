@@ -24,14 +24,12 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  // Animation for the logo
   const logoAnimation = useSpring({
     from: { opacity: 0, transform: 'translateY(-50px)' },
     to: { opacity: 1, transform: 'translateY(0)' },
     config: config.molasses,
   });
 
-  // Animation for the login form
   const formAnimation = useSpring({
     from: { opacity: 0, transform: 'scale(0.8)' },
     to: { opacity: 1, transform: 'scale(1)' },
@@ -39,95 +37,100 @@ const Login = () => {
     delay: 300,
   });
 
-  // Subtle background animation
-  const bgAnimation = useSpring({
-    from: { backgroundPosition: '0% 50%' },
-    to: { backgroundPosition: '100% 50%' },
-    config: { duration: 20000 },
-    loop: { reverse: true },
-  });
-
-  // New function to handle logo click
   const handleLogoClick = () => {
     navigate('/dashboards/modern');
   };
 
   return (
     <PageContainer title="Login" description="this is Login page">
-      <Grid container sx={{ height: '100vh', position: 'relative' }}>
-        <AnimatedBox
+      <Box sx={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
+        <Box
           component="video"
           src={videoBg}
           autoPlay
           muted
           loop
           playsInline
-          style={bgAnimation}
           sx={{
             position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
+            objectFit: 'fill',
+            objectPosition: 'center center',
             zIndex: -1,
           }}
         />
-        <Grid
-          item
-          xs={12}
+        <Box 
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            height: '100vh',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            zIndex: 0,
           }}
-        >
-          <AnimatedBox 
-            p={isMobile ? 2 : 3} 
-            style={logoAnimation} 
-            onClick={handleLogoClick}
-            sx={{ cursor: 'pointer' }}
-          >
-            <Logo />
-          </AnimatedBox>
-          <Box
+        />
+        <Grid container sx={{ height: '100%', position: 'relative', zIndex: 1 }}>
+          <Grid
+            item
+            xs={12}
             sx={{
               display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
               height: '100%',
-              pb: isMobile ? 2 : 5,
             }}
           >
-            <AnimatedBox
-              style={formAnimation}
+            <AnimatedBox 
+              p={isMobile ? 2 : 3} 
+              style={logoAnimation} 
+              onClick={handleLogoClick}
+              sx={{ cursor: 'pointer' }}
+            >
+              <Logo />
+            </AnimatedBox>
+            <Box
               sx={{
-                width: isMobile ? '90%' : isTablet ? '70%' : '400px',
-                maxWidth: '400px',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '16px',
-                p: isMobile ? 2 : 4,
-                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                pb: isMobile ? 2 : 5,
               }}
             >
-              <AuthLogin
-                title="WELCOME TO SFC PC SYSTEM"
-                subtext={
-                  <Typography 
-                    variant={isMobile ? "body2" : "subtitle1"} 
-                    color="textSecondary" 
-                    mb={1}
-                  >
-                    SFC PRECAST SYSTEM
-                  </Typography>
-                }
-              />
-            </AnimatedBox>
-          </Box>
+              <AnimatedBox
+                style={formAnimation}
+                sx={{
+                  width: isMobile ? '90%' : isTablet ? '70%' : '400px',
+                  maxWidth: '400px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '16px',
+                  p: isMobile ? 2 : 4,
+                  boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                }}
+              >
+                <AuthLogin
+                  title="WELCOME TO SFC PC SYSTEM"
+                  subtext={
+                    <Typography 
+                      variant={isMobile ? "body2" : "subtitle1"} 
+                      color="textSecondary" 
+                      mb={1}
+                    >
+                      SFC PRECAST SYSTEM
+                    </Typography>
+                  }
+                />
+              </AnimatedBox>
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </PageContainer>
   );
 };

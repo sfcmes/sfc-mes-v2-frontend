@@ -4,6 +4,7 @@ import { Box, Typography, Button, Stack } from '@mui/material';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 import CustomFormLabel from '../../../components/forms/theme-elements/CustomFormLabel';
 import { useAuth } from '../../../contexts/AuthContext';
+import logo from 'src/assets/images/logos/logo-main.svg'; // Import the logo
 
 const AuthLogin = ({ title, subtext }) => {
   const [emailOrUsername, setEmailOrUsername] = useState('');
@@ -43,14 +44,10 @@ const AuthLogin = ({ title, subtext }) => {
       }
     } catch (err) {
       if (err.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         setError(err.response.data.message || 'An error occurred during login');
       } else if (err.request) {
-        // The request was made but no response was received
         setError('No response from server. Please try again later.');
       } else {
-        // Something happened in setting up the request that triggered an Error
         setError('An unexpected error occurred. Please try again.');
       }
       console.error('Login error:', err);
@@ -61,13 +58,28 @@ const AuthLogin = ({ title, subtext }) => {
 
   return (
     <form onSubmit={handleSubmit}>
+      <Box mb={3} textAlign="center">
+        <img src={logo} alt="Logo" style={{ width: '150px' }} /> {/* Add the logo here */}
+      </Box>
+
       {title && (
-        <Typography fontWeight="700" variant="h3" mb={1} color="common.white">
+        <Typography
+          fontWeight="700"
+          variant="h3"
+          mb={1}
+          sx={{
+            color: 'common.white',
+            textAlign: 'center',
+            letterSpacing: '0.1em',
+            lineHeight: 1.2,
+            textShadow: '2px 2px 8px rgba(0, 0, 0, 0.6)',
+          }}
+        >
           {title}
         </Typography>
       )}
 
-      {subtext}
+      {/* {subtext} */}
 
       <Stack spacing={2}>
         <Box>

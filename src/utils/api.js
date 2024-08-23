@@ -185,7 +185,6 @@ const logoutUser = async () => {
 const fetchProjectById = (projectId) => api.get(`/projects/${projectId}`);
 const createProject = (data) => api.post('/projects', data);
 const updateProject = (projectId, data) => api.put(`/projects/${projectId}`, data);
-const deleteProject = (projectId) => api.delete(`/projects/${projectId}`);
 
 const fetchSectionsByProjectId = (projectId) => api.get(`/sections/projects/${projectId}/sections`);
 const fetchSectionById = (sectionId) => api.get(`/sections/${sectionId}`);
@@ -304,6 +303,29 @@ const fetchSectionByName = async (projectId, sectionName) => {
   }
 };
 
+const updateComponentStatus = async (componentId, newStatus) => {
+  try {
+    const response = await api.put(`/components/${componentId}`, { status: newStatus });
+    console.log('Updated component status:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating component status:', error);
+    throw error;
+  }
+};
+
+const deleteProject = async (projectId) => {
+  try {
+      const response = await api.delete(`/projects/${projectId}`);
+      return response.data;
+  } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+  }
+};
+
+
+
 export {
   api,
   loginUser,
@@ -336,6 +358,7 @@ export {
   downloadFile,
   openFile,
   fetchSectionByName,
+  updateComponentStatus,
 };
 
 export default api; // Keep the default export

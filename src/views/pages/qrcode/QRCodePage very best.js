@@ -132,24 +132,95 @@ const QRCodePage = () => {
       console.error('Error generating QR code: ', error);
     }
   };
+
+  const createLargePrintQRCodeElement = (component, sectionName, projectName) => {
+    const qrCodeData = {
+      project: projectName,
+      section: sectionName,
+      name: component.name,
+      type: component.type,
+      width: component.width,
+      height: component.height,
+      thickness: component.thickness,
+      extension: component.extension,
+      reduction: component.reduction,
+      area: component.area,
+      volume: component.volume,
+      weight: component.weight,
+      status: component.status
+    };
+  
+    const qrCodeValue = JSON.stringify(qrCodeData);
+  
+    const qrCodeElement = document.createElement('div');
+    qrCodeElement.style.backgroundColor = 'white';
+    qrCodeElement.style.padding = '40px';
+    qrCodeElement.style.display = 'inline-block';
+    qrCodeElement.style.textAlign = 'center';
+  
+    const qrCodeContainer = document.createElement('div');
+    qrCodeContainer.style.backgroundColor = 'white';
+    qrCodeContainer.style.padding = '20px';
+    qrCodeContainer.style.display = 'inline-block';
+    qrCodeElement.appendChild(qrCodeContainer);
+  
+    const qrCodeRoot = createRoot(qrCodeContainer);
+    qrCodeRoot.render(
+      <QRCodeCanvas
+        value={qrCodeValue}
+        size={600} // Increased size for printing
+        bgColor={"#ffffff"}
+        fgColor={"#000000"}
+        level={"H"}
+        includeMargin={true}
+        imageSettings={{
+          src: logo,
+          x: undefined,
+          y: undefined,
+          height: 112, // Increased logo size
+          width: 112,
+          excavate: true,
+        }}
+      />
+    );
+  
+    const qrCodeText = document.createElement('p');
+    qrCodeText.style.color = 'black';
+    qrCodeText.style.textAlign = 'center';
+    qrCodeText.style.marginTop = '20px';
+    qrCodeText.style.fontSize = '28px'; // Increased font size
+    qrCodeText.innerHTML = `
+      บริษัทแสงฟ้าก่อสร้าง จำกัด<br />
+      โครงการ: ${projectName}<br />
+      ชั้น: ${sectionName || 'N/A'}<br />
+      ชื่อชิ้นงาน: ${component.name}
+    `;
+  
+    qrCodeElement.appendChild(qrCodeText);
+  
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(qrCodeElement), 100);
+    });
+  };
   
   const handlePrint = async (component, sectionName, projectName) => {
     try {
       console.log('handlePrint:', { component, sectionName, projectName });
-      const qrCodeElement = await createQRCodeElement(component, sectionName, projectName);
+      const qrCodeElement = await createLargePrintQRCodeElement(component, sectionName, projectName);
       if (!qrCodeElement) {
-        console.error('Failed to create QR code element');
+        console.error('Failed to create QR code element for printing');
         return;
       }
       document.body.appendChild(qrCodeElement);
   
       const canvas = await html2canvas(qrCodeElement, { 
         useCORS: true,
-        backgroundColor: 'white' // Ensure white background when capturing
+        backgroundColor: 'white',
+        scale: 2 // Increase scale for better print quality
       });
       const imgData = canvas.toDataURL('image/png');
   
-      const printWindow = window.open('', '', 'width=600,height=600');
+      const printWindow = window.open('', '', 'width=800,height=800');
       if (!printWindow) {
         console.error('Failed to open print window');
         return;
@@ -162,12 +233,19 @@ const QRCodePage = () => {
         <head>
           <title>Print QR Code</title>
           <style>
-            body { margin: 0; padding: 0; background-color: white; }
-            img { display: block; margin: auto; }
+            body { margin: 0; padding: 20px; background-color: white; }
+            img { display: block; margin: auto; max-width: 100%; height: auto; }
+            .qr-details { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
           </style>
         </head>
         <body>
-          <img src="${imgData}" onload="window.focus(); window.print();">
+          <img src="${imgData}" onload="window.focus(); window.print(); window.close();">
+          <div class="qr-details">
+            <p>บริษัทแสงฟ้าก่อสร้าง จำกัด</p>
+            <p>โครงการ: ${projectName}</p>
+            <p>ชั้น: ${sectionName || 'N/A'}</p>
+            <p>ชื่อชิ้นงาน: ${component.name}</p>
+          </div>
         </body>
         </html>
       `);
@@ -175,7 +253,7 @@ const QRCodePage = () => {
   
       document.body.removeChild(qrCodeElement);
     } catch (error) {
-      console.error('Error generating QR code: ', error);
+      console.error('Error generating QR code for printing: ', error);
     }
   };
   

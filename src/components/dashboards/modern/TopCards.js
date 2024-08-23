@@ -1,5 +1,6 @@
 import React from 'react';
 import { Grid, Box, Typography, Paper, useTheme, useMediaQuery } from '@mui/material';
+import { alpha } from '@mui/material/styles'; // Import alpha utility from MUI
 import producedGif from 'src/assets/animated-icons/producedgif.gif';
 import transporting from 'src/assets/animated-icons/transporting.gif';
 import transported from 'src/assets/animated-icons/transported.gif';
@@ -63,7 +64,16 @@ const TopCards = ({ stats, projectName }) => {
   return (
     <Box>
       {!isSmallScreen && (
-        <Paper elevation={3} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 2, 
+            mb: 3, 
+            borderRadius: 2, 
+            backgroundColor: alpha(theme.palette.background.paper, 0.9), // Semi-transparent background based on theme
+            color: 'white' // Text color adjustment for contrast
+          }}
+        >
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6}>
               <Typography variant="h5" fontWeight={600}>
@@ -100,6 +110,7 @@ const TopCards = ({ stats, projectName }) => {
                 '&:hover': {
                   transform: 'scale(1.05)',
                 },
+                backgroundColor: alpha(theme.palette.background.paper, 0.7), // Semi-transparent background for cards
               }}
             >
               <Box
@@ -142,6 +153,5 @@ const TopCards = ({ stats, projectName }) => {
     </Box>
   );
 };
-
 
 export default TopCards;

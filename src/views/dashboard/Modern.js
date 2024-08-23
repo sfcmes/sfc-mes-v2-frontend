@@ -5,6 +5,7 @@ import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
 import { fetchProjects } from 'src/utils/api';
+import videoBg from 'src/assets/videos/blue-sky-background-4k.mp4'; // Import your video
 
 const statusDisplayMap = {
   Planning: 'วางแผนผลิต',
@@ -89,25 +90,49 @@ const Modern = () => {
   };
 
   return (
-    <Box>
-      <Grid container spacing={3}>
-        <Grid item sm={12} lg={12}>
-          <TopCards
-            stats={projectStats}
-            projectName={selectedProject ? selectedProject.name : 'Not Selected'}
-          />
+    <Box position="relative" overflow="hidden" width="100%" height="100vh">
+      <video
+        autoPlay
+        loop
+        muted
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: -1,
+        }}
+      >
+        <source src={videoBg} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
+        <Grid container spacing={3}>
+          <Grid item sm={12} lg={12}>
+            <TopCards
+              stats={projectStats}
+              projectName={selectedProject ? selectedProject.name : 'Not Selected'}
+            />
+          </Grid>
+          <Grid item xs={12} lg={8}>
+            <TopPerformers projects={projects} onRowClick={handleRowClick} />
+          </Grid>
+          <Grid item xs={12} lg={4}>
+            <WeeklyStats
+              projectId={selectedProject ? selectedProject.id : null}
+              projectName={selectedProject ? selectedProject.name : 'All Projects'}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12} lg={8}>
-          <TopPerformers projects={projects} onRowClick={handleRowClick} />
-        </Grid>
-        <Grid item xs={12} lg={4}>
-          <WeeklyStats
-            projectId={selectedProject ? selectedProject.id : null}
-            projectName={selectedProject ? selectedProject.name : 'All Projects'}
-          />
-        </Grid>
-      </Grid>
-      <Welcome />
+        <Welcome />
+      </Box>
     </Box>
   );
 };

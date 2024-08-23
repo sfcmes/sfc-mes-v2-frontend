@@ -13,13 +13,13 @@ const validationSchema = yup.object({
   sectionName: yup
     .string()
     .min(2, 'Too Short!')
-    .max(50, 'Too Long!')
+    .max(100, 'Too Long!')
     .required('กรุณาใส่ชื่อชั้น'),
   components: yup
     .number()
     .integer('Components must be an integer')
     .min(1, 'Components must be at least 1')
-    .max(100, 'Components must be less than or equal to 100')
+    .max(9999, 'Components must be less than or equal to 9999')
     .required('กรุณาใส่จำนวน Component'),
   status: yup
     .string()
@@ -129,8 +129,8 @@ const FVSection = ({ onAddSection }) => {
             >
               <MenuItem value="">เลือกสถานะของ Section</MenuItem>
               <MenuItem value="Planning">แผนผลิต</MenuItem>
-              <MenuItem value="In Progress">แผนผลิต</MenuItem>
-              <MenuItem value="Completed">Completed</MenuItem>
+              <MenuItem value="In Progress">ผลิต</MenuItem>
+              <MenuItem value="Completed">เสร็จแล้ว</MenuItem>
               <MenuItem value="On Hold">On Hold</MenuItem>
             </Select>
           </FormControl>
