@@ -14,10 +14,10 @@ import {
 import { styled, alpha } from '@mui/system';
 import ReactImageMagnify from 'react-image-magnify';
 import api from 'src/utils/api';
-import { 
-  CloudUpload as CloudUploadIcon, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  CloudUpload as CloudUploadIcon,
+  ChevronLeft,
+  ChevronRight,
   Close as CloseIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
