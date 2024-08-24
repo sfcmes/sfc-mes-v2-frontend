@@ -27,7 +27,7 @@ const validationSchema = yup.object({
     .required('กรุณาเลือกสถานะของ Section'),
 });
 
-const FVSection = ({ onAddSection }) => {
+const FVSection = ({ onAddSection, onEditSection, editingSection }) => {
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
@@ -44,21 +44,29 @@ const FVSection = ({ onAddSection }) => {
 
   const formik = useFormik({
     initialValues: {
-      projectSelection: '',
-      sectionName: '',
-      components: '',
-      status: '',
+      projectSelection: editingSection ? `${editingSection.project_id}-${editingSection.id}` : '',
+      sectionName: editingSection ? editingSection.name : '',
+      components: editingSection ? editingSection.components : '',
+      status: editingSection ? editingSection.status : '',
     },
+    enableReinitialize: true, // Reinitialize form when editingSection changes
     validationSchema: validationSchema,
     onSubmit: (values) => {
       const selectedProject = projects.find(p => `${p.project_code}-${p.id}` === values.projectSelection);
       const newSection = {
+        id: editingSection ? editingSection.id : undefined,
         project_id: selectedProject.id,
         name: values.sectionName,
         components: values.components,
         status: values.status,
       };
-      onAddSection(newSection);
+      
+      if (editingSection) {
+        onEditSection(newSection); // Update section if in edit mode
+      } else {
+        onAddSection(newSection); // Add section if not in edit mode
+      }
+      
       formik.resetForm();
     },
   });
@@ -137,7 +145,7 @@ const FVSection = ({ onAddSection }) => {
         </Box>
       </Stack>
       <Button color="primary" variant="contained" type="submit">
-        บันทึก Section เข้าระบบ
+        {editingSection ? 'Update Section' : 'บันทึก Section เข้าระบบ'}
       </Button>
     </form>
   );
