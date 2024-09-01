@@ -161,7 +161,7 @@ const Modern = () => {
             fontWeight: 'bold',
           }}
         >
-          Project Dashboard
+          {/* Project Dashboard */}
         </Typography>
         <Grid container spacing={3}>
           <Grid item xs={12}>

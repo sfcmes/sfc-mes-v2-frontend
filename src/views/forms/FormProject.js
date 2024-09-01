@@ -190,18 +190,18 @@ const FormProject = () => {
 
   const handleDeleteProject = async (projectId) => {
     try {
-      if (window.confirm('Are you sure you want to delete this project and all associated data?')) {
+      if (window.confirm('Are you sure you want to delete this project and ALL associated data? This action cannot be undone.')) {
         const token = localStorage.getItem('token');
         api.setToken(token);
         await deleteProject(projectId);
         fetchProjectsData(); // Refresh the project list
+        alert('Project and all associated data deleted successfully');
       }
     } catch (error) {
       console.error('Error deleting project:', error);
-      alert('Error deleting project: ' + error.message);
+      alert('Error deleting project and its associated data: ' + (error.response?.data?.details || error.message));
     }
   };
-
   return (
     <PageContainer title="สร้างโครงการใหม่" description="This is the form to create a new project.">
       <Breadcrumb title="สร้างโครงการใหม่" items={BCrumb} />

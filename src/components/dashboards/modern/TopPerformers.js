@@ -387,32 +387,40 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
         setLoading(true);
         const response = await fetchProjects();
         console.log(`Fetched ${response.data.length} projects`);
-
+  
         const projectsWithComponents = await Promise.all(
           response.data.map(async (project) => {
-            const components = await fetchComponentsByProjectId(project.id);
-            console.log(`Components for project ${project.project_code}:`, components);
-
-            const sections = components.reduce((acc, component) => {
-              let section = acc.find((sec) => sec.id === component.section_id);
-              if (!section) {
-                section = {
-                  id: component.section_id,
-                  name: component.section_name || `Unnamed Section`,
-                  components: [],
-                };
-                acc.push(section);
+            try {
+              const components = await fetchComponentsByProjectId(project.id);
+  
+              if (!Array.isArray(components)) {
+                console.error(`Components data is not an array for project ${project.project_code}`, components);
+                return null; // Skip processing this project
               }
-              section.components.push(component);
-              return acc;
-            }, []);
-
-            console.log(`Sections for project ${project.project_code}:`, sections);
-            return { ...project, sections };
-          }),
+  
+              const sections = components.reduce((acc, component) => {
+                let section = acc.find((sec) => sec.id === component.section_id);
+                if (!section) {
+                  section = {
+                    id: component.section_id,
+                    name: component.section_name || `Unnamed Section`,
+                    components: [],
+                  };
+                  acc.push(section);
+                }
+                section.components.push(component);
+                return acc;
+              }, []);
+  
+              return { ...project, sections };
+            } catch (error) {
+              console.error(`Error processing project ${project.project_code}:`, error.message);
+              return null; // Skip this project
+            }
+          })
         );
-
-        setProjects(projectsWithComponents);
+  
+        setProjects(projectsWithComponents.filter((project) => project !== null));
       } catch (err) {
         console.error('Error fetching projects:', err.message);
         setError('Failed to load projects. Please try again.');
@@ -420,9 +428,10 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
         setLoading(false);
       }
     };
-
+  
     loadProjects();
   }, [refreshTrigger]); // Add refreshTrigger to the dependency array
+  
 
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -475,8 +484,8 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
         </Search>
       </Box>
       <Tabs value={tabValue} onChange={handleTabChange} aria-label="Top Performers Tabs">
-        <Tab label="Precast" value="1" />
-        <Tab label="Other" value="2" />
+        <Tab label="ชิ้นงานพรีคาสท์" value="1" />
+        <Tab label="ชิ้นงานอื่นๆ" value="2" />
       </Tabs>
       {tabValue === '1' && (
         <Box sx={{ maxHeight: '50vh', overflowY: 'auto' }}>

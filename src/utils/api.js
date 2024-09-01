@@ -208,7 +208,7 @@ const fetchComponentsByProjectId = async (projectId) => {
   } catch (error) {
     console.error(`Error fetching components for project ${projectId}:`, error);
     if (error.response && error.response.status === 404) {
-      return [];
+      return { precast: [], other: [] };
     }
     throw error;
   }
@@ -412,6 +412,65 @@ const uploadComponentFile = async (file, componentId) => {
   }
 };
 
+const createOtherComponent = async (data) => {
+  try {
+    const response = await api.post('/components/other', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating other component:', error);
+    throw error;
+  }
+};
+
+
+
+const fetchOtherComponentsByProjectId = async (projectId) => {
+  try {
+    const response = await api.get(`/components/other/project/${projectId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching other components:', error);
+    throw error;
+  }
+};
+
+const updateOtherComponent = async (componentId, data) => {
+  try {
+    const response = await api.put(`/components/other/${componentId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating other component:', error);
+    throw error;
+  }
+};
+
+const deleteOtherComponent = async (componentId) => {
+  try {
+    await api.delete(`/components/other/${componentId}`);
+  } catch (error) {
+    console.error('Error deleting other component:', error);
+    throw error;
+  }
+};
+
+const createPrecastComponent = async (formData) => {
+  try {
+    const response = await api.post('/components/precast', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating precast component:', error);
+    throw error;
+  }
+};
+
 export {
   api,
   publicApi,
@@ -448,6 +507,11 @@ export {
   updateComponentStatus,
   uploadComponentFile ,
   deleteFileRevision,
+  createOtherComponent,
+  fetchOtherComponentsByProjectId,
+  updateOtherComponent,
+  deleteOtherComponent,
+  createPrecastComponent,
 };
 
 export default api; // Keep the default export
