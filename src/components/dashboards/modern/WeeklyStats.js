@@ -1,61 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Grid,
-  useTheme,
-  useMediaQuery,
   Box,
-  Button,
   Typography,
-  CircularProgress,
-  Paper,
-  Dialog,
   IconButton,
+  Button,
+  CircularProgress,
+  Dialog,
+  Snackbar,
+  Alert,
+  Paper,
 } from '@mui/material';
-import { styled, alpha } from '@mui/system';
-import ReactImageMagnify from 'react-image-magnify';
-import api from 'src/utils/api';
+import { styled, alpha } from '@mui/material/styles';
 import {
-  CloudUpload as CloudUploadIcon,
   ChevronLeft,
   ChevronRight,
+  CloudUpload as CloudUploadIcon,
   Close as CloseIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
 } from '@mui/icons-material';
+import { publicApi, api } from 'src/utils/api';
+
+const COMPONENT_HEIGHT = 600; // Fixed height for the component
+const IMAGE_HEIGHT = 400; // Fixed height for the image container
+
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.background.paper, 0.9),
+  display: 'flex',
+  flexDirection: 'column',
+  height: COMPONENT_HEIGHT, // Fixed height for the entire component
+  borderRadius: theme.shape.borderRadius,
+  overflow: 'hidden',
+}));
 
 const ImageContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
   width: '100%',
-  height: '90%',
+  height: IMAGE_HEIGHT, // Fixed height for the image container
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  overflow: 'hidden',
-  borderRadius: theme.shape.borderRadius,
   backgroundColor: alpha(theme.palette.background.paper, 0.5),
+  overflow: 'hidden',
 }));
 
 const StyledImage = styled('img')({
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
+  maxWidth: '100%',
+  maxHeight: '100%',
+  objectFit: 'contain', // Resize the image to fit within the container
   cursor: 'pointer',
 });
 
-const NavigationButton = styled(Button)(({ theme }) => ({
+const NavigationButton = styled(IconButton)(({ theme }) => ({
   position: 'absolute',
   top: '50%',
   transform: 'translateY(-50%)',
-  minWidth: '30px',
-  width: '30px',
-  height: '30px',
-  padding: 0,
   backgroundColor: alpha(theme.palette.primary.main, 0.7),
   color: theme.palette.common.white,
   '&:hover': {
     backgroundColor: alpha(theme.palette.primary.dark, 0.9),
   },
-  zIndex: 1,
+  '&.Mui-disabled': {
+    backgroundColor: alpha(theme.palette.action.disabled, 0.7),
+    color: theme.palette.action.disabled,
+  },
 }));
 
 const ImageCounter = styled(Typography)(({ theme }) => ({
@@ -67,106 +75,67 @@ const ImageCounter = styled(Typography)(({ theme }) => ({
   color: theme.palette.common.white,
   borderRadius: '4px',
   fontSize: '0.875rem',
-  zIndex: 1,
 }));
 
 const UploadButton = styled(Button)(({ theme }) => ({
-  marginTop: theme.spacing(2),
   backgroundColor: alpha(theme.palette.primary.main, 0.7),
   '&:hover': {
     backgroundColor: alpha(theme.palette.primary.dark, 0.9),
   },
 }));
 
-const EnlargedImageContainer = styled(Box)({
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'black',
-  overflow: 'hidden',
-  position: 'relative',
-});
-
-const FullSizeImageContainer = styled(Box)({
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'black',
-  overflow: 'auto',
-});
-
-const FullSizeImage = styled('img')({
-  maxWidth: 'none',
-  maxHeight: 'none',
-});
-
-const ZoomButton = styled(IconButton)(({ theme }) => ({
-  position: 'absolute',
-  bottom: 16,
-  right: 16,
-  backgroundColor: alpha(theme.palette.primary.main, 0.7),
-  color: theme.palette.common.white,
-  '&:hover': {
-    backgroundColor: alpha(theme.palette.primary.dark, 0.9),
-  },
-}));
-
-const WeeklyStats = ({ projectId, projectName }) => {
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  const [currentIndex, setCurrentIndex] = useState(0);
+const WeeklyStats = ({ projectId, projectName, userRole }) => {
   const [images, setImages] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const fileInputRef = useRef(null);
 
-  const [open, setOpen] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [isZoomed, setIsZoomed] = useState(false);
+  const canUpload = userRole === 'Admin' || userRole === 'Site User';
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      try {
-        const response = await api.get(`/projects/${projectId}/images`);
-        setImages(response.data);
-      } catch (error) {
-        console.error('Error fetching project images:', error);
-        setError('Failed to load images. Please try again later.');
-      }
-    };
-
-    if (projectId) {
-      fetchImages();
+  const fetchImages = useCallback(async () => {
+    try {
+      const response = await publicApi.get(`/projects/${projectId}/images`);
+      setImages(response.data);
+    } catch (error) {
+      console.error('Error fetching project images:', error);
+      setError('Failed to load images. Please try again later.');
     }
   }, [projectId]);
 
-  const handlePrevious = () => {
+  useEffect(() => {
+    if (projectId) {
+      fetchImages();
+    }
+  }, [projectId, fetchImages]);
+
+  const handlePrevious = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : images.length - 1));
-  };
+  }, [images.length]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex < images.length - 1 ? prevIndex + 1 : 0));
-  };
+  }, [images.length]);
 
-  const handleImageClick = (index) => {
-    setSelectedImageIndex(index);
+  const handleImageClick = useCallback(() => {
     setOpen(true);
     setIsZoomed(false);
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setOpen(false);
-  };
+  }, []);
 
-  const handleZoomToggle = () => {
-    setIsZoomed(!isZoomed);
-  };
+  const handleZoomToggle = useCallback(() => {
+    setIsZoomed((prev) => !prev);
+  }, []);
 
-  const handleUpload = async (event) => {
+  const handleUpload = useCallback(async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -180,95 +149,69 @@ const WeeklyStats = ({ projectId, projectName }) => {
       const response = await api.post(`/projects/${projectId}/images`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setImages([...images, response.data]);
+      setImages((prevImages) => [...prevImages, response.data]);
+      setSnackbarMessage('Image uploaded successfully');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
     } catch (uploadError) {
       setError('Failed to upload image. Please try again.');
+      setSnackbarMessage('Failed to upload image');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
       console.error('Error uploading image:', uploadError);
     } finally {
       setUploading(false);
     }
-  };
+  }, [projectId]);
+
+  const handleSnackbarClose = useCallback((event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  }, []);
 
   return (
-    <Grid
-      item
-      xs={12}
-      lg={8}
-      sx={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          backgroundColor: alpha(theme.palette.background.paper, 0.7),
-          overflow: 'hidden',
-          boxSizing: 'border-box',
-          flexGrow: 1,
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{
-            padding: theme.spacing(2),
-            color: theme.palette.text.primary,
-            textAlign: 'center',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {projectName}
-        </Typography>
+    <StyledPaper elevation={3}>
+      <Typography variant="h6" sx={{ fontWeight: 'bold', p: 1, textAlign: 'center' }}>
+        {projectName}
+      </Typography>
 
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-            boxSizing: 'border-box',
-            backgroundColor: '#f0f0f0',
-          }}
-        >
-          {images.length > 0 ? (
-            <ImageContainer>
-              <StyledImage
-                src={images[currentIndex].image_url}
-                alt={`Project ${currentIndex + 1}`}
-                onClick={() => handleImageClick(currentIndex)}
-              />
-              <NavigationButton onClick={handlePrevious} style={{ left: '10px' }}>
-                <ChevronLeft />
-              </NavigationButton>
-              <NavigationButton onClick={handleNext} style={{ right: '10px' }}>
-                <ChevronRight />
-              </NavigationButton>
-              <ImageCounter>
-                {currentIndex + 1} / {images.length}
-              </ImageCounter>
-            </ImageContainer>
-          ) : (
-            <Typography
-              align="center"
-              color={theme.palette.text.secondary}
-              sx={{ wordWrap: 'break-word' }}
+      <ImageContainer>
+        {images.length > 0 ? (
+          <>
+            <StyledImage
+              src={images[currentIndex]?.image_url}
+              alt={`Project ${currentIndex + 1}`}
+              onClick={handleImageClick}
+            />
+            <NavigationButton 
+              onClick={handlePrevious} 
+              sx={{ left: 10 }}
+              disabled={images.length <= 1}
             >
-              No images available for this project.
-            </Typography>
-          )}
-        </Box>
+              <ChevronLeft />
+            </NavigationButton>
+            <NavigationButton 
+              onClick={handleNext} 
+              sx={{ right: 10 }}
+              disabled={images.length <= 1}
+            >
+              <ChevronRight />
+            </NavigationButton>
+            <ImageCounter>
+              {currentIndex + 1} / {images.length}
+            </ImageCounter>
+          </>
+        ) : (
+          <Typography align="center" color="text.secondary">
+            No images available for this project.
+          </Typography>
+        )}
+      </ImageContainer>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', padding: theme.spacing(2) }}>
+      {canUpload && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
           <input
             type="file"
             accept="image/*"
@@ -281,26 +224,21 @@ const WeeklyStats = ({ projectId, projectName }) => {
             startIcon={<CloudUploadIcon />}
             onClick={() => fileInputRef.current.click()}
             disabled={uploading}
+            size="small"
           >
             {uploading ? <CircularProgress size={24} /> : 'Upload Image'}
           </UploadButton>
         </Box>
-
-        {error && (
-          <Typography color="error" align="center" sx={{ marginTop: 2 }}>
-            {error}
-          </Typography>
-        )}
-      </Paper>
+      )}
 
       <Dialog
         open={open}
         onClose={handleClose}
-        maxWidth={false}
+        maxWidth="md"
         fullWidth
         PaperProps={{
           style: {
-            backgroundColor: 'transparent',
+            backgroundColor: 'black',
             boxShadow: 'none',
           },
         }}
@@ -318,49 +256,49 @@ const WeeklyStats = ({ projectId, projectName }) => {
         >
           <CloseIcon />
         </IconButton>
-        {isZoomed ? (
-          <EnlargedImageContainer>
-            {images.length > 0 && (
-              <ReactImageMagnify
-                {...{
-                  smallImage: {
-                    alt: `Enlarged Project ${selectedImageIndex + 1}`,
-                    isFluidWidth: true,
-                    src: images[selectedImageIndex].image_url,
-                  },
-                  largeImage: {
-                    src: images[selectedImageIndex].image_url,
-                    width: 1600,
-                    height: 2400,
-                  },
-                  enlargedImageContainerDimensions: {
-                    width: '150%',
-                    height: '150%',
-                  },
-                  isHintEnabled: true,
-                  shouldHideHintAfterFirstActivation: false,
-                  enlargedImagePosition: 'over',
-                  hintTextMouse: 'Hover to zoom',
-                  hintTextTouch: 'Long-touch to zoom',
-                }}
-              />
-            )}
-          </EnlargedImageContainer>
-        ) : (
-          <FullSizeImageContainer>
-            {images.length > 0 && (
-              <FullSizeImage
-                src={images[selectedImageIndex].image_url}
-                alt={`Full-size Project ${selectedImageIndex + 1}`}
-              />
-            )}
-          </FullSizeImageContainer>
+        {images.length > 0 && (
+          <Box 
+            sx={{ 
+              width: '100%', 
+              height: '80vh', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center' 
+            }}
+          >
+            <img
+              src={images[currentIndex].image_url}
+              alt={`Full-size Project ${currentIndex + 1}`}
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%', 
+                objectFit: 'contain',
+                transition: 'transform 0.3s ease-in-out',
+                transform: isZoomed ? 'scale(1.5)' : 'scale(1)',
+              }}
+            />
+          </Box>
         )}
-        <ZoomButton onClick={handleZoomToggle}>
+        <IconButton
+          onClick={handleZoomToggle}
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            right: 16,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            color: 'white',
+          }}
+        >
           {isZoomed ? <ZoomOutIcon /> : <ZoomInIcon />}
-        </ZoomButton>
+        </IconButton>
       </Dialog>
-    </Grid>
+
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </StyledPaper>
   );
 };
 

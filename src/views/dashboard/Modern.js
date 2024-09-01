@@ -1,41 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Grid } from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Add useCallback here
+import { Box, Grid, Typography, useTheme, useMediaQuery } from '@mui/material';
 import TopCards from '../../components/dashboards/modern/TopCards';
-import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
+import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
-import { fetchProjects } from 'src/utils/api';
-import videoBg from 'src/assets/videos/blue-sky-background-4k.mp4'; // Import your video
+import { fetchProjects, fetchUserProfile } from 'src/utils/api';
+import videoBg from 'src/assets/videos/blue-sky-background-4k.mp4';
 
 const statusDisplayMap = {
-  Planning: 'วางแผนผลิต',
-  Manufactured: 'ผลิตแล้ว',
-  'In Transit': 'อยู่ระหว่างขนส่ง',
-  Transported: 'ขนส่งสำเร็จ',
-  Accepted: 'ตรวจรับแล้ว',
-  Installed: 'ติดตั้งแล้ว',
-  Rejected: 'ถูกปฏิเสธ',
+  planning: 'วางแผนผลิต',
+  manufactured: 'ผลิตแล้ว',
+  in_transit: 'อยู่ระหว่างขนส่ง',
+  transported: 'ขนส่งสำเร็จ',
+  accepted: 'ตรวจรับแล้ว',
+  installed: 'ติดตั้งแล้ว',
+  rejected: 'ถูกปฏิเสธ',
 };
 
 const Modern = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [projectStats, setProjectStats] = useState([]);
+  const [userRole, setUserRole] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const videoRef = useRef(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const handleComponentUpdate = useCallback(() => {
+    setRefreshTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetchProjects();
-        if (response && response.data && Array.isArray(response.data.projects)) {
-          setProjects(response.data.projects);
+        const [projectsResponse, userProfile] = await Promise.all([
+          fetchProjects(),
+          fetchUserProfile().catch(() => null),
+        ]);
+
+        if (projectsResponse && Array.isArray(projectsResponse.data)) {
+          const processedProjects = projectsResponse.data.map((project) => ({
+            ...project,
+            sections: parseInt(project.sections, 10) || 0,
+            components: parseInt(project.components, 10) || 0,
+          }));
+          setProjects(processedProjects);
         } else {
-          console.error('Unexpected projects data structure:', response);
+          console.error('Unexpected projects data structure:', projectsResponse);
         }
+
+        setUserRole(userProfile ? userProfile.role : null);
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        console.error('Error fetching data:', error);
       }
     };
     fetchData();
+
+    // Set video playback rate
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.8; // Adjust this value to change the speed (0.5 is half speed)
+    }
   }, []);
 
   useEffect(() => {
@@ -57,13 +82,13 @@ const Modern = () => {
       0,
     );
     const statusCounts = {
-      Planning: 0,
-      Manufactured: 0,
-      'In Transit': 0,
-      Transported: 0,
-      Accepted: 0,
-      Installed: 0,
-      Rejected: 0,
+      planning: 0,
+      manufactured: 0,
+      in_transit: 0,
+      transported: 0,
+      accepted: 0,
+      installed: 0,
+      rejected: 0,
     };
 
     project.sections.forEach((section) => {
@@ -90,48 +115,78 @@ const Modern = () => {
   };
 
   return (
-    <Box position="relative" overflow="hidden" width="100%" height="100vh">
-      <video
+    <Box
+      sx={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100%',
+        minHeight: '100vh',
+        padding: theme.spacing(2),
+      }}
+    >
+      <Box
+        component="video"
+        ref={videoRef}
         autoPlay
         loop
         muted
-        style={{
-          position: 'absolute',
+        sx={{
+          position: 'fixed',
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
+          minWidth: '100%',
+          minHeight: '100%',
+          width: 'auto',
+          height: 'auto',
           zIndex: -1,
+          objectFit: 'cover',
+          display: { xs: 'none', md: 'block' }, // Hide on mobile and tablet
         }}
       >
         <source src={videoBg} type="video/mp4" />
         Your browser does not support the video tag.
-      </video>
+      </Box>
       <Box
         sx={{
           position: 'relative',
           zIndex: 1,
         }}
       >
+        <Typography
+          variant={isMobile ? 'h5' : 'h4'}
+          sx={{
+            mb: 3,
+            textAlign: 'center',
+            color: theme.palette.primary.main,
+            fontWeight: 'bold',
+          }}
+        >
+          Project Dashboard
+        </Typography>
         <Grid container spacing={3}>
-          <Grid item sm={12} lg={12}>
+          <Grid item xs={12}>
             <TopCards
               stats={projectStats}
               projectName={selectedProject ? selectedProject.name : 'Not Selected'}
             />
           </Grid>
           <Grid item xs={12} lg={8}>
-            <TopPerformers projects={projects} onRowClick={handleRowClick} />
+            <TopPerformers
+              projects={projects}
+              onRowClick={handleRowClick}
+              userRole={userRole}
+              refreshTrigger={refreshTrigger}
+            />
           </Grid>
           <Grid item xs={12} lg={4}>
             <WeeklyStats
               projectId={selectedProject ? selectedProject.id : null}
               projectName={selectedProject ? selectedProject.name : 'All Projects'}
+              userRole={userRole}
             />
           </Grid>
         </Grid>
-        <Welcome />
+        {!isMobile && <Welcome />}
       </Box>
     </Box>
   );

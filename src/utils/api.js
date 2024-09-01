@@ -67,6 +67,13 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 
 api.setToken = (token) => {
   if (token) {
@@ -182,6 +189,7 @@ const logoutUser = async () => {
   }
 };
 
+
 const fetchProjectById = (projectId) => api.get(`/projects/${projectId}`);
 const createProject = (data) => api.post('/projects', data);
 const updateProject = (projectId, data) => api.put(`/projects/${projectId}`, data);
@@ -217,7 +225,16 @@ const addComponentHistory = async (data) => {
   }
 };
 
-const updateComponent = (componentId, data) => api.put(`/components/${componentId}`, data);
+const updateComponent = async (componentId, data) => {
+  try {
+    const response = await api.put(`/components/${componentId}`, data);
+    console.log('Update component response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating component:', error);
+    throw error;
+  }
+};
 const deleteComponent = (componentId) => api.delete(`/components/${componentId}`);
 
 const fetchComponentById = async (componentId) => {
@@ -324,10 +341,80 @@ const deleteProject = async (projectId) => {
   }
 };
 
+// Fetch all file revisions for a component
+export const fetchComponentFiles = async (componentId) => {
+  try {
+    const response = await api.get(`/components/${componentId}/files`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching component files:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to fetch component files');
+  }
+};
 
+// Update a specific file revision
+export const updateFileRevision = async (componentId, revision, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+      const response = await api.put(`/components/${componentId}/files/${revision}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+  } catch (error) {
+      console.error('Error updating file revision:', error);
+      throw error;
+  }
+};
+
+// Delete a specific file revision
+const deleteFileRevision = async (componentId, revision) => {
+  try {
+    const response = await api.delete(`/components/${componentId}/files/${revision}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting file revision:', error);
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || 'Failed to delete file revision');
+    } else {
+      throw new Error('Network error occurred while deleting file revision');
+    }
+  }
+};
+
+export const updateComponentWithFile = async (componentId, formData) => {
+  try {
+    const response = await axios.put(`/api/components/${componentId}/updateWithFile`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating component with file:', error);
+    throw error;
+  }
+};
+
+const uploadComponentFile = async (file, componentId) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const response = await api.post(`/components/${componentId}/upload-file`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log('File upload response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading component file:', error);
+    throw error;
+  }
+};
 
 export {
   api,
+  publicApi,
   loginUser,
   logoutUser ,
   registerUser,
@@ -359,6 +446,8 @@ export {
   openFile,
   fetchSectionByName,
   updateComponentStatus,
+  uploadComponentFile ,
+  deleteFileRevision,
 };
 
 export default api; // Keep the default export

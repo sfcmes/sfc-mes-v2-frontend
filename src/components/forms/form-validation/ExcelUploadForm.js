@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Box, Typography, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Button, Box, Typography, FormControl, InputLabel, Select, MenuItem, LinearProgress, Modal, Backdrop, Fade } from '@mui/material';
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -12,9 +12,9 @@ import {
 import DataTable from './DataTable';
 
 const columnMapping = {
-  ชื่อชั้น: 'section_name',
-  ชื่อชิ้นงาน: 'component_name',
-  ประเภทชิ้นงาน: 'type',
+  'ชื่อชั้น': 'section_name',
+  'ชื่อชิ้นงาน': 'name',
+  'ประเภทชิ้นงาน': 'type',
   'ความกว้าง (มม.)': 'width',
   'ความสูง (มม.)': 'height',
   'ความหนา (มม.)': 'thickness',
@@ -23,7 +23,7 @@ const columnMapping = {
   'พื้นที่ (ตร.ม.)': 'area',
   'ปริมาตร (ลบ.ม.)': 'volume',
   'น้ำหนัก (ตัน)': 'weight',
-  สถานะ: 'status',
+  'สถานะ': 'status',
 };
 
 const excelHeaders = Object.keys(columnMapping);
@@ -35,6 +35,8 @@ const ExcelUploadForm = () => {
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [sections, setSections] = useState([]);
+  const [progress, setProgress] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false); // State for controlling modal
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,23 +68,15 @@ const ExcelUploadForm = () => {
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    console.log('File selected:', file.name);
-
     const reader = new FileReader();
 
     reader.onload = (evt) => {
       try {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-
-        console.log('Workbook sheets:', workbook.SheetNames);
-
         const wsname = workbook.SheetNames[0];
         const ws = workbook.Sheets[wsname];
-
         const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1 });
-        console.log('Parsed data (first row):', jsonData[0]);
-        console.log('Parsed data (second row):', jsonData[1]);
 
         if (jsonData.length > 1) {
           const headers = jsonData[0];
@@ -91,25 +85,21 @@ const ExcelUploadForm = () => {
             headers.forEach((header, index) => {
               const trimmedHeader = header.trim();
               const mappedKey = columnMapping[trimmedHeader] || trimmedHeader;
-              obj[mappedKey] = row[index];
+              obj[mappedKey] = row[index] || null;
             });
             return obj;
           });
+
           console.log('Converted JSON data (first item):', formattedData[0]);
           setData(formattedData);
           setError(null);
         } else {
-          setError('ไม่มีข้อมูลใน Excel ไฟล์.');
+          setError('No data in Excel file.');
         }
       } catch (error) {
         console.error('Error parsing Excel file:', error);
         setError(`Error parsing Excel file: ${error.message}`);
       }
-    };
-
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      setError('Error การอ่านไฟล์ผิดพลาด กรุณาลองใหม่อีกครั้ง');
     };
 
     reader.readAsArrayBuffer(file);
@@ -179,90 +169,82 @@ const ExcelUploadForm = () => {
   const handleSaveToDatabase = async () => {
     setError(null);
     setSaveMessage('');
+    setProgress(0); // Reset progress
+    setModalOpen(true); // Open the modal
 
     if (!data.length) {
-      setError('ไม่มีข้อมูลสำหรับการบันทึก.');
+      setError('No data to save.');
+      setModalOpen(false); // Close the modal if there's no data
       return;
     }
 
     if (!selectedProject) {
-      setError('กรุณาเลือกชื่อโครงการ.');
+      setError('Please select a project.');
+      setModalOpen(false); // Close the modal if no project is selected
       return;
     }
 
-    const validationErrors = validateExcelData(data);
-    if (validationErrors.length > 0) {
-      setError(
-        `Found ${validationErrors.length} error(s) in the Excel data:\n${validationErrors.join(
-          '\n',
-        )}`,
-      );
+    let sectionsResponse;
+    try {
+      sectionsResponse = await fetchSectionsByProjectId(selectedProject);
+    } catch (error) {
+      setError('Error fetching sections: ' + error.message);
+      setModalOpen(false); // Close the modal on error
+      return;
+    }
+
+    const sections = Array.isArray(sectionsResponse) ? sectionsResponse : sectionsResponse.data;
+
+    if (!Array.isArray(sections)) {
+      setError('Invalid sections data received from the server');
+      setModalOpen(false); // Close the modal on error
       return;
     }
 
     const errors = [];
     const successfulSaves = [];
+    const totalComponents = data.length;
 
-    for (const component of data) {
+    for (let i = 0; i < totalComponents; i++) {
+      const component = data[i];
       try {
-        console.log('Processing component:', component);
-
-        if (!component.section_name) {
-          throw new Error(
-            `ไม่มีข้อมูลชื่อชั้นในระบบ กรุณาตรวจสอบอีกครั้ง: ${
-              component.component_name || 'Unnamed Component'
-            }`,
-          );
+        if (!component.name) {
+          throw new Error('Component name is missing');
         }
 
-        console.log('Fetching section:', component.section_name);
-        const section = await fetchSectionByName(selectedProject, component.section_name);
-        if (!section) {
-          throw new Error(`ชั้น "${component.section_name}" ไม่มีข้อมูลในโครงการ.`);
+        const matchingSection = sections.find(section => section.name === component.section_name);
+        if (!matchingSection) {
+          throw new Error(`Section "${component.section_name}" not found`);
         }
-        console.log('Section found:', section);
 
         const componentData = {
           id: uuidv4(),
-          section_id: section.id,
-          name: component.component_name || '',
-          type: component.type || '',
-          width: parseFloat(component.width) || 0,
-          height: parseFloat(component.height) || 0,
-          thickness: parseFloat(component.thickness) || 0,
-          extension: parseFloat(component.extension) || 0,
-          reduction: parseFloat(component.reduction) || 0,
-          area: parseFloat(component.area) || 0,
-          volume: parseFloat(component.volume) || 0,
-          weight: parseFloat(component.weight) || 0,
-          status: component.status || 'Planning',
+          section_id: matchingSection.id,
+          name: component.name,
+          type: component.type || null,
+          width: component.width ? parseFloat(component.width) : null,
+          height: component.height ? parseFloat(component.height) : null,
+          thickness: component.thickness ? parseFloat(component.thickness) : null,
+          extension: component.extension ? parseFloat(component.extension) : null,
+          reduction: component.reduction ? parseFloat(component.reduction) : null,
+          area: component.area ? parseFloat(component.area) : null,
+          volume: component.volume ? parseFloat(component.volume) : null,
+          weight: component.weight ? parseFloat(component.weight) : null,
+          status: component.status || 'planning'
         };
 
-        console.log('Creating component with data:', componentData);
         const createdComponent = await createComponent(componentData);
         console.log('Component created:', createdComponent);
 
-        // Add component history
-        await addComponentHistory({
-          component_id: createdComponent.data.id,
-          action: 'Created',
-          details: 'Component created via Excel upload',
-        });
-        console.log('Component history added');
-
-        successfulSaves.push(component.component_name || 'Unnamed Component');
+        successfulSaves.push(component.name);
+        setProgress(Math.floor(((i + 1) / totalComponents) * 100)); // Update progress
       } catch (error) {
         console.error('Error processing component:', error);
-        errors.push(
-          `Error saving component "${component.component_name || 'Unnamed Component'}": ${
-            error.message
-          }`,
-        );
+        errors.push(`Error saving component "${component.name}": ${error.message}`);
       }
     }
 
     if (errors.length > 0) {
-      console.error('Errors saving data:', errors);
       setError(`Encountered ${errors.length} error(s) while saving:\n${errors.join('\n')}`);
     }
 
@@ -271,6 +253,8 @@ const ExcelUploadForm = () => {
     } else {
       setSaveMessage('No components were saved successfully.');
     }
+
+    setModalOpen(false); // Close the modal when done
   };
 
   const handleDownloadTemplate = () => {
@@ -283,7 +267,7 @@ const ExcelUploadForm = () => {
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
-        อัปโหลดไฟล์ Excel สำหรับการอัปเดตข้อมูลจำนวนมาก
+        อัพโหลดไฟล์ Excel สำหรับการอัพเดตข้อมูลจำนวนมาก
       </Typography>
       <FormControl fullWidth margin="normal">
         <InputLabel id="project-select-label">เลือกโครงการ</InputLabel>
@@ -300,6 +284,7 @@ const ExcelUploadForm = () => {
           ))}
         </Select>
       </FormControl>
+
       <Box sx={{ display: 'flex', gap: 2, my: 2 }}>
         <Button variant="contained" color="secondary" onClick={handleDownloadTemplate}>
           ดาวน์โหลดแม่แบบ Excel
@@ -313,15 +298,17 @@ const ExcelUploadForm = () => {
         />
         <label htmlFor="raised-button-file">
           <Button variant="contained" component="span">
-            อัปโหลดไฟล์ Excel
+            อัพโหลดไฟล์ Excel
           </Button>
         </label>
       </Box>
+
       {error && (
         <Typography color="error" style={{ marginTop: '10px', whiteSpace: 'pre-line' }}>
           {error}
         </Typography>
       )}
+
       {data.length > 0 && (
         <>
           <Typography style={{ marginTop: '10px' }}>Loaded {data.length} rows of data.</Typography>
@@ -333,6 +320,7 @@ const ExcelUploadForm = () => {
               flex: 1,
             }))}
           />
+
           <Button
             variant="contained"
             color="primary"
@@ -341,11 +329,45 @@ const ExcelUploadForm = () => {
           >
             บันทึกในฐานข้อมูล
           </Button>
+
           {saveMessage && (
             <Typography style={{ marginTop: '10px', color: 'green' }}>{saveMessage}</Typography>
           )}
         </>
       )}
+
+      {/* Modal for progress bar */}
+      <Modal
+        open={modalOpen}
+        onClose={() => {}}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{
+          timeout: 500,
+        }}
+      >
+        <Fade in={modalOpen}>
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4,
+            outline: 'none',
+          }}>
+            <Typography variant="h6" component="h2">
+              Processing...
+            </Typography>
+            <LinearProgress variant="determinate" value={progress} sx={{ mt: 2 }} />
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              {`Progress: ${progress}%`}
+            </Typography>
+          </Box>
+        </Fade>
+      </Modal>
     </Box>
   );
 };

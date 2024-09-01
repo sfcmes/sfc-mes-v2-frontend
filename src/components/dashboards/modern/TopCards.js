@@ -10,17 +10,17 @@ import rejected from 'src/assets/animated-icons/rejected.gif';
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'Manufactured':
+    case 'manufactured':
       return 'primary';
-    case 'In Transit':
+    case 'in_transit':
       return 'warning';
-    case 'Transported':
+    case 'transported':
       return 'secondary';
-    case 'Accepted':
+    case 'accepted':
       return 'info';
-    case 'Installed':
+    case 'installed':
       return 'success';
-    case 'Rejected':
+    case 'rejected':
       return 'error';
     default:
       return 'info';
@@ -29,17 +29,17 @@ const getStatusColor = (status) => {
 
 const getStatusGif = (status) => {
   switch (status) {
-    case 'Manufactured':
+    case 'manufactured':
       return producedGif;
-    case 'In Transit':
+    case 'in_transit':
       return transporting;
-    case 'Transported':
+    case 'transported':
       return transported;
-    case 'Accepted':
+    case 'accepted':
       return accepted;
-    case 'Installed':
+    case 'installed':
       return installed;
-    case 'Rejected':
+    case 'rejected':
       return rejected;
     default:
       return producedGif;
@@ -50,16 +50,13 @@ const TopCards = ({ stats, projectName }) => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Calculate total components excluding Planning
   const totalComponents = stats.reduce((sum, stat) => 
-    stat.status !== 'Planning' ? sum + stat.count : sum, 0
+    stat.status !== 'planning' ? sum + stat.count : sum, 0
   );
-  
-  // Calculate the number of items in "Planning" status
-  const planningCount = stats.find(stat => stat.status === 'Planning')?.count || 0;
 
-  // Filter out Planning status for the grid display
-  const displayStats = stats.filter(stat => stat.status !== 'Planning');
+  const planningCount = stats.find(stat => stat.status === 'planning')?.count || 0;
+
+  const displayStats = stats.filter(stat => stat.status !== 'planning');
 
   return (
     <Box>
@@ -70,8 +67,8 @@ const TopCards = ({ stats, projectName }) => {
             p: 2, 
             mb: 3, 
             borderRadius: 2, 
-            backgroundColor: alpha(theme.palette.background.paper, 0.9), // Semi-transparent background based on theme
-            color: 'white' // Text color adjustment for contrast
+            backgroundColor: alpha(theme.palette.background.paper, 0.9),
+            color: 'white' 
           }}
         >
           <Grid container spacing={2} alignItems="center">
@@ -110,7 +107,7 @@ const TopCards = ({ stats, projectName }) => {
                 '&:hover': {
                   transform: 'scale(1.05)',
                 },
-                backgroundColor: alpha(theme.palette.background.paper, 0.7), // Semi-transparent background for cards
+                backgroundColor: alpha(theme.palette.background.paper, 0.7),
               }}
             >
               <Box

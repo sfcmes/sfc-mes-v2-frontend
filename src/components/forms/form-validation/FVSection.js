@@ -23,11 +23,11 @@ const validationSchema = yup.object({
     .required('กรุณาใส่จำนวน Component'),
   status: yup
     .string()
-    .oneOf(["Planning", "In Progress", "Completed", "On Hold"])
+    .oneOf(["planning", "in_progress", "completed", "on_hold"])
     .required('กรุณาเลือกสถานะของ Section'),
 });
 
-const FVSection = ({ onAddSection, onEditSection, editingSection }) => {
+const FVSection = ({ onAddSection }) => {
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
@@ -44,29 +44,21 @@ const FVSection = ({ onAddSection, onEditSection, editingSection }) => {
 
   const formik = useFormik({
     initialValues: {
-      projectSelection: editingSection ? `${editingSection.project_id}-${editingSection.id}` : '',
-      sectionName: editingSection ? editingSection.name : '',
-      components: editingSection ? editingSection.components : '',
-      status: editingSection ? editingSection.status : '',
+      projectSelection: '',
+      sectionName: '',
+      components: '',
+      status: '',
     },
-    enableReinitialize: true, // Reinitialize form when editingSection changes
     validationSchema: validationSchema,
     onSubmit: (values) => {
       const selectedProject = projects.find(p => `${p.project_code}-${p.id}` === values.projectSelection);
       const newSection = {
-        id: editingSection ? editingSection.id : undefined,
         project_id: selectedProject.id,
         name: values.sectionName,
         components: values.components,
         status: values.status,
       };
-      
-      if (editingSection) {
-        onEditSection(newSection); // Update section if in edit mode
-      } else {
-        onAddSection(newSection); // Add section if not in edit mode
-      }
-      
+      onAddSection(newSection);
       formik.resetForm();
     },
   });
@@ -136,16 +128,16 @@ const FVSection = ({ onAddSection, onEditSection, editingSection }) => {
               error={formik.touched.status && Boolean(formik.errors.status)}
             >
               <MenuItem value="">เลือกสถานะของ Section</MenuItem>
-              <MenuItem value="Planning">แผนผลิต</MenuItem>
-              <MenuItem value="In Progress">ผลิต</MenuItem>
-              <MenuItem value="Completed">เสร็จแล้ว</MenuItem>
-              <MenuItem value="On Hold">On Hold</MenuItem>
+              <MenuItem value="planning">แผนผลิต</MenuItem>
+              <MenuItem value="in_progress">ผลิต</MenuItem>
+              <MenuItem value="completed">เสร็จแล้ว</MenuItem>
+              <MenuItem value="on_hold">On Hold</MenuItem>
             </Select>
           </FormControl>
         </Box>
       </Stack>
       <Button color="primary" variant="contained" type="submit">
-        {editingSection ? 'Update Section' : 'บันทึก Section เข้าระบบ'}
+        บันทึก Section เข้าระบบ
       </Button>
     </form>
   );

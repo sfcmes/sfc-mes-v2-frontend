@@ -43,8 +43,11 @@ const validationSchema = yup.object({
   area: yup.number().positive('พื้นที่ต้องเป็นตัวเลข').required('กรุณาใส่พื้นที่ของชิ้นงาน'),
   volume: yup.number().positive('ปริมาตรต้องเป็นตัวเลข').required('กรุณาใส่ปริมาตรของชิ้นงาน'),
   weight: yup.number().positive('น้ำหนักต้องเป็นตัวเลข').required('กรุณาใส่น้ำหนักของชิ้นงาน'),
-  status: yup.string().oneOf(['Planning', 'Fabrication', 'Installed', 'Completed', 'Reject']).required('กรุณาเลือกสถานะของชิ้นงาน'),
-  file: yup.mixed().required('กรุณาอัปโหลดไฟล์ PDF')
+  status: yup
+    .string()
+    .oneOf(['planning', 'manufactured', 'in_transit', 'installed', 'rejected'])
+    .required('กรุณาเลือกสถานะของชิ้นงาน'),
+  file: yup.mixed().required('กรุณาอัพโหลดไฟล์ PDF'),
 });
 
 const FVComponent = () => {
@@ -180,9 +183,9 @@ const FVComponent = () => {
       <QRCodeCanvas
         value={qrCodeData}
         size={256}
-        bgColor={"#ffffff"}
-        fgColor={"#000000"}
-        level={"L"}
+        bgColor={'#ffffff'}
+        fgColor={'#000000'}
+        level={'L'}
         includeMargin={false}
         imageSettings={{
           src: logo,
@@ -192,7 +195,7 @@ const FVComponent = () => {
           width: 48,
           excavate: true,
         }}
-      />
+      />,
     );
 
     const qrCodeText = document.createElement('p');
@@ -221,9 +224,9 @@ const FVComponent = () => {
           <QRCodeCanvas
             value={JSON.stringify(parsedQRCodeValue)}
             size={size}
-            bgColor={"#ffffff"}
-            fgColor={"#000000"}
-            level={"L"}
+            bgColor={'#ffffff'}
+            fgColor={'#000000'}
+            level={'L'}
             includeMargin={false}
             imageSettings={{
               src: logo,
@@ -257,7 +260,7 @@ const FVComponent = () => {
       volume: '',
       weight: '',
       status: '',
-      file: null
+      file: null,
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
@@ -283,7 +286,6 @@ const FVComponent = () => {
 
         // Generate QR Code after successful submission
         handleQRCodeClick(values);
-
       } catch (error) {
         console.error('Error creating component:', error);
         if (error.response && error.response.data && error.response.data.error) {
@@ -452,11 +454,11 @@ const FVComponent = () => {
             error={formik.touched.status && Boolean(formik.errors.status)}
           >
             <MenuItem value="">เลือก Status</MenuItem>
-            <MenuItem value="Planning">แผนผลิต</MenuItem>
-            <MenuItem value="Fabrication">ผลิต</MenuItem>
-            <MenuItem value="In Transit">กำลังขนส่ง</MenuItem>
-            <MenuItem value="Installed">ติดตั้งแล้ว</MenuItem>
-            <MenuItem value="Reject">Reject</MenuItem>
+            <MenuItem value="planning">แผนผลิต</MenuItem>
+            <MenuItem value="manufactured">ผลิตแล้ว</MenuItem>
+            <MenuItem value="in_transit">อยู่ระหว่างขนส่ง</MenuItem>
+            <MenuItem value="installed">ติดตั้งแล้ว</MenuItem>
+            <MenuItem value="rejected">ถูกปฏิเสธ</MenuItem>
           </Select>
         </FormControl>
         <TextField

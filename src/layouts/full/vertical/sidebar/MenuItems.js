@@ -68,7 +68,12 @@ const Menuitems = [
   },
   {
     navlabel: true,
-    subheader: 'บันทึกข้อมูลเข้าระบบ',
+    subheader: 'นำเข้าข้อมูลพรีคาสท์สู่ระบบ',
+    children:[
+      {
+        
+      }
+    ]
   },
   {
     id: uniqueId(),
@@ -89,6 +94,31 @@ const Menuitems = [
     href: '/forms/form-component',
   },
   {
+    navlabel: true,
+    subheader: 'นำเข้าข้อมูลชิ้นงานอื่นๆสู่ระบบ',
+    children:[
+      {
+        
+        
+      }
+    ]
+  },
+  {
+    id: uniqueId(),
+    title: 'สร้างข้อมูลชิ้นงานอื่นๆ',
+    icon: IconBrandCodepen,
+    href: '/forms/form-component2',
+  },
+  {
+    navlabel: true,
+    subheader: 'QR CODE',
+    children:[
+      {
+        
+      }
+    ]
+  },
+  {
     id: uniqueId(),
     title: 'โปรแกรมอ่าน QR Code',
     icon: IconZoomCode,
@@ -100,108 +130,6 @@ const Menuitems = [
     icon: IconZoomCode,
     href: '/pages/qr-code',
   },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Form Elements',
-  //   icon: IconApps,
-  //   href: '/forms/form-elements/autocomplete',
-  //   children: [
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Autocomplete',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/autocomplete',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Button',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/button',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Checkbox',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/checkbox',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Radio',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/radio',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Date Time',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/date-time',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Slider',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/slider',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Switch',
-  //       icon: IconPoint,
-  //       href: '/forms/form-elements/switch',
-  //     },
-  //   ],
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Form Validation',
-  //   icon: IconFiles,
-  //   href: '/forms/form-validation',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Quill Editor',
-  //   icon: IconEdit,
-  //   href: '/forms/quill-editor',
-  // },
-  // {
-  //   navlabel: true,
-  //   subheader: 'Tables',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Basic',
-  //   icon: IconBorderAll,
-  //   href: '/tables/basic',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Collapsible',
-  //   icon: IconBorderHorizontal,
-  //   href: '/tables/collapsible',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Enhanced',
-  //   icon: IconBorderInner,
-  //   href: '/tables/enhanced',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Fixed Header',
-  //   icon: IconBorderVertical,
-  //   href: '/tables/fixed-header',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Pagination',
-  //   icon: IconBorderTop,
-  //   href: '/tables/pagination',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Search',
-  //   icon: IconBorderStyle2,
-  //   href: '/tables/search',
-  // },
   {
     navlabel: true,
     subheader: 'Auth',
@@ -234,64 +162,6 @@ const Menuitems = [
       },
     ],
   },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Account Setting',
-  //   icon: IconUserCircle,
-  //   href: '/pages/account-settings',
-  // },
-  // {
-  //   navlabel: true,
-  //   subheader: 'Other',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Menu Level',
-  //   icon: IconBoxMultiple,
-  //   href: '/dashboards/starter',
-  //   children: [
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Level 1',
-  //       icon: IconPoint,
-  //       href: '/l1',
-  //     },
-  //     {
-  //       id: uniqueId(),
-  //       title: 'Level 1.1',
-  //       icon: IconPoint,
-  //       href: '/l1.1',
-  //       children: [
-  //         {
-  //           id: uniqueId(),
-  //           title: 'Level 2',
-  //           icon: IconPoint,
-  //           href: '/l2',
-  //         },
-  //         {
-  //           id: uniqueId(),
-  //           title: 'Level 2.1',
-  //           icon: IconPoint,
-  //           href: '/l2.1',
-  //           children: [
-  //             {
-  //               id: uniqueId(),
-  //               title: 'Level 3',
-  //               icon: IconPoint,
-  //               href: '/l3',
-  //             },
-  //             {
-  //               id: uniqueId(),
-  //               title: 'Level 3.1',
-  //               icon: IconPoint,
-  //               href: '/l3.1',
-  //             },
-  //           ],
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // },
 ];
 
 export default Menuitems;
