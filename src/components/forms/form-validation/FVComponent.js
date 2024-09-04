@@ -35,6 +35,11 @@ const FVComponent = () => {
     }
   };
 
+  const handleComponentAdded = (newComponent) => {
+    // Do something with the new component, e.g., update state or show a notification
+    console.log('New component added:', newComponent);
+  };
+
   return (
     <Box>
       <Tabs value={tabValue} onChange={handleTabChange}>
@@ -54,6 +59,7 @@ const FVComponent = () => {
             projects={projects}
             sections={sections}
             onProjectChange={handleProjectChange}
+            onComponentAdded={handleComponentAdded} // Add this line
           />
         )}
       </Box>

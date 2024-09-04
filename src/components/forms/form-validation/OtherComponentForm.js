@@ -5,27 +5,26 @@ import {
   Box,
   Button,
   Stack,
-  TextField,
   FormControl,
   InputLabel,
   Typography,
   CircularProgress,
-  Select,      // Import Select
-  MenuItem,    // Import MenuItem
+  Select,
+  MenuItem,
 } from '@mui/material';
 import CustomTextField from '../theme-elements/CustomTextField';
 import { createOtherComponent } from 'src/utils/api';
 
 const validationSchema = yup.object({
-  projectName: yup.string().required('กรุณาใส่ชื่อโครงการ'),
-  sizeName: yup.string().required('ชื่อชิ้นงาน'),
-  width: yup.number().positive('ความกว้างต้องเป็นตัวเลข').required('กรุณาใส่ความกว้างของชิ้นงาน'),
-  height: yup.number().positive('ความสูงต้องเป็นตัวเลข').required('กรุณาใส่ความสูงของชิ้นงาน'),
-  thickness: yup.number().positive('ความหนาต้องเป็นตัวเลข').required('กรุณาใส่ความหนาของชิ้นงาน'),
-  total: yup.number().positive('จำนวนต้องเป็นตัวเลข').required('กรุณาใส่จำนวนของชิ้นงาน'),
+  project_id: yup.string().required('กรุณาเลือกโครงการ'),
+  name: yup.string().required('กรุณาใส่ชื่อชิ้นงาน'),
+  width: yup.number().positive('ความกว้างต้องเป็นตัวเลขบวก').required('กรุณาใส่ความกว้างของชิ้นงาน'),
+  height: yup.number().positive('ความสูงต้องเป็นตัวเลขบวก').required('กรุณาใส่ความสูงของชิ้นงาน'),
+  thickness: yup.number().positive('ความหนาต้องเป็นตัวเลขบวก').required('กรุณาใส่ความหนาของชิ้นงาน'),
+  total_quantity: yup.number().positive('จำนวนต้องเป็นตัวเลขบวก').required('กรุณาใส่จำนวนของชิ้นงาน'),
 });
 
-const OtherComponentForm = ({ projects, onProjectChange }) => {
+const OtherComponentForm = ({ projects, onProjectChange, onComponentAdded }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,12 +42,12 @@ const OtherComponentForm = ({ projects, onProjectChange }) => {
 
   const formik = useFormik({
     initialValues: {
-      projectName: '',
+      project_id: '',
       name: '',
       width: '',
       height: '',
       thickness: '',
-      total: '',
+      total_quantity: '',
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
@@ -56,20 +55,14 @@ const OtherComponentForm = ({ projects, onProjectChange }) => {
       setSuccess('');
       setIsSubmitting(true);
       try {
-        const data = {
-          project_id: values.projectName,
-          size_name: values.name,
-          width: values.width,
-          height: values.height,
-          thickness: values.thickness,
-          total: values.total,
-        };
-
-        const response = await createOtherComponent(data);
-        setSuccess('Component has been successfully created.');
+        const response = await createOtherComponent(values);
+        console.log('New other component created:', response);
+        setSuccess('ชิ้นงานอื่นๆ ถูกสร้างเรียบร้อยแล้ว');
+        onComponentAdded(response); // Notify parent component about the new component
+        formik.resetForm(); // Reset the form after successful submission
       } catch (error) {
         console.error('Error creating component:', error);
-        setError('An unexpected error occurred. Please try again.');
+        setError('เกิดข้อผิดพลาดที่ไม่คาดคิด โปรดลองอีกครั้ง');
       } finally {
         setIsSubmitting(false);
       }
@@ -82,17 +75,17 @@ const OtherComponentForm = ({ projects, onProjectChange }) => {
         {error && <Typography color="error">{error}</Typography>}
         {success && <Typography color="success.main">{success}</Typography>}
         <FormControl fullWidth>
-          <InputLabel id="project-name-label">โครงการ</InputLabel>
+          <InputLabel id="project-id-label">โครงการ</InputLabel>
           <Select
-            labelId="project-name-label"
-            id="projectName"
-            name="projectName"
-            value={formik.values.projectName}
+            labelId="project-id-label"
+            id="project_id"
+            name="project_id"
+            value={formik.values.project_id}
             onChange={(event) => {
-              formik.setFieldValue('projectName', event.target.value);
+              formik.setFieldValue('project_id', event.target.value);
               onProjectChange(event);
             }}
-            error={formik.touched.projectName && Boolean(formik.errors.projectName)}
+            error={formik.touched.project_id && Boolean(formik.errors.project_id)}
           >
             {projects.map((project) => (
               <MenuItem key={project.id} value={project.id}>
@@ -148,14 +141,14 @@ const OtherComponentForm = ({ projects, onProjectChange }) => {
         />
         <CustomTextField
           fullWidth
-          id="total"
-          name="total"
+          id="total_quantity"
+          name="total_quantity"
           label="จำนวน"
           type="number"
-          value={formik.values.total}
+          value={formik.values.total_quantity}
           onChange={formik.handleChange}
-          error={formik.touched.total && Boolean(formik.errors.total)}
-          helperText={formik.touched.total && formik.errors.total}
+          error={formik.touched.total_quantity && Boolean(formik.errors.total_quantity)}
+          helperText={formik.touched.total_quantity && formik.errors.total_quantity}
         />
 
         <Box mt={3}>

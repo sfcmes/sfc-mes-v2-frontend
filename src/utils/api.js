@@ -414,18 +414,14 @@ const uploadComponentFile = async (file, componentId) => {
 
 const createOtherComponent = async (data) => {
   try {
-    const response = await api.post('/components/other', data, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await api.post('/other-components', data);
+    console.log('Created other component:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error creating other component:', error);
     throw error;
   }
 };
-
 
 
 const fetchOtherComponentsByProjectId = async (projectId) => {
@@ -471,6 +467,31 @@ const createPrecastComponent = async (formData) => {
   }
 };
 
+const fetchProjectsWithOtherComponents = async () => {
+  try {
+    const response = await api.get('/other-components/projects-with-other-components');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching projects with other components:', error);
+    throw error;
+  }
+};
+
+const updateOtherComponentStatus = async (componentId, fromStatus, toStatus, quantity) => {
+  try {
+    const response = await api.put(`/other-components/${componentId}/status`, {
+      fromStatus,
+      toStatus,
+      quantity
+    });
+    console.log('Updated other component status:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating other component status:', error);
+    throw error;
+  }
+};
+
 export {
   api,
   publicApi,
@@ -512,6 +533,8 @@ export {
   updateOtherComponent,
   deleteOtherComponent,
   createPrecastComponent,
+  fetchProjectsWithOtherComponents,
+  updateOtherComponentStatus,
 };
 
 export default api; // Keep the default export
