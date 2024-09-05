@@ -31,11 +31,6 @@ import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
 import ComponentDialog from './ComponentDialog';
 import Tab2Content from './Tab2Content';
 
-
-
-
-
-
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
   backgroundColor: theme.palette.primary.main,
@@ -49,7 +44,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 const COLORS = {
   manufactured: '#82ca9d',
   transported: '#ffc658',
-  rejected: '#ff6b6b',
+  rejected: '#ff6b6b'
 };
 
 const STATUS_THAI = {
@@ -163,34 +158,31 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
                   return null;
                 })}
               </Box>
-              <Grid container spacing={0.1}>
+              <Grid container spacing={1}>
                 {sortedComponents.map((component) => {
                   const { bg, color } = getStatusColor(component.status);
                   return (
-                    <Grid item xs={3} sm={1.1} md={0.9} key={component.id}>
+                    <Grid item xs={4} sm={3} md={2} key={component.id}>
                       <Card
                         sx={{
                           bgcolor: (theme) => theme.palette[bg.split('.')[0]][bg.split('.')[1]],
-                          height: { xs: '40px', sm: '45px', md: '50px' }, // Adjusted card height
+                          height: { xs: '80px', sm: '85px', md: '90px' },
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
-                          p: { xs: '1px', sm: '1px', md: '1px' }, // Adjusted padding
-                          m: { xs: '1px', sm: '1px', md: '1px' },
-                          border: '1px solid', // Added border
-                          borderColor: (theme) =>
-                            theme.palette[color.split('.')[0]][color.split('.')[1]], // Dynamic border color
+                          p: { xs: '4px', sm: '5px', md: '6px' },
+                          m: { xs: '2px', sm: '3px', md: '4px' },
                         }}
                       >
                         <CardContent
-                          sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}
+                          sx={{ textAlign: 'center', p: { xs: '2px', sm: '3px', md: '4px' } }}
                         >
                           <Typography
                             variant="subtitle2"
                             sx={{
                               color: (theme) =>
                                 theme.palette[color.split('.')[0]][color.split('.')[1]],
-                              fontSize: { xs: '5px', sm: '6px', md: '7px' },
+                              fontSize: { xs: '10px', sm: '11px', md: '12px' },
                               fontWeight: 'bold',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
@@ -205,12 +197,12 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
                               size="small"
                               onClick={() => setSelectedComponent(component)}
                               sx={{
-                                mt: { xs: '1px', sm: '1px', md: '1px' },
+                                mt: { xs: '4px', sm: '5px', md: '6px' },
                                 bgcolor: 'rgba(255, 255, 255, 0.2)',
                                 color: (theme) =>
                                   theme.palette[color.split('.')[0]][color.split('.')[1]],
-                                fontSize: { xs: '4px', sm: '5px', md: '6px' },
-                                p: { xs: '1px 2px', sm: '1px 2px', md: '1px 2px' },
+                                fontSize: { xs: '8px', sm: '9px', md: '10px' },
+                                p: { xs: '2px 4px', sm: '2px 5px', md: '2px 6px' },
                                 minWidth: 'auto',
                               }}
                             >
@@ -273,16 +265,7 @@ const ProjectRow = memo(({ project, onRowClick, isSmallScreen, onProjectUpdate, 
 
   return (
     <>
-      <TableRow
-        onClick={handleRowClick}
-        style={{ cursor: 'pointer' }}
-        sx={{
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.5), // 50% lighter
-            color: (theme) => theme.palette.common.white, // Ensuring text contrast
-          },
-        }}
-      >
+      <TableRow onClick={handleRowClick} style={{ cursor: 'pointer' }}>
         <TableCell>
           <IconButton size="small" onClick={handleIconClick}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
@@ -293,7 +276,6 @@ const ProjectRow = memo(({ project, onRowClick, isSmallScreen, onProjectUpdate, 
         {!isSmallScreen && <TableCell align="right">{numberOfSections}</TableCell>}
         <TableCell align="right">{totalComponents}</TableCell>
       </TableRow>
-
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={isSmallScreen ? 3 : 5}>
           <Collapse in={open} timeout="auto" unmountOnExit>
@@ -396,20 +378,17 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
         setLoading(true);
         const response = await fetchProjects();
         console.log(`Fetched ${response.data.length} projects`);
-
+  
         const projectsWithComponents = await Promise.all(
           response.data.map(async (project) => {
             try {
               const components = await fetchComponentsByProjectId(project.id);
-
+  
               if (!Array.isArray(components)) {
-                console.error(
-                  `Components data is not an array for project ${project.project_code}`,
-                  components,
-                );
+                console.error(`Components data is not an array for project ${project.project_code}`, components);
                 return null;
               }
-
+  
               const sections = components.reduce((acc, component) => {
                 let section = acc.find((sec) => sec.id === component.section_id);
                 if (!section) {
@@ -423,15 +402,16 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
                 section.components.push(component);
                 return acc;
               }, []);
-
+  
               return { ...project, sections };
             } catch (error) {
               console.error(`Error processing project ${project.project_code}:`, error.message);
               return null;
-            }
-          }),
-        );
 
+            }
+          })
+        );
+    
         setProjects(projectsWithComponents.filter((project) => project !== null));
       } catch (err) {
         console.error('Error fetching projects:', err.message);
@@ -440,14 +420,14 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
         setLoading(false);
       }
     };
-
+  
     loadProjects();
   }, [refreshTrigger]);
-
+  
   const filteredProjects = projects.filter((project) =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-
+  
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
@@ -455,7 +435,7 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
       </Box>
     );
   }
-
+  
   if (error) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="300px">
@@ -463,7 +443,7 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
       </Box>
     );
   }
-
+  
   return (
     <Paper
       elevation={3}
@@ -500,12 +480,8 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
       </Tabs>
       {tabValue === '1' && (
         <Box sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
-          <TableContainer sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
-            <Table
-              stickyHeader
-              aria-label="collapsible table"
-              size={isSmallScreen ? 'small' : 'medium'}
-            >
+          <TableContainer>
+            <Table aria-label="collapsible table" size={isSmallScreen ? 'small' : 'medium'}>
               <TableHead>
                 <TableRow>
                   <StyledTableCell />
@@ -556,6 +532,7 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
       />
     </Paper>
   );
-});
-
-export default TopPerformers;
+  });
+  
+  export default TopPerformers;
+  

@@ -79,8 +79,15 @@ const DoughnutChart = ({ data, status }) => {
             total: {
               show: true,
               label: STATUS_THAI[status],
+              color: bg,
               formatter: function (w) {
                 return percentage + '%'
+              }
+            },
+            value: {
+              color: bg,
+              formatter: function (val) {
+                return val;
               }
             }
           }
@@ -89,6 +96,13 @@ const DoughnutChart = ({ data, status }) => {
     },
     dataLabels: {
       enabled: false
+    },
+    tooltip: {
+      y: {
+        formatter: function(value) {
+          return value + ' ชิ้น';
+        }
+      }
     }
   };
 

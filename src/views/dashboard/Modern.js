@@ -164,7 +164,7 @@ const Modern = () => {
           {/* Project Dashboard */}
         </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
             <TopCards
               stats={projectStats}
               projectName={selectedProject ? selectedProject.name : 'Not Selected'}
