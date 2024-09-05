@@ -113,7 +113,7 @@ const DoughnutChart = ({ data, status }) => {
   );
 };
 
-const ComponentRow = memo(({ component, onUpdateStatus }) => {
+const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
   const [open, setOpen] = useState(false);
   const [statusUpdate, setStatusUpdate] = useState({
     fromStatus: '',
@@ -168,51 +168,53 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
                   </Grid>
                 ))}
               </Grid>
-              <form onSubmit={handleStatusUpdate}>
-                <Grid container spacing={2} alignItems="flex-end">
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel>จากสถานะ</InputLabel>
-                      <Select
-                        value={statusUpdate.fromStatus}
-                        onChange={(e) => setStatusUpdate(prev => ({ ...prev, fromStatus: e.target.value }))}
-                      >
-                        {statusOrder.map((status) => (
-                          <MenuItem key={status} value={status}>{STATUS_THAI[status]}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+              {isLoggedIn && (
+                <form onSubmit={handleStatusUpdate}>
+                  <Grid container spacing={2} alignItems="flex-end">
+                    <Grid item xs={12} sm={3}>
+                      <FormControl fullWidth>
+                        <InputLabel>จากสถานะ</InputLabel>
+                        <Select
+                          value={statusUpdate.fromStatus}
+                          onChange={(e) => setStatusUpdate(prev => ({ ...prev, fromStatus: e.target.value }))}
+                        >
+                          {statusOrder.map((status) => (
+                            <MenuItem key={status} value={status}>{STATUS_THAI[status]}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <FormControl fullWidth>
+                        <InputLabel>ไปยังสถานะ</InputLabel>
+                        <Select
+                          value={statusUpdate.toStatus}
+                          onChange={(e) => setStatusUpdate(prev => ({ ...prev, toStatus: e.target.value }))}
+                        >
+                          {statusOrder.map((status) => (
+                            <MenuItem key={status} value={status}>{STATUS_THAI[status]}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <TextField
+                        fullWidth
+                        type="text"
+                        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                        label="จำนวน"
+                        value={statusUpdate.quantity}
+                        onChange={(e) => setStatusUpdate(prev => ({ ...prev, quantity: e.target.value }))}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
+                      <Button type="submit" variant="contained" color="primary" fullWidth>
+                        อัปเดตสถานะ
+                      </Button>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel>ไปยังสถานะ</InputLabel>
-                      <Select
-                        value={statusUpdate.toStatus}
-                        onChange={(e) => setStatusUpdate(prev => ({ ...prev, toStatus: e.target.value }))}
-                      >
-                        {statusOrder.map((status) => (
-                          <MenuItem key={status} value={status}>{STATUS_THAI[status]}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <TextField
-                      fullWidth
-                      type="text"
-                      inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-                      label="จำนวน"
-                      value={statusUpdate.quantity}
-                      onChange={(e) => setStatusUpdate(prev => ({ ...prev, quantity: e.target.value }))}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <Button type="submit" variant="contained" color="primary" fullWidth>
-                      อัปเดตสถานะ
-                    </Button>
-                  </Grid>
-                </Grid>
-              </form>
+                </form>
+              )}
               {error && <Typography color="error" style={{ marginTop: '10px' }}>{error}</Typography>}
             </Box>
           </Collapse>
@@ -222,7 +224,7 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
   );
 });
 
-const ProjectRowTab2 = memo(({ project, onUpdateStatus }) => {
+const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus }) => {
   const [open, setOpen] = useState(false);
 
   if (!project.components || project.components.length === 0) {
@@ -258,7 +260,12 @@ const ProjectRowTab2 = memo(({ project, onUpdateStatus }) => {
                 </TableHead>
                 <TableBody>
                   {project.components.map((component) => (
-                    <ComponentRow key={component.id} component={component} onUpdateStatus={onUpdateStatus} />
+                    <ComponentRow 
+                      key={component.id} 
+                      component={component} 
+                      isLoggedIn={isLoggedIn}
+                      onUpdateStatus={onUpdateStatus} 
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -275,6 +282,7 @@ const Tab2Content = memo(({ isSmallScreen }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -282,6 +290,7 @@ const Tab2Content = memo(({ isSmallScreen }) => {
         setLoading(true);
         const data = await fetchProjectsWithOtherComponents();
         setProjects(data);
+        setIsLoggedIn(!!localStorage.getItem('token'));
       } catch (err) {
         console.error('Error fetching projects with other components:', err);
         setError('Failed to fetch projects with other components');
@@ -294,6 +303,10 @@ const Tab2Content = memo(({ isSmallScreen }) => {
   }, []);
 
   const handleUpdateStatus = useCallback(async (componentId, fromStatus, toStatus, quantity) => {
+    if (!isLoggedIn) {
+      setSnackbar({ open: true, message: 'คุณต้องเข้าสู่ระบบเพื่อทำการอัปเดต', severity: 'warning' });
+      return;
+    }
     try {
       const updatedComponent = await updateOtherComponentStatus(componentId, fromStatus, toStatus, parseInt(quantity, 10));
       setProjects(prevProjects => 
@@ -309,7 +322,7 @@ const Tab2Content = memo(({ isSmallScreen }) => {
       console.error('Failed to update status:', err);
       setSnackbar({ open: true, message: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ', severity: 'error' });
     }
-  }, []);
+  }, [isLoggedIn]);
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
@@ -332,7 +345,12 @@ const Tab2Content = memo(({ isSmallScreen }) => {
           </TableHead>
           <TableBody>
             {projects.map((project) => (
-              <ProjectRowTab2 key={project.id} project={project} onUpdateStatus={handleUpdateStatus} />
+              <ProjectRowTab2 
+                key={project.id} 
+                project={project} 
+                isLoggedIn={isLoggedIn}
+                onUpdateStatus={handleUpdateStatus} 
+              />
             ))}
           </TableBody>
         </Table>

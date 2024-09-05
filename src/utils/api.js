@@ -469,10 +469,13 @@ const createPrecastComponent = async (formData) => {
 
 const fetchProjectsWithOtherComponents = async () => {
   try {
-    const response = await api.get('/other-components/projects-with-other-components');
+    const response = await publicApi.get('/other-components/projects-with-other-components');
     return response.data;
   } catch (error) {
     console.error('Error fetching projects with other components:', error);
+    if (error.response && error.response.status === 500) {
+      throw new Error('Server error occurred. Please try again later.');
+    }
     throw error;
   }
 };
@@ -492,9 +495,33 @@ const updateOtherComponentStatus = async (componentId, fromStatus, toStatus, qua
   }
 };
 
+const fetchUsers = async () => {
+  try {
+    const response = await api.get('/users');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+const updateUserPassword = async (userId, newPassword) => {
+  try {
+    const response = await api.put(`/users/${userId}/password`, { password: newPassword });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user password:', error);
+    throw error;
+  }
+};
+
+
+
 export {
   api,
   publicApi,
+  fetchUsers ,
+  updateUserPassword,
   loginUser,
   logoutUser ,
   registerUser,
