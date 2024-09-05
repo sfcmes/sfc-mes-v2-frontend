@@ -36,52 +36,62 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   },
 }));
 
-const getStatusColor = (status) => {
-  switch (status) {
-    case 'manufactured':
-      return { bg: 'primary.light', color: 'primary.main' };
-    case 'transported':
-      return { bg: 'secondary.light', color: 'secondary.main' };
-    case 'rejected':
-      return { bg: 'error.light', color: 'error.main' };
-    case 'planning':
-      return { bg: 'info.light', color: 'info.main' };
-    default:
-      return { bg: 'grey.light', color: 'grey.main' };
-  }
+const COLORS = {
+  planning: '#64b5f6',
+  manufactured: '#82ca9d',
+  transported: '#ffc658',
+  rejected: '#ff6b6b'
 };
 
 const STATUS_THAI = {
+  planning: 'วางแผน',
   manufactured: 'ผลิตแล้ว',
   transported: 'ขนส่งสำเร็จ',
   rejected: 'ถูกปฏิเสธ',
-  planning: 'วางแผน',
+};
+
+const getStatusColor = (status) => {
+  return { bg: COLORS[status], color: '#ffffff' };
 };
 
 const DoughnutChart = ({ data, status }) => {
   const theme = useTheme();
-  const { color } = getStatusColor(status);
+  const { bg, color } = getStatusColor(status);
   
+  const statusQuantity = data.statuses[status] || 0;
+  const percentage = ((statusQuantity / data.total) * 100).toFixed(1);
+
   const options = {
     chart: {
       type: 'donut',
     },
     labels: [STATUS_THAI[status], 'อื่นๆ'],
-    colors: [theme.palette[color.split('.')[0]][color.split('.')[1]], theme.palette.grey[300]],
+    colors: [bg, theme.palette.grey[300]],
     legend: {
-      show: true,
-      position: 'bottom'
+      show: false
     },
     plotOptions: {
       pie: {
         donut: {
-          size: '70%'
+          size: '70%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: STATUS_THAI[status],
+              formatter: function (w) {
+                return percentage + '%'
+              }
+            }
+          }
         }
       }
+    },
+    dataLabels: {
+      enabled: false
     }
   };
 
-  const statusQuantity = data.statuses[status] || 0;
   const series = [statusQuantity, data.total - statusQuantity];
 
   return (
@@ -117,6 +127,8 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
       });
   }, [statusUpdate, component, onUpdateStatus]);
 
+  const statusOrder = ['planning', 'manufactured', 'transported', 'rejected'];
+
   return (
     <>
       <TableRow>
@@ -133,9 +145,9 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={1}>
               <Grid container spacing={2}>
-                {Object.keys(STATUS_THAI).map((status) => (
+                {statusOrder.map((status) => (
                   <Grid item xs={12} sm={3} key={status}>
-                    <Typography variant="subtitle1" gutterBottom>
+                    <Typography variant="subtitle1" gutterBottom style={{ color: COLORS[status], fontWeight: 'bold' }}>
                       {STATUS_THAI[status]}: {component.statuses[status] || 0}
                     </Typography>
                     <DoughnutChart data={component} status={status} />
@@ -151,8 +163,8 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
                         value={statusUpdate.fromStatus}
                         onChange={(e) => setStatusUpdate(prev => ({ ...prev, fromStatus: e.target.value }))}
                       >
-                        {Object.entries(STATUS_THAI).map(([key, value]) => (
-                          <MenuItem key={key} value={key}>{value}</MenuItem>
+                        {statusOrder.map((status) => (
+                          <MenuItem key={status} value={status}>{STATUS_THAI[status]}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
@@ -164,8 +176,8 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
                         value={statusUpdate.toStatus}
                         onChange={(e) => setStatusUpdate(prev => ({ ...prev, toStatus: e.target.value }))}
                       >
-                        {Object.entries(STATUS_THAI).map(([key, value]) => (
-                          <MenuItem key={key} value={key}>{value}</MenuItem>
+                        {statusOrder.map((status) => (
+                          <MenuItem key={status} value={status}>{STATUS_THAI[status]}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
@@ -173,10 +185,11 @@ const ComponentRow = memo(({ component, onUpdateStatus }) => {
                   <Grid item xs={12} sm={3}>
                     <TextField
                       fullWidth
-                      type="number"
+                      type="text"
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                       label="จำนวน"
                       value={statusUpdate.quantity}
-                      onChange={(e) => setStatusUpdate(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                      onChange={(e) => setStatusUpdate(prev => ({ ...prev, quantity: e.target.value }))}
                     />
                   </Grid>
                   <Grid item xs={12} sm={3}>
@@ -268,7 +281,7 @@ const Tab2Content = memo(({ isSmallScreen }) => {
 
   const handleUpdateStatus = useCallback(async (componentId, fromStatus, toStatus, quantity) => {
     try {
-      const updatedComponent = await updateOtherComponentStatus(componentId, fromStatus, toStatus, quantity);
+      const updatedComponent = await updateOtherComponentStatus(componentId, fromStatus, toStatus, parseInt(quantity, 10));
       setProjects(prevProjects => 
         prevProjects.map(project => ({
           ...project,
