@@ -10,22 +10,36 @@ import {
   FormControl,
   InputLabel,
   TextField,
+  Typography,
+  Alert,
 } from '@mui/material';
-import CustomTextField from '../theme-elements/CustomTextField'; // Ensure this import is correct
+import CustomTextField from '../theme-elements/CustomTextField';
 import { createPrecastComponent } from 'src/utils/api';
 
 const validationSchema = yup.object({
-  projectName: yup.string().required('กรุณาใส่ชื่อโครงการ'),
+  projectName: yup.string().required('กรุณาเลือกโครงการ'),
   sectionId: yup.string().required('กรุณาเลือกส่วน'),
   componentName: yup.string().required('กรุณาใส่ชื่อชิ้นงาน'),
-  width: yup.number().positive('ความกว้างต้องเป็นตัวเลข').required('กรุณาใส่ความกว้างของชิ้นงาน'),
-  height: yup.number().positive('ความสูงต้องเป็นตัวเลข').required('กรุณาใส่ความสูงของชิ้นงาน'),
-  thickness: yup.number().positive('ความหนาต้องเป็นตัวเลข').required('กรุณาใส่ความหนาของชิ้นงาน'),
-  extension: yup.number().min(0, 'ส่วนขยายต้องเป็นตัวเลข').required('กรุณาใส่ส่วนขยายของชิ้นงาน'),
-  reduction: yup.number().min(0, 'ส่วนลดต้องเป็นตัวเลข').required('กรุณาใส่ส่วนลดของชิ้นงาน'),
-  area: yup.number().positive('พื้นที่ต้องเป็นตัวเลข').required('กรุณาใส่พื้นที่ของชิ้นงาน'),
-  volume: yup.number().positive('ปริมาตรต้องเป็นตัวเลข').required('กรุณาใส่ปริมาตรของชิ้นงาน'),
-  weight: yup.number().positive('น้ำหนักต้องเป็นตัวเลข').required('กรุณาใส่น้ำหนักของชิ้นงาน'),
+  width: yup
+    .number()
+    .positive('ความกว้างต้องเป็นตัวเลขบวก')
+    .required('กรุณาใส่ความกว้างของชิ้นงาน'),
+  height: yup.number().positive('ความสูงต้องเป็นตัวเลขบวก').required('กรุณาใส่ความสูงของชิ้นงาน'),
+  thickness: yup
+    .number()
+    .positive('ความหนาต้องเป็นตัวเลขบวก')
+    .required('กรุณาใส่ความหนาของชิ้นงาน'),
+  extension: yup
+    .number()
+    .min(0, 'ส่วนขยายต้องเป็นตัวเลขที่ไม่ติดลบ')
+    .required('กรุณาใส่ส่วนขยายของชิ้นงาน'),
+  reduction: yup
+    .number()
+    .min(0, 'ส่วนลดต้องเป็นตัวเลขที่ไม่ติดลบ')
+    .required('กรุณาใส่ส่วนลดของชิ้นงาน'),
+  area: yup.number().positive('พื้นที่ต้องเป็นตัวเลขบวก').required('กรุณาใส่พื้นที่ของชิ้นงาน'),
+  volume: yup.number().positive('ปริมาตรต้องเป็นตัวเลขบวก').required('กรุณาใส่ปริมาตรของชิ้นงาน'),
+  weight: yup.number().positive('น้ำหนักต้องเป็นตัวเลขบวก').required('กรุณาใส่น้ำหนักของชิ้นงาน'),
   status: yup
     .string()
     .oneOf(['planning', 'manufactured', 'in_transit', 'installed', 'rejected'])
@@ -35,6 +49,7 @@ const validationSchema = yup.object({
 
 const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const formik = useFormik({
     initialValues: {
@@ -55,6 +70,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       setError('');
+      setSuccess('');
       try {
         const formData = new FormData();
         formData.append('section_id', values.sectionId);
@@ -68,16 +84,20 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
         formData.append('volume', values.volume);
         formData.append('weight', values.weight);
         formData.append('status', values.status);
-        formData.append('file', values.file);
+        if (values.file) {
+          formData.append('file', values.file);
+        }
 
         const response = await createPrecastComponent(formData);
-        console.log('Precast component created:', response.data);
+        console.log('Precast component created:', response);
+        setSuccess('ชิ้นงานถูกสร้างเรียบร้อยแล้ว');
+        formik.resetForm();
       } catch (error) {
         console.error('Error creating component:', error);
-        if (error.response && error.response.data && error.response.data.error) {
-          setError(error.response.data.error);
+        if (error.message === 'A component with this name already exists in this section') {
+          setError('ชิ้นงานที่มีชื่อนี้มีอยู่แล้วในส่วนนี้ กรุณาใช้ชื่ออื่น');
         } else {
-          setError('An unexpected error occurred. Please try again.');
+          setError(`เกิดข้อผิดพลาดในการสร้างชิ้นงาน: ${error.message}`);
         }
       }
     },
@@ -86,7 +106,8 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
   return (
     <form onSubmit={formik.handleSubmit}>
       <Stack spacing={3}>
-        {error && <Typography color="error">{error}</Typography>}
+        {error && <Alert severity="error">{error}</Alert>}
+        {success && <Alert severity="success">{success}</Alert>}
         <FormControl fullWidth>
           <InputLabel id="project-name-label">โครงการ</InputLabel>
           <Select
@@ -96,7 +117,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
             value={formik.values.projectName}
             onChange={(event) => {
               formik.setFieldValue('projectName', event.target.value);
-              onProjectChange(event); // Ensure this function is passed correctly from the parent component
+              onProjectChange(event);
             }}
             error={formik.touched.projectName && Boolean(formik.errors.projectName)}
           >
@@ -130,8 +151,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           id="componentName"
           name="componentName"
           label="ชื่อชิ้นงาน"
-          value={formik.values.componentName}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('componentName')}
           error={formik.touched.componentName && Boolean(formik.errors.componentName)}
           helperText={formik.touched.componentName && formik.errors.componentName}
         />
@@ -141,8 +161,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="width"
           label="ความกว้าง (มม.)"
           type="number"
-          value={formik.values.width}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('width')}
           error={formik.touched.width && Boolean(formik.errors.width)}
           helperText={formik.touched.width && formik.errors.width}
         />
@@ -152,8 +171,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="height"
           label="ความสูง (มม.)"
           type="number"
-          value={formik.values.height}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('height')}
           error={formik.touched.height && Boolean(formik.errors.height)}
           helperText={formik.touched.height && formik.errors.height}
         />
@@ -163,8 +181,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="thickness"
           label="ความหนา (มม.)"
           type="number"
-          value={formik.values.thickness}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('thickness')}
           error={formik.touched.thickness && Boolean(formik.errors.thickness)}
           helperText={formik.touched.thickness && formik.errors.thickness}
         />
@@ -174,8 +191,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="extension"
           label="ส่วนขยาย (ตร.ม.)"
           type="number"
-          value={formik.values.extension}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('extension')}
           error={formik.touched.extension && Boolean(formik.errors.extension)}
           helperText={formik.touched.extension && formik.errors.extension}
         />
@@ -185,8 +201,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="reduction"
           label="ส่วนลด (ตร.ม.)"
           type="number"
-          value={formik.values.reduction}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('reduction')}
           error={formik.touched.reduction && Boolean(formik.errors.reduction)}
           helperText={formik.touched.reduction && formik.errors.reduction}
         />
@@ -196,8 +211,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="area"
           label="พื้นที่ (ตร.ม.)"
           type="number"
-          value={formik.values.area}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('area')}
           error={formik.touched.area && Boolean(formik.errors.area)}
           helperText={formik.touched.area && formik.errors.area}
         />
@@ -207,8 +221,7 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="volume"
           label="ปริมาตร (ลบ.ม.)"
           type="number"
-          value={formik.values.volume}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('volume')}
           error={formik.touched.volume && Boolean(formik.errors.volume)}
           helperText={formik.touched.volume && formik.errors.volume}
         />
@@ -218,19 +231,17 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           name="weight"
           label="น้ำหนัก (ตัน)"
           type="number"
-          value={formik.values.weight}
-          onChange={formik.handleChange}
+          {...formik.getFieldProps('weight')}
           error={formik.touched.weight && Boolean(formik.errors.weight)}
           helperText={formik.touched.weight && formik.errors.weight}
         />
         <FormControl fullWidth>
-          <InputLabel id="status-label">Status</InputLabel>
+          <InputLabel id="status-label">สถานะ</InputLabel>
           <Select
             labelId="status-label"
             id="status"
             name="status"
-            value={formik.values.status}
-            onChange={formik.handleChange}
+            {...formik.getFieldProps('status')}
             error={formik.touched.status && Boolean(formik.errors.status)}
           >
             <MenuItem value="planning">แผนผลิต</MenuItem>
@@ -244,7 +255,9 @@ const PrecastComponentForm = ({ projects, sections, onProjectChange }) => {
           id="file"
           name="file"
           type="file"
-          onChange={(event) => formik.setFieldValue('file', event.currentTarget.files[0])}
+          onChange={(event) => {
+            formik.setFieldValue('file', event.currentTarget.files[0]);
+          }}
           error={formik.touched.file && Boolean(formik.errors.file)}
           helperText={formik.touched.file && formik.errors.file}
         />

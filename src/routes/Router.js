@@ -72,6 +72,7 @@ const FormValidation = Loadable(lazy(() => import('../views/forms/FormValidation
 const QuillEditor = Loadable(lazy(() => import('../views/forms/quill-editor/QuillEditor')));
 const FormHorizontal = Loadable(lazy(() => import('../views/forms/FormHorizontal')));
 const FormVertical = Loadable(lazy(() => import('../views/forms/FormVertical')));
+const FormComponentCard = Loadable(lazy(() => import('../views/forms/FormComponentCard')));
 
 // tables
 const BasicTable = Loadable(lazy(() => import('../views/tables/BasicTable')));
@@ -220,8 +221,7 @@ const Router = [
       { path: '/widgets/charts', element: <WidgetCharts /> },
       { path: '/pages/qr-code', element: <QRCodePage /> },
       { path: '/component/:id', element: <ComponentDetailsPage /> },
-
-      { path: '*', element: <Navigate to="/auth/404" /> },
+     
     ],
   },
   {
@@ -231,6 +231,8 @@ const Router = [
       { path: '/auth/404', element: <Error /> },
       { path: '/auth/login', element: <Login /> },
       { path: '/auth/register', element: <Register /> },
+      { path: '*', element: <Navigate to="/auth/404" /> },
+      { path: '/forms/form-component-card/:id', element: <FormComponentCard/>},
       { path: '*', element: <Navigate to="/auth/404" /> },
     ],
   },

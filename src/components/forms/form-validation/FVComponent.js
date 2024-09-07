@@ -43,8 +43,8 @@ const FVComponent = () => {
   return (
     <Box>
       <Tabs value={tabValue} onChange={handleTabChange}>
-        <Tab label="Precast Component" />
-        <Tab label="Other Component" />
+        <Tab label="ชิ้นงานพรีคาสท์" />
+        <Tab label="ชิ้นงานอื่นๆ" />
       </Tabs>
       <Box mt={3}>
         {tabValue === 0 && (

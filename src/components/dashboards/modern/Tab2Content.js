@@ -19,6 +19,8 @@ import {
   InputLabel,
   Snackbar,
   Alert,
+  useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -32,7 +34,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   color: theme.palette.common.white,
   [theme.breakpoints.down('sm')]: {
     padding: theme.spacing(1),
-    fontSize: '0.8rem',
+    fontSize: '0.75rem',
   },
 }));
 
@@ -54,7 +56,7 @@ const getStatusColor = (status) => {
   return { bg: COLORS[status], color: '#ffffff' };
 };
 
-const DoughnutChart = ({ data, status }) => {
+const DoughnutChart = memo(({ data, status, isSmallScreen }) => {
   const theme = useTheme();
   const { bg, color } = getStatusColor(status);
   
@@ -73,19 +75,21 @@ const DoughnutChart = ({ data, status }) => {
     plotOptions: {
       pie: {
         donut: {
-          size: '70%',
+          size: '80%',
           labels: {
             show: true,
             total: {
               show: true,
               label: STATUS_THAI[status],
               color: bg,
+              fontSize: isSmallScreen ? '10px' : '14px',
               formatter: function (w) {
                 return percentage + '%'
               }
             },
             value: {
               color: bg,
+              fontSize: isSmallScreen ? '12px' : '16px',
               formatter: function (val) {
                 return val;
               }
@@ -109,11 +113,11 @@ const DoughnutChart = ({ data, status }) => {
   const series = [statusQuantity, data.total - statusQuantity];
 
   return (
-    <Chart options={options} series={series} type="donut" width="100%" height={200} />
+    <Chart options={options} series={series} type="donut" width="100%" height={isSmallScreen ? 120 : 150} />
   );
-};
+});
 
-const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
+const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, isSmallScreen, refreshData }) => {
   const [open, setOpen] = useState(false);
   const [statusUpdate, setStatusUpdate] = useState({
     fromStatus: '',
@@ -121,6 +125,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
     quantity: 0
   });
   const [error, setError] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleStatusUpdate = useCallback((e) => {
     e.preventDefault();
@@ -131,15 +136,20 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
       return;
     }
 
+    setIsUpdating(true);
     onUpdateStatus(component.id, fromStatus, toStatus, quantity)
       .then(() => {
         setStatusUpdate({ fromStatus: '', toStatus: '', quantity: 0 });
         setError('');
+        refreshData(); // This will refresh the data without collapsing the row
       })
       .catch(err => {
-        setError('เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+        setError('เกิดข้อผิดพลาดในการอัพเดตสถานะ');
+      })
+      .finally(() => {
+        setIsUpdating(false);
       });
-  }, [statusUpdate, component, onUpdateStatus]);
+  }, [statusUpdate, component, onUpdateStatus, refreshData]);
 
   const statusOrder = ['planning', 'manufactured', 'transported', 'rejected'];
 
@@ -158,21 +168,21 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box margin={1}>
-              <Grid container spacing={2}>
+              <Grid container spacing={isSmallScreen ? 1 : 2} justifyContent="center">
                 {statusOrder.map((status) => (
-                  <Grid item xs={12} sm={3} key={status}>
-                    <Typography variant="subtitle1" gutterBottom style={{ color: COLORS[status], fontWeight: 'bold' }}>
+                  <Grid item xs={6} sm={3} key={status}>
+                    <Typography variant={isSmallScreen ? "caption" : "subtitle2"} gutterBottom style={{ color: COLORS[status], fontWeight: 'bold' }}>
                       {STATUS_THAI[status]}: {component.statuses[status] || 0}
                     </Typography>
-                    <DoughnutChart data={component} status={status} />
+                    <DoughnutChart data={component} status={status} isSmallScreen={isSmallScreen} />
                   </Grid>
                 ))}
               </Grid>
               {isLoggedIn && (
                 <form onSubmit={handleStatusUpdate}>
-                  <Grid container spacing={2} alignItems="flex-end">
+                  <Grid container spacing={isSmallScreen ? 1 : 2} alignItems="flex-end" sx={{ mt: 1 }}>
                     <Grid item xs={12} sm={3}>
-                      <FormControl fullWidth>
+                      <FormControl fullWidth size="small">
                         <InputLabel>จากสถานะ</InputLabel>
                         <Select
                           value={statusUpdate.fromStatus}
@@ -185,7 +195,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
                       </FormControl>
                     </Grid>
                     <Grid item xs={12} sm={3}>
-                      <FormControl fullWidth>
+                      <FormControl fullWidth size="small">
                         <InputLabel>ไปยังสถานะ</InputLabel>
                         <Select
                           value={statusUpdate.toStatus}
@@ -197,9 +207,10 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
                         </Select>
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={3}>
+                    <Grid item xs={6} sm={3}>
                       <TextField
                         fullWidth
+                        size="small"
                         type="text"
                         inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                         label="จำนวน"
@@ -207,15 +218,22 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
                         onChange={(e) => setStatusUpdate(prev => ({ ...prev, quantity: e.target.value }))}
                       />
                     </Grid>
-                    <Grid item xs={12} sm={3}>
-                      <Button type="submit" variant="contained" color="primary" fullWidth>
-                        อัปเดตสถานะ
+                    <Grid item xs={6} sm={3}>
+                      <Button 
+                        type="submit" 
+                        variant="contained" 
+                        color="primary" 
+                        fullWidth 
+                        size="small"
+                        disabled={isUpdating}
+                      >
+                        {isUpdating ? <CircularProgress size={24} /> : 'อัพเดตสถานะ'}
                       </Button>
                     </Grid>
                   </Grid>
                 </form>
               )}
-              {error && <Typography color="error" style={{ marginTop: '10px' }}>{error}</Typography>}
+              {error && <Typography color="error" style={{ marginTop: '10px', fontSize: isSmallScreen ? '0.75rem' : '0.875rem' }}>{error}</Typography>}
             </Box>
           </Collapse>
         </TableCell>
@@ -224,7 +242,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
   );
 });
 
-const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus }) => {
+const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus, isSmallScreen, refreshData }) => {
   const [open, setOpen] = useState(false);
 
   if (!project.components || project.components.length === 0) {
@@ -264,7 +282,9 @@ const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus }) => {
                       key={component.id} 
                       component={component} 
                       isLoggedIn={isLoggedIn}
-                      onUpdateStatus={onUpdateStatus} 
+                      onUpdateStatus={onUpdateStatus}
+                      isSmallScreen={isSmallScreen}
+                      refreshData={refreshData}
                     />
                   ))}
                 </TableBody>
@@ -277,38 +297,42 @@ const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus }) => {
   );
 });
 
-const Tab2Content = memo(({ isSmallScreen }) => {
+const Tab2Content = memo(() => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const loadProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchProjectsWithOtherComponents();
+      setProjects(data);
+      setIsLoggedIn(!!localStorage.getItem('token'));
+    } catch (err) {
+      console.error('Error fetching projects with other components:', err);
+      setError('Failed to fetch projects with other components');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchProjectsWithOtherComponents();
-        setProjects(data);
-        setIsLoggedIn(!!localStorage.getItem('token'));
-      } catch (err) {
-        console.error('Error fetching projects with other components:', err);
-        setError('Failed to fetch projects with other components');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProjects();
-  }, []);
+  }, [loadProjects]);
 
   const handleUpdateStatus = useCallback(async (componentId, fromStatus, toStatus, quantity) => {
     if (!isLoggedIn) {
-      setSnackbar({ open: true, message: 'คุณต้องเข้าสู่ระบบเพื่อทำการอัปเดต', severity: 'warning' });
+      setSnackbar({ open: true, message: 'คุณต้องเข้าสู่ระบบเพื่อทำการอัพเดต', severity: 'warning' });
       return;
     }
     try {
       const updatedComponent = await updateOtherComponentStatus(componentId, fromStatus, toStatus, parseInt(quantity, 10));
+      
+      // Update the local state immediately
       setProjects(prevProjects => 
         prevProjects.map(project => ({
           ...project,
@@ -317,12 +341,16 @@ const Tab2Content = memo(({ isSmallScreen }) => {
           )
         }))
       );
-      setSnackbar({ open: true, message: 'สถานะอัปเดตเรียบร้อยแล้ว', severity: 'success' });
+      
+      setSnackbar({ open: true, message: 'สถานะอัพเดตเรียบร้อยแล้ว', severity: 'success' });
+      
+      // Refresh data after successful update
+      await loadProjects();
     } catch (err) {
       console.error('Failed to update status:', err);
-      setSnackbar({ open: true, message: 'เกิดข้อผิดพลาดในการอัปเดตสถานะ', severity: 'error' });
+      setSnackbar({ open: true, message: 'เกิดข้อผิดพลาดในการอัพเดตสถานะ', severity: 'error' });
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, loadProjects]);
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
@@ -332,9 +360,9 @@ const Tab2Content = memo(({ isSmallScreen }) => {
   if (error) return <Box display="flex" justifyContent="center" alignItems="center" height="300px"><Typography color="error">{error}</Typography></Box>;
 
   return (
-    <Box sx={{ maxHeight: '70vh', overflowY: 'auto' }}>
+    <Box sx={{ maxHeight: '70vh', overflowY: 'auto', overflowX: 'auto' }}>
       <TableContainer>
-        <Table aria-label="collapsible table" size={isSmallScreen ? 'small' : 'medium'}>
+        <Table aria-label="collapsible table" size="small">
           <TableHead>
             <TableRow>
               <StyledTableCell />
@@ -349,7 +377,9 @@ const Tab2Content = memo(({ isSmallScreen }) => {
                 key={project.id} 
                 project={project} 
                 isLoggedIn={isLoggedIn}
-                onUpdateStatus={handleUpdateStatus} 
+                onUpdateStatus={handleUpdateStatus}
+                isSmallScreen={isSmallScreen}
+                refreshData={loadProjects}
               />
             ))}
           </TableBody>

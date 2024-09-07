@@ -8,7 +8,6 @@ import {
   addComponentHistory,
   fetchSectionsByProjectId,
   fetchSectionByName,
-  createSection, // Ensure this is imported
 } from 'src/utils/api';
 import DataTable from './DataTable';
 
@@ -172,19 +171,19 @@ const ExcelUploadForm = () => {
     setSaveMessage('');
     setProgress(0); // Reset progress
     setModalOpen(true); // Open the modal
-  
+
     if (!data.length) {
       setError('No data to save.');
       setModalOpen(false); // Close the modal if there's no data
       return;
     }
-  
+
     if (!selectedProject) {
       setError('Please select a project.');
       setModalOpen(false); // Close the modal if no project is selected
       return;
     }
-  
+
     let sectionsResponse;
     try {
       sectionsResponse = await fetchSectionsByProjectId(selectedProject);
@@ -193,42 +192,31 @@ const ExcelUploadForm = () => {
       setModalOpen(false); // Close the modal on error
       return;
     }
-  
+
     const sections = Array.isArray(sectionsResponse) ? sectionsResponse : sectionsResponse.data;
-  
+
     if (!Array.isArray(sections)) {
       setError('Invalid sections data received from the server');
       setModalOpen(false); // Close the modal on error
       return;
     }
-  
+
     const errors = [];
     const successfulSaves = [];
     const totalComponents = data.length;
-  
+
     for (let i = 0; i < totalComponents; i++) {
       const component = data[i];
       try {
         if (!component.name) {
           throw new Error('Component name is missing');
         }
-  
-        let matchingSection = sections.find(section => section.name === component.section_name);
-        
-        // Create section if not found
+
+        const matchingSection = sections.find(section => section.name === component.section_name);
         if (!matchingSection) {
-          console.log(`Section "${component.section_name}" not found, creating it.`);
-          try {
-            matchingSection = await createSection({
-              name: component.section_name,
-              project_id: selectedProject,
-              status: 'planning'
-            });
-          } catch (createSectionError) {
-            throw new Error(`Failed to create section "${component.section_name}": ${createSectionError.message}`);
-          }
+          throw new Error(`Section "${component.section_name}" not found`);
         }
-  
+
         const componentData = {
           id: uuidv4(),
           section_id: matchingSection.id,
@@ -244,10 +232,10 @@ const ExcelUploadForm = () => {
           weight: component.weight ? parseFloat(component.weight) : null,
           status: component.status || 'planning'
         };
-  
+
         const createdComponent = await createComponent(componentData);
         console.log('Component created:', createdComponent);
-  
+
         successfulSaves.push(component.name);
         setProgress(Math.floor(((i + 1) / totalComponents) * 100)); // Update progress
       } catch (error) {
@@ -255,20 +243,19 @@ const ExcelUploadForm = () => {
         errors.push(`Error saving component "${component.name}": ${error.message}`);
       }
     }
-  
+
     if (errors.length > 0) {
       setError(`Encountered ${errors.length} error(s) while saving:\n${errors.join('\n')}`);
     }
-  
+
     if (successfulSaves.length > 0) {
       setSaveMessage(`Successfully saved ${successfulSaves.length} component(s).`);
     } else {
       setSaveMessage('No components were saved successfully.');
     }
-  
+
     setModalOpen(false); // Close the modal when done
   };
-  
 
   const handleDownloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([excelHeaders]);

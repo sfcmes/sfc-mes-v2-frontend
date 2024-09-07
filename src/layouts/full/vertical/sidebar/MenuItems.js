@@ -95,22 +95,6 @@ const Menuitems = [
   },
   {
     navlabel: true,
-    subheader: 'นำเข้าข้อมูลชิ้นงานอื่นๆสู่ระบบ',
-    children:[
-      {
-        
-        
-      }
-    ]
-  },
-  {
-    id: uniqueId(),
-    title: 'สร้างข้อมูลชิ้นงานอื่นๆ',
-    icon: IconBrandCodepen,
-    href: '/forms/form-component2',
-  },
-  {
-    navlabel: true,
     subheader: 'QR CODE',
     children:[
       {
@@ -132,8 +116,20 @@ const Menuitems = [
   },
   {
     navlabel: true,
+    subheader: 'OTHER',
+  },
+  {
+    id: uniqueId(),
+    title: 'COMPANY PROFILE',
+    external: true,
+    icon: IconStar,
+    href: 'https://sfcmes.github.io/sangfahpc.com/',
+  },
+  {
+    navlabel: true,
     subheader: 'Auth',
   },
+ 
   {
     id: uniqueId(),
     title: 'Login',

@@ -31,11 +31,6 @@ import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
 import ComponentDialog from './ComponentDialog';
 import Tab2Content from './Tab2Content';
 
-
-
-
-
-
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
   backgroundColor: theme.palette.primary.main,

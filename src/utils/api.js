@@ -15,14 +15,14 @@ let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
@@ -34,21 +34,24 @@ api.interceptors.response.use(
     if (error.response.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          failedQueue.push({resolve, reject});
-        }).then(token => {
-          originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          return api(originalRequest);
-        }).catch(err => Promise.reject(err));
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       return new Promise((resolve, reject) => {
-        api.post('/auth/refresh', {
-          refreshToken: localStorage.getItem('refreshToken')
-        })
-          .then(({data}) => {
+        api
+          .post('/auth/refresh', {
+            refreshToken: localStorage.getItem('refreshToken'),
+          })
+          .then(({ data }) => {
             api.defaults.headers.common['Authorization'] = 'Bearer ' + data.token;
             originalRequest.headers['Authorization'] = 'Bearer ' + data.token;
             processQueue(null, data.token);
@@ -65,7 +68,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 const publicApi = axios.create({
   baseURL: API_BASE_URL,
@@ -73,7 +76,6 @@ const publicApi = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
 
 api.setToken = (token) => {
   if (token) {
@@ -132,17 +134,19 @@ const loginUser = async (data) => {
     return { success: true, data: response.data };
   } catch (error) {
     console.error('Login error:', error.response ? error.response.data : error.message);
-    return { 
-      success: false, 
-      error: error.response ? error.response.data.message : 'An unexpected error occurred. Please try again.'
+    return {
+      success: false,
+      error: error.response
+        ? error.response.data.message
+        : 'An unexpected error occurred. Please try again.',
     };
   }
 };
 
 const fetchUserProfile = async () => {
   try {
-    const token = localStorage.getItem('token'); 
-    const response = await api.get('/users/me', { 
+    const token = localStorage.getItem('token');
+    const response = await api.get('/users/me', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -189,7 +193,6 @@ const logoutUser = async () => {
   }
 };
 
-
 const fetchProjectById = (projectId) => api.get(`/projects/${projectId}`);
 const createProject = (data) => api.post('/projects', data);
 const updateProject = (projectId, data) => api.put(`/projects/${projectId}`, data);
@@ -204,6 +207,7 @@ const fetchComponentsBySectionId = (sectionId) => api.get(`/components/section/$
 const fetchComponentsByProjectId = async (projectId) => {
   try {
     const response = await api.get(`/components/project/${projectId}`);
+    console.log('API response:', response);
     return response.data;
   } catch (error) {
     console.error(`Error fetching components for project ${projectId}:`, error);
@@ -237,9 +241,19 @@ const updateComponent = async (componentId, data) => {
 };
 const deleteComponent = (componentId) => api.delete(`/components/${componentId}`);
 
+// const fetchComponentById = async (componentId) => {
+//   try {
+//     const response = await api.get(`/components/${componentId}`);
+//     console.log('Fetched component details:', response.data);
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error fetching component details:', error);
+//     throw error;
+//   }
+// };
 const fetchComponentById = async (componentId) => {
   try {
-    const response = await api.get(`/components/${componentId}`);
+    const response = await publicApi.get(`/components/${componentId}`);
     console.log('Fetched component details:', response.data);
     return response.data;
   } catch (error) {
@@ -247,7 +261,6 @@ const fetchComponentById = async (componentId) => {
     throw error;
   }
 };
-
 const fetchUserById = async (userId) => {
   try {
     const response = await api.get(`/users/${userId}`);
@@ -311,7 +324,7 @@ const openFile = async (fileUrl) => {
 const fetchSectionByName = async (projectId, sectionName) => {
   try {
     const response = await api.get(`/sections/projects/${projectId}/sections`, {
-      params: { name: sectionName }
+      params: { name: sectionName },
     });
     return response.data.length > 0 ? response.data[0] : null;
   } catch (error) {
@@ -333,11 +346,11 @@ const updateComponentStatus = async (componentId, newStatus) => {
 
 const deleteProject = async (projectId) => {
   try {
-      const response = await api.delete(`/projects/${projectId}`);
-      return response.data;
+    const response = await api.delete(`/projects/${projectId}`);
+    return response.data;
   } catch (error) {
-      console.error('Error deleting project:', error);
-      throw error;
+    console.error('Error deleting project:', error);
+    throw error;
   }
 };
 
@@ -357,13 +370,13 @@ export const updateFileRevision = async (componentId, revision, file) => {
   const formData = new FormData();
   formData.append('file', file);
   try {
-      const response = await api.put(`/components/${componentId}/files/${revision}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
+    const response = await api.put(`/components/${componentId}/files/${revision}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
   } catch (error) {
-      console.error('Error updating file revision:', error);
-      throw error;
+    console.error('Error updating file revision:', error);
+    throw error;
   }
 };
 
@@ -423,7 +436,6 @@ const createOtherComponent = async (data) => {
   }
 };
 
-
 const fetchOtherComponentsByProjectId = async (projectId) => {
   try {
     const response = await api.get(`/components/other/project/${projectId}`);
@@ -463,7 +475,15 @@ const createPrecastComponent = async (formData) => {
     return response.data;
   } catch (error) {
     console.error('Error creating precast component:', error);
-    throw error;
+    if (error.response && error.response.data) {
+      console.error('Error response data:', error.response.data);
+      throw new Error(
+        error.response.data.error ||
+          error.response.data.details ||
+          'Failed to create precast component',
+      );
+    }
+    throw new Error('Failed to create precast component');
   }
 };
 
@@ -485,7 +505,7 @@ const updateOtherComponentStatus = async (componentId, fromStatus, toStatus, qua
     const response = await api.put(`/other-components/${componentId}/status`, {
       fromStatus,
       toStatus,
-      quantity
+      quantity,
     });
     console.log('Updated other component status:', response.data);
     return response.data;
@@ -515,15 +535,50 @@ const updateUserPassword = async (userId, newPassword) => {
   }
 };
 
+const createComponentsBatch = async (data) => {
+  try {
+    const response = await api.post('/components/batch', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating components batch:', error);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+    }
+    throw error;
+  }
+};
 
+const fetchComponentByQR = async (id) => {
+  try {
+    const response = await publicApi.get(`/components/qr/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching component by QR:', error);
+    throw error;
+  }
+};
+
+const fetchProjectDetailsByComponentId = async (componentId) => {
+  try {
+    const response = await publicApi.get(`/components/${componentId}/project-details`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project details:', error);
+    throw error;
+  }
+};
 
 export {
   api,
   publicApi,
-  fetchUsers ,
+  fetchUsers,
+  fetchComponentByQR,
   updateUserPassword,
+  fetchProjectDetailsByComponentId,
   loginUser,
-  logoutUser ,
+  logoutUser,
   registerUser,
   fetchUserProfile,
   fetchUserById,
@@ -553,7 +608,7 @@ export {
   openFile,
   fetchSectionByName,
   updateComponentStatus,
-  uploadComponentFile ,
+  uploadComponentFile,
   deleteFileRevision,
   createOtherComponent,
   fetchOtherComponentsByProjectId,
@@ -562,6 +617,7 @@ export {
   createPrecastComponent,
   fetchProjectsWithOtherComponents,
   updateOtherComponentStatus,
+  createComponentsBatch,
 };
 
 export default api; // Keep the default export

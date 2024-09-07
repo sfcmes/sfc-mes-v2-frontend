@@ -33,7 +33,7 @@ import DownloadIcon from '@mui/icons-material/CloudDownload';
 import Breadcrumb from '../../../layouts/full/shared/breadcrumb/Breadcrumb';
 import PageContainer from '../../../components/container/PageContainer';
 import { createRoot } from 'react-dom/client';
-import logo from 'src/assets/images/logos/logo-main.svg';
+import logo from 'F:/project/sfc-mes/frontend/src/assets/images/logos/logo-main.svg'; // Import the logo
 
 const BCrumb = [
   {
@@ -56,15 +56,14 @@ const QRCodePage = () => {
   const [qrCodeDetails, setQrCodeDetails] = useState('');
   const [filterSection, setFilterSection] = useState('');
   const [filterType, setFilterType] = useState('');
-  const [sortColumn, setSortColumn] = useState('project');
-  const [sortDirection, setSortDirection] = useState('asc');
+  const [sortColumn, setSortColumn] = useState('project'); // Default sorting by project
+  const [sortDirection, setSortDirection] = useState('asc'); // Default ascending order
   const qrCodeRef = useRef(null);
 
   useEffect(() => {
     const loadProjects = async () => {
       try {
         const response = await fetchProjects();
-        console.log('Fetched projects:', response.data);
         setProjects(response.data);
       } catch (error) {
         console.error('Error fetching projects:', error);
@@ -76,7 +75,6 @@ const QRCodePage = () => {
   const handleProjectChange = async (event) => {
     const projectId = event.target.value;
     setSelectedProject(projectId);
-    console.log('Fetching components for project:', projectId);
     try {
       const response = await fetchComponentsByProjectId(projectId);
       const sectionResponse = await fetchSectionsByProjectId(projectId);
@@ -94,18 +92,19 @@ const QRCodePage = () => {
       const projectResponse = await fetchProjectById(selectedProject);
       const sectionResponse = await fetchSectionById(component.section_id);
       const sectionName = sectionResponse.data ? sectionResponse.data.name : 'N/A';
+
       const projectName = projectResponse.data.name;
 
       const qrCodeDetails = `บริษัทแสงฟ้าก่อสร้าง จำกัด\nโครงการ: ${projectName}\nชั้น: ${sectionName}\nชื่อชิ้นงาน: ${component.name}`;
       setQrCodeDetails(qrCodeDetails);
-
-      // ใช้ URL ที่นำไปสู่ FormComponentCard โดยตรง
-      // const qrCodeUrl = `${window.location.origin}/forms/form-component-card/${component.id}`;
-      // const qrCodeUrl = `${window.location.origin}/api/components/qr/${component.id}`;
-      // const qrCodeUrl = `${window.location.origin}/qr/component/${component.id}`;
-      const qrCodeUrl = `${window.location.origin}/forms/form-component-card/${component.id}`;
-      console.log(qrCodeUrl);
-      setQrCodeData(qrCodeUrl);
+      const qrCodeData = {
+        project: projectName,
+        section: sectionName,
+        name: component.name,
+        type: component.type,
+        status: component.status,
+      };
+      setQrCodeData(JSON.stringify(qrCodeData));
       setIsModalOpen(true);
     } catch (error) {
       console.error('Error fetching project/section details:', error);
@@ -114,57 +113,50 @@ const QRCodePage = () => {
 
   const handleSave = async (component, sectionName, projectName) => {
     try {
-      if (!component.name) {
-        console.error('Component name is undefined:', component);
-        return;
-      }
       const qrCodeElement = await createQRCodeElement(component, sectionName, projectName);
       if (!qrCodeElement) {
         console.error('Failed to create QR code element');
         return;
       }
       document.body.appendChild(qrCodeElement);
-
-      const canvas = await html2canvas(qrCodeElement, {
+  
+      const canvas = await html2canvas(qrCodeElement, { 
         useCORS: true,
-        backgroundColor: 'white',
+        backgroundColor: 'white' // Ensure white background when capturing
       });
       const link = document.createElement('a');
       link.download = `qr-code-${component.name}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
-
+  
       document.body.removeChild(qrCodeElement);
     } catch (error) {
       console.error('Error generating QR code: ', error);
     }
   };
-
+  
   const handlePrint = async (component, sectionName, projectName) => {
     try {
-      if (!component.name) {
-        console.error('Component name is undefined:', component);
-        return;
-      }
+      console.log('handlePrint:', { component, sectionName, projectName });
       const qrCodeElement = await createQRCodeElement(component, sectionName, projectName);
       if (!qrCodeElement) {
         console.error('Failed to create QR code element');
         return;
       }
       document.body.appendChild(qrCodeElement);
-
-      const canvas = await html2canvas(qrCodeElement, {
+  
+      const canvas = await html2canvas(qrCodeElement, { 
         useCORS: true,
-        backgroundColor: 'white',
+        backgroundColor: 'white' // Ensure white background when capturing
       });
       const imgData = canvas.toDataURL('image/png');
-
+  
       const printWindow = window.open('', '', 'width=600,height=600');
       if (!printWindow) {
         console.error('Failed to open print window');
         return;
       }
-
+  
       printWindow.document.open();
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -182,37 +174,61 @@ const QRCodePage = () => {
         </html>
       `);
       printWindow.document.close();
-
+  
       document.body.removeChild(qrCodeElement);
     } catch (error) {
       console.error('Error generating QR code: ', error);
     }
   };
-
+  
   const createQRCodeElement = (component, sectionName, projectName) => {
-    const qrCodeUrl = `https://sfcpcsystem.ngrok.io/forms/form-component-card/${component.id}`;
-
+    console.log('createQRCodeElement:', { component, sectionName, projectName }); // Add logging
+    const qrCodeData = {
+      project: projectName,
+      section: sectionName,
+      name: component.name,
+      type: component.type,
+      width: component.width,
+      height: component.height,
+      thickness: component.thickness,
+      extension: component.extension,
+      reduction: component.reduction,
+      area: component.area,
+      volume: component.volume,
+      weight: component.weight,
+      status: component.status
+    };
+  
+    let qrCodeValue;
+    try {
+      qrCodeValue = JSON.stringify(qrCodeData);
+    } catch (error) {
+      console.error('Error stringifying QR code data: ', error);
+      return null;
+    }
+  
     const qrCodeElement = document.createElement('div');
     qrCodeElement.style.backgroundColor = 'white';
     qrCodeElement.style.padding = '20px';
     qrCodeElement.style.display = 'inline-block';
-    qrCodeElement.style.textAlign = 'center';
+    qrCodeElement.style.textAlign = 'center'; 
     qrCodeElement.id = 'qrCodeElement';
-
+  
     const qrCodeContainer = document.createElement('div');
     qrCodeContainer.style.backgroundColor = 'white';
     qrCodeContainer.style.padding = '10px';
     qrCodeContainer.style.display = 'inline-block';
     qrCodeElement.appendChild(qrCodeContainer);
-
+  
+    // Use createRoot to render the QRCode component into the qrCodeContainer
     const qrCodeRoot = createRoot(qrCodeContainer);
     qrCodeRoot.render(
       <QRCodeCanvas
-        value={qrCodeUrl}
+        value={qrCodeValue}
         size={256}
-        bgColor={'#ffffff'}
-        fgColor={'#000000'}
-        level={'Q'}
+        bgColor={"#ffffff"}
+        fgColor={"#000000"}
+        level={"L"}
         includeMargin={true}
         imageSettings={{
           src: logo,
@@ -222,9 +238,9 @@ const QRCodePage = () => {
           width: 48,
           excavate: true,
         }}
-      />,
+      />
     );
-
+  
     const qrCodeText = document.createElement('p');
     qrCodeText.style.color = 'black';
     qrCodeText.style.textAlign = 'center';
@@ -235,40 +251,45 @@ const QRCodePage = () => {
       ชั้น: ${sectionName || 'N/A'}<br />
       ชื่อชิ้นงาน: ${component.name}
     `;
-
+  
     qrCodeElement.appendChild(qrCodeText);
-
+  
     return new Promise((resolve) => {
       setTimeout(() => resolve(qrCodeElement), 100);
     });
   };
-
+  
   const renderQRCode = (qrCodeValue, qrCodeDetails, size = 256) => {
+    let parsedQRCodeValue = {};
+    try {
+      parsedQRCodeValue = typeof qrCodeValue === 'string' ? JSON.parse(qrCodeValue) : qrCodeValue;
+    } catch (error) {
+      console.error('Error parsing QR code value:', error);
+    }
+
     return (
       <Box sx={{ textAlign: 'center', p: 2 }}>
-        <Paper
-          elevation={3}
-          sx={{
-            display: 'inline-block',
-            p: 2,
-            backgroundColor: 'white',
-          }}
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            display: 'inline-block', 
+            p: 2, 
+            backgroundColor: 'white', // Ensure the Paper background is white
+          }} 
           ref={qrCodeRef}
         >
-          <Box
-            sx={{
-              backgroundColor: 'white',
-              padding: '10px',
-              display: 'inline-block',
-            }}
-          >
+          <Box sx={{ 
+            backgroundColor: 'white', // Ensure the QR code background is white
+            padding: '10px', // Add some padding around the QR code
+            display: 'inline-block' // Make the box inline
+          }}>
             <QRCodeCanvas
-              value={qrCodeValue}
+              value={JSON.stringify(parsedQRCodeValue)}
               size={size}
-              bgColor={'#ffffff'}
-              fgColor={'#000000'}
-              level={'L'}
-              includeMargin={true}
+              bgColor={"#ffffff"} // Ensure background is white
+              fgColor={"#000000"} // Ensure foreground (QR code) is black
+              level={"L"}
+              includeMargin={true} // Include a margin to ensure a white border
               imageSettings={{
                 src: logo,
                 x: undefined,
@@ -279,7 +300,7 @@ const QRCodePage = () => {
               }}
             />
           </Box>
-          <Typography mt={2} variant="body1" whiteSpace="pre-line" sx={{ color: 'black' }}>
+          <Typography mt={2} variant="body1" whiteSpace="pre-line" sx={{ color: 'black' }}> {/* Ensure text is black */}
             {qrCodeDetails}
           </Typography>
         </Paper>
@@ -310,12 +331,12 @@ const QRCodePage = () => {
   const sortedComponents = filteredComponents.sort((a, b) => {
     const sectionA = sections.find((s) => s.id === a.section_id)?.name || '';
     const sectionB = sections.find((s) => s.id === b.section_id)?.name || '';
-
+    
     const projectNameA = projects.find((p) => p.id === selectedProject)?.name || '';
     const projectNameB = projects.find((p) => p.id === selectedProject)?.name || '';
-
+    
     let valueA, valueB;
-
+    
     switch (sortColumn) {
       case 'project':
         valueA = projectNameA.toLowerCase();
@@ -332,7 +353,7 @@ const QRCodePage = () => {
       default:
         return 0;
     }
-
+  
     if (valueA < valueB) {
       return sortDirection === 'asc' ? -1 : 1;
     }
@@ -341,8 +362,7 @@ const QRCodePage = () => {
     }
     return 0;
   });
-
-  console.log('Projects:', projects);
+  
 
   return (
     <PageContainer title="QRCODE" description="สร้าง QR CODE">
@@ -360,8 +380,8 @@ const QRCodePage = () => {
                   <em>เลือกโครงการ</em>
                 </MenuItem>
                 {projects.map((project) => (
-                  <MenuItem key={project.id || project._id} value={project.id || project._id}>
-                    {project.name || project.projectName}
+                  <MenuItem key={project.id} value={project.id}>
+                    {project.name}
                   </MenuItem>
                 ))}
               </Select>
@@ -427,46 +447,51 @@ const QRCodePage = () => {
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
-            {components.length > 0 ? (
-              <TableBody>
-                {sortedComponents.map((component) => {
-                  const section = sections.find((s) => s.id === component.section_id);
-                  const sectionName = section?.name || 'N/A';
-                  const projectName = projects.find((p) => p.id === selectedProject)?.name;
-                  const qrCodeUrl = `https://sfcpcsystem.ngrok.io/forms/form-component-card/${component.id}`;
-                  return (
-                    <TableRow key={component.id}>
-                      <TableCell>{projectName}</TableCell>
-                      <TableCell>{sectionName}</TableCell>
-                      <TableCell>{component.name}</TableCell>
-                      <TableCell>{component.type}</TableCell>
-                      <TableCell>{component.width}</TableCell>
-                      <TableCell>{component.height}</TableCell>
-                      <TableCell align="center">
-                        <Box
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => handleQRCodeClick(component)}
-                        >
-                          {renderQRCode(qrCodeUrl, '', 100)}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <IconButton onClick={() => handleSave(component, sectionName, projectName)}>
-                          <DownloadIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handlePrint(component, sectionName, projectName)}
-                        >
-                          <PrintIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            ) : (
-              <Typography>Loading components...</Typography>
-            )}
+            <TableBody>
+              {sortedComponents.map((component) => {
+                const section = sections.find((s) => s.id === component.section_id);
+                const sectionName = section?.name || 'N/A';
+                const projectName = projects.find((p) => p.id === selectedProject)?.name;
+                const qrCodeValue = {
+                  project: projectName,
+                  section: sectionName,
+                  name: component.name,
+                  type: component.type,
+                  width: component.width,
+                  height: component.height,
+                  thickness: component.thickness,
+                  extension: component.extension,
+                  reduction: component.reduction,
+                  area: component.area,
+                  volume: component.volume,
+                  weight: component.weight,
+                  status: component.status,
+                };
+                return (
+                  <TableRow key={component.id}>
+                    <TableCell>{qrCodeValue.project}</TableCell>
+                    <TableCell>{qrCodeValue.section}</TableCell>
+                    <TableCell>{qrCodeValue.name}</TableCell>
+                    <TableCell>{qrCodeValue.type}</TableCell>
+                    <TableCell>{qrCodeValue.width}</TableCell>
+                    <TableCell>{qrCodeValue.height}</TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ cursor: 'pointer' }} onClick={() => handleQRCodeClick(component)}>
+                        {renderQRCode(qrCodeValue, '', 100)}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleSave(component, sectionName, projectName)}>
+                        <DownloadIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handlePrint(component, sectionName, projectName)}>
+                        <PrintIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
           </Table>
         </TableContainer>
         <Modal
@@ -489,24 +514,19 @@ const QRCodePage = () => {
             }}
           >
             <Typography id="qr-code-modal" variant="h6" component="h2" align="center" gutterBottom>
-              บริษัทแสงฟ้าก่อสร้าง จำกัด
+            บริษัทแสงฟ้าก่อสร้าง จำกัด
             </Typography>
             <div>{renderQRCode(qrCodeData, qrCodeDetails)}</div>
             <Grid container spacing={2} justifyContent="center" mt={2}>
               <Grid item>
                 <Button
-                  onClick={() => {
-                    const component = sortedComponents.find(
-                      (comp) => comp.id === qrCodeData.split('/').pop(),
-                    );
-                    if (component) {
-                      handleSave(
-                        component,
-                        qrCodeDetails.split('\n')[2].split(': ')[1],
-                        qrCodeDetails.split('\n')[1].split(': ')[1],
-                      );
-                    }
-                  }}
+                  onClick={() =>
+                    handleSave(
+                      JSON.parse(qrCodeData),
+                      JSON.parse(qrCodeData).section,
+                      JSON.parse(qrCodeData).project,
+                    )
+                  }
                   variant="contained"
                   color="primary"
                 >
@@ -514,25 +534,19 @@ const QRCodePage = () => {
                 </Button>
               </Grid>
               <Grid item>
-              <Button
-  onClick={() => {
-    const component = sortedComponents.find(
-      (comp) => comp.id === qrCodeData.split('/').pop()
-    );
-    if (component) {
-      handlePrint(
-        component,
-        qrCodeDetails.split('\n')[2].split(': ')[1],  // section name
-        qrCodeDetails.split('\n')[1].split(': ')[1]   // project name
-      );
-    }
-  }}
-  variant="contained"
-  color="secondary"
->
-  Print
-</Button>
-
+                <Button
+                  onClick={() =>
+                    handlePrint(
+                      JSON.parse(qrCodeData),
+                      JSON.parse(qrCodeData).section,
+                      JSON.parse(qrCodeData).project,
+                    )
+                  }
+                  variant="contained"
+                  color="secondary"
+                >
+                  Print
+                </Button>
               </Grid>
             </Grid>
           </Box>
