@@ -170,103 +170,103 @@ const ExcelUploadForm = () => {
   const handleSaveToDatabase = async () => {
     setError(null);
     setSaveMessage('');
-    setProgress(0); // Reset progress
-    setModalOpen(true); // Open the modal
+    setProgress(0);
+    setModalOpen(true);
   
     if (!data.length) {
       setError('No data to save.');
-      setModalOpen(false); // Close the modal if there's no data
+      setModalOpen(false);
       return;
     }
   
     if (!selectedProject) {
       setError('Please select a project.');
-      setModalOpen(false); // Close the modal if no project is selected
+      setModalOpen(false);
       return;
     }
   
-    let sectionsResponse;
     try {
-      sectionsResponse = await fetchSectionsByProjectId(selectedProject);
-    } catch (error) {
-      setError('Error fetching sections: ' + error.message);
-      setModalOpen(false); // Close the modal on error
-      return;
-    }
+      const sectionsResponse = await fetchSectionsByProjectId(selectedProject);
+      let sections = Array.isArray(sectionsResponse) ? sectionsResponse : sectionsResponse.data;
   
-    const sections = Array.isArray(sectionsResponse) ? sectionsResponse : sectionsResponse.data;
-  
-    if (!Array.isArray(sections)) {
-      setError('Invalid sections data received from the server');
-      setModalOpen(false); // Close the modal on error
-      return;
-    }
-  
-    const errors = [];
-    const successfulSaves = [];
-    const totalComponents = data.length;
-  
-    for (let i = 0; i < totalComponents; i++) {
-      const component = data[i];
-      try {
-        if (!component.name) {
-          throw new Error('Component name is missing');
-        }
-  
-        let matchingSection = sections.find(section => section.name === component.section_name);
-        
-        // Create section if not found
-        if (!matchingSection) {
-          console.log(`Section "${component.section_name}" not found, creating it.`);
-          try {
-            matchingSection = await createSection({
-              name: component.section_name,
-              project_id: selectedProject,
-              status: 'planning'
-            });
-          } catch (createSectionError) {
-            throw new Error(`Failed to create section "${component.section_name}": ${createSectionError.message}`);
-          }
-        }
-  
-        const componentData = {
-          id: uuidv4(),
-          section_id: matchingSection.id,
-          name: component.name,
-          type: component.type || null,
-          width: component.width ? parseFloat(component.width) : null,
-          height: component.height ? parseFloat(component.height) : null,
-          thickness: component.thickness ? parseFloat(component.thickness) : null,
-          extension: component.extension ? parseFloat(component.extension) : null,
-          reduction: component.reduction ? parseFloat(component.reduction) : null,
-          area: component.area ? parseFloat(component.area) : null,
-          volume: component.volume ? parseFloat(component.volume) : null,
-          weight: component.weight ? parseFloat(component.weight) : null,
-          status: component.status || 'planning'
-        };
-  
-        const createdComponent = await createComponent(componentData);
-        console.log('Component created:', createdComponent);
-  
-        successfulSaves.push(component.name);
-        setProgress(Math.floor(((i + 1) / totalComponents) * 100)); // Update progress
-      } catch (error) {
-        console.error('Error processing component:', error);
-        errors.push(`Error saving component "${component.name}": ${error.message}`);
+      if (!Array.isArray(sections)) {
+        throw new Error('Invalid sections data received from the server');
       }
-    }
   
-    if (errors.length > 0) {
-      setError(`Encountered ${errors.length} error(s) while saving:\n${errors.join('\n')}`);
-    }
+      const errors = [];
+      const successfulSaves = [];
+      const totalComponents = data.length;
   
-    if (successfulSaves.length > 0) {
-      setSaveMessage(`Successfully saved ${successfulSaves.length} component(s).`);
-    } else {
-      setSaveMessage('No components were saved successfully.');
-    }
+      for (let i = 0; i < totalComponents; i++) {
+        const component = data[i];
+        try {
+          if (!component.name) {
+            throw new Error('Component name is missing');
+          }
   
-    setModalOpen(false); // Close the modal when done
+          let matchingSection = sections.find(section => section.name === component.section_name);
+          
+          if (!matchingSection) {
+            console.log(`Section "${component.section_name}" not found, creating it.`);
+            try {
+              matchingSection = await createSection({
+                name: component.section_name,
+                project_id: selectedProject,
+                status: 'planning'
+              });
+              sections.push(matchingSection); // Add the new section to our local array
+            } catch (createSectionError) {
+              if (createSectionError.response && createSectionError.response.status === 409) {
+                // If the section already exists (409 Conflict), fetch it instead
+                matchingSection = await fetchSectionByName(selectedProject, component.section_name);
+              } else {
+                throw new Error(`Failed to create section "${component.section_name}": ${createSectionError.message}`);
+              }
+            }
+          }
+  
+          const componentData = {
+            id: uuidv4(),
+            section_id: matchingSection.id,
+            name: component.name,
+            type: component.type || null,
+            width: component.width ? parseFloat(component.width) : null,
+            height: component.height ? parseFloat(component.height) : null,
+            thickness: component.thickness ? parseFloat(component.thickness) : null,
+            extension: component.extension ? parseFloat(component.extension) : null,
+            reduction: component.reduction ? parseFloat(component.reduction) : null,
+            area: component.area ? parseFloat(component.area) : null,
+            volume: component.volume ? parseFloat(component.volume) : null,
+            weight: component.weight ? parseFloat(component.weight) : null,
+            status: component.status || 'planning'
+          };
+  
+          const createdComponent = await createComponent(componentData);
+          console.log('Component created:', createdComponent);
+  
+          successfulSaves.push(component.name);
+          setProgress(Math.floor(((i + 1) / totalComponents) * 100));
+        } catch (error) {
+          console.error('Error processing component:', error);
+          errors.push(`Error saving component "${component.name}": ${error.message}`);
+        }
+      }
+  
+      if (errors.length > 0) {
+        setError(`Encountered ${errors.length} error(s) while saving:\n${errors.join('\n')}`);
+      }
+  
+      if (successfulSaves.length > 0) {
+        setSaveMessage(`Successfully saved ${successfulSaves.length} component(s).`);
+      } else {
+        setSaveMessage('No components were saved successfully.');
+      }
+  
+    } catch (error) {
+      setError('Error processing data: ' + error.message);
+    } finally {
+      setModalOpen(false);
+    }
   };
   
 

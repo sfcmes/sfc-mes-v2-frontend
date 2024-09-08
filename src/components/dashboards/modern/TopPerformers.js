@@ -266,6 +266,14 @@ const ProjectRow = memo(({ project, onRowClick, isSmallScreen, onProjectUpdate, 
     [project, onProjectUpdate],
   );
 
+  // Sort sections based on their names or IDs
+  const sortedSections = [...project.sections].sort((a, b) => {
+    if (a.name && b.name) {
+      return a.name.localeCompare(b.name);
+    }
+    return a.id - b.id;
+  });
+
   return (
     <>
       <TableRow
@@ -273,8 +281,8 @@ const ProjectRow = memo(({ project, onRowClick, isSmallScreen, onProjectUpdate, 
         style={{ cursor: 'pointer' }}
         sx={{
           '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.5), // 50% lighter
-            color: (theme) => theme.palette.common.white, // Ensuring text contrast
+            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.5),
+            color: (theme) => theme.palette.common.white,
           },
         }}
       >
@@ -298,7 +306,7 @@ const ProjectRow = memo(({ project, onRowClick, isSmallScreen, onProjectUpdate, 
               </Typography>
               <Table size="small">
                 <TableBody>
-                  {project.sections.map((section) => (
+                  {sortedSections.map((section) => (
                     <SectionRow
                       key={section.id}
                       section={section}
@@ -410,7 +418,7 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
                 if (!section) {
                   section = {
                     id: component.section_id,
-                    name: component.section_name || `Unnamed Section`,
+                    name: component.section_name || `Section ${component.section_id}`,
                     components: [],
                   };
                   acc.push(section);
