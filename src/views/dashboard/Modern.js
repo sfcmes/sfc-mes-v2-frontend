@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // Add useCallback here
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Grid, Typography, useTheme, useMediaQuery } from '@mui/material';
 import TopCards from '../../components/dashboards/modern/TopCards';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
@@ -21,12 +21,15 @@ const Modern = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [projectStats, setProjectStats] = useState([]);
+  const [currentTab, setCurrentTab] = useState('1');
   const [userRole, setUserRole] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const videoRef = useRef(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleComponentUpdate = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
   }, []);
@@ -57,9 +60,8 @@ const Modern = () => {
     };
     fetchData();
 
-    // Set video playback rate
     if (videoRef.current) {
-      videoRef.current.playbackRate = 0.8; // Adjust this value to change the speed (0.5 is half speed)
+      videoRef.current.playbackRate = 0.8;
     }
   }, []);
 
@@ -114,6 +116,21 @@ const Modern = () => {
     setSelectedProject(project);
   };
 
+  const handleProjectSelect = useCallback((project) => {
+    setSelectedProject(project);
+    const stats = calculateProjectStats(project);
+    setProjectStats(stats);
+  }, []);
+
+  const handleTabChange = useCallback((newTab) => {
+    setCurrentTab(newTab);
+    if (newTab === '2') {
+      setSelectedProject(null);
+      setProjectStats([]);
+    }
+  }, []);
+
+
   return (
     <Box
       sx={{
@@ -124,58 +141,57 @@ const Modern = () => {
         padding: theme.spacing(2),
       }}
     >
-      <Box
-        component="video"
-        ref={videoRef}
-        autoPlay
-        loop
-        muted
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          minWidth: '100%',
-          minHeight: '100%',
-          width: 'auto',
-          height: 'auto',
-          zIndex: -1,
-          objectFit: 'cover',
-          display: { xs: 'none', md: 'block' }, // Hide on mobile and tablet
-        }}
-      >
-        <source src={videoBg} type="video/mp4" />
-        Your browser does not support the video tag.
-      </Box>
+      {isDesktop && (
+        <Box
+          component="video"
+          ref={videoRef}
+          autoPlay
+          loop
+          muted
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            minWidth: '100%',
+            minHeight: '100%',
+            width: 'auto',
+            height: 'auto',
+            zIndex: -1,
+            objectFit: 'cover',
+          }}
+        >
+          <source src={videoBg} type="video/mp4" />
+          Your browser does not support the video tag.
+        </Box>
+      )}
       <Box
         sx={{
           position: 'relative',
           zIndex: 1,
+          backdropFilter: 'blur(10px)',
+          backgroundColor: `rgba(${theme.palette.background.default.replace(
+            /^\w+\((\d+,\s*\d+,\s*\d+).*$/,
+            '$1'
+          )}, 0.3)`,
+          borderRadius: theme.shape.borderRadius,
+          padding: theme.spacing(3),
         }}
       >
-        <Typography
-          variant={isMobile ? 'h5' : 'h4'}
-          sx={{
-            mb: 3,
-            textAlign: 'center',
-            color: theme.palette.primary.main,
-            fontWeight: 'bold',
-          }}
-        >
-          {/* Project Dashboard */}
-        </Typography>
         <Grid container spacing={3}>
           <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
             <TopCards
               stats={projectStats}
               projectName={selectedProject ? selectedProject.name : 'Not Selected'}
+              isResetState={currentTab === '2'}
             />
           </Grid>
           <Grid item xs={12} lg={8}>
             <TopPerformers
               projects={projects}
-              onRowClick={handleRowClick}
+              onProjectSelect={handleProjectSelect}
               userRole={userRole}
               refreshTrigger={refreshTrigger}
+              onTabChange={handleTabChange}
             />
           </Grid>
           <Grid item xs={12} lg={4}>
@@ -183,6 +199,7 @@ const Modern = () => {
               projectId={selectedProject ? selectedProject.id : null}
               projectName={selectedProject ? selectedProject.name : 'All Projects'}
               userRole={userRole}
+              currentTab={currentTab}
             />
           </Grid>
         </Grid>

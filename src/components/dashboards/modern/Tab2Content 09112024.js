@@ -22,11 +22,12 @@ import {
   useMediaQuery,
   CircularProgress,
 } from '@mui/material';
-import { styled, alpha, useTheme } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Chart from 'react-apexcharts';
 import { fetchProjectsWithOtherComponents, updateOtherComponentStatus } from 'src/utils/api';
+
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
   backgroundColor: theme.palette.primary.main,
@@ -241,34 +242,18 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, isSmallScree
   );
 });
 
-const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus, isSmallScreen, refreshData, userRole, onProjectSelect }) => {
+const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus, isSmallScreen, refreshData }) => {
   const [open, setOpen] = useState(false);
-  // const theme = useTheme();
 
   if (!project.components || project.components.length === 0) {
     return null;
   }
 
-  const handleRowClick = () => {
-    setOpen(!open);
-    if (typeof onProjectSelect === 'function') {
-      onProjectSelect(project);
-    }
-  };
-
   return (
     <>
-      <TableRow
-        sx={{
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.1),
-            cursor: 'pointer',
-          },
-        }}
-        onClick={handleRowClick}
-      >
+      <TableRow>
         <TableCell>
-          <IconButton size="small">
+          <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -312,13 +297,14 @@ const ProjectRowTab2 = memo(({ project, isLoggedIn, onUpdateStatus, isSmallScree
   );
 });
 
-const Tab2Content = memo(({ onProjectSelect, isSmallScreen, userRole }) => {
+const Tab2Content = memo(() => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const loadProjects = useCallback(async () => {
     try {
@@ -344,8 +330,21 @@ const Tab2Content = memo(({ onProjectSelect, isSmallScreen, userRole }) => {
       return;
     }
     try {
-      await updateOtherComponentStatus(componentId, fromStatus, toStatus, parseInt(quantity, 10));
+      const updatedComponent = await updateOtherComponentStatus(componentId, fromStatus, toStatus, parseInt(quantity, 10));
+      
+      // Update the local state immediately
+      setProjects(prevProjects => 
+        prevProjects.map(project => ({
+          ...project,
+          components: project.components.map(comp => 
+            comp.id === componentId ? { ...comp, statuses: updatedComponent.statuses } : comp
+          )
+        }))
+      );
+      
       setSnackbar({ open: true, message: 'สถานะอัพเดตเรียบร้อยแล้ว', severity: 'success' });
+      
+      // Refresh data after successful update
       await loadProjects();
     } catch (err) {
       console.error('Failed to update status:', err);
@@ -366,10 +365,10 @@ const Tab2Content = memo(({ onProjectSelect, isSmallScreen, userRole }) => {
         <Table aria-label="collapsible table" size="small">
           <TableHead>
             <TableRow>
-              <TableCell />
-              <TableCell>รหัสโครงการ</TableCell>
-              <TableCell>ชื่อโครงการ</TableCell>
-              <TableCell align="right">จำนวนชิ้นงานอื้นๆ</TableCell>
+              <StyledTableCell />
+              <StyledTableCell>รหัสโครงการ</StyledTableCell>
+              <StyledTableCell>ชื่อโครงการ</StyledTableCell>
+              <StyledTableCell align="right">จำนวนชิ้นงานอื่นๆ</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -381,8 +380,6 @@ const Tab2Content = memo(({ onProjectSelect, isSmallScreen, userRole }) => {
                 onUpdateStatus={handleUpdateStatus}
                 isSmallScreen={isSmallScreen}
                 refreshData={loadProjects}
-                userRole={userRole}
-                onProjectSelect={onProjectSelect}
               />
             ))}
           </TableBody>

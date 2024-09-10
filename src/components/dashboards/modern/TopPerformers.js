@@ -22,6 +22,8 @@ import {
   InputBase,
   Card,
   CardContent,
+  Tooltip,
+  Popper ,
 } from '@mui/material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -30,6 +32,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
 import ComponentDialog from './ComponentDialog';
 import Tab2Content from './Tab2Content';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -48,19 +51,26 @@ const COLORS = {
 };
 
 const STATUS_THAI = {
+  planning: 'แผนผลิต',
   manufactured: 'ผลิตแล้ว',
-  transported: 'ขนส่งสำเร็จ',
+  in_transit: 'อยู่ระหว่างขนส่ง',
+  accepted: 'ตรวจรับแล้ว',
+  installed: 'ติดตั้งแล้ว',
   rejected: 'ถูกปฏิเสธ',
 };
 
-const statusOrder = ['manufactured', 'transported', 'rejected'];
+const statusOrder = ['planning', 'manufactured', 'in_transit', 'accepted', 'installed', 'rejected'];
 
 const getStatusColor = (status) => {
   switch (status) {
     case 'manufactured':
       return { bg: 'primary.light', color: 'primary.main' };
-    case 'transported':
+    case 'in_transit':
+      return { bg: 'info.light', color: 'info.main' };
+    case 'accepted':
       return { bg: 'secondary.light', color: 'secondary.main' };
+    case 'installed':
+      return { bg: 'warning.light', color: 'warning.main' };
     case 'rejected':
       return { bg: 'error.light', color: 'error.main' };
     default:
@@ -88,6 +98,73 @@ const StatusChip = memo(({ status, label }) => {
     </Box>
   );
 });
+
+const ComponentCard = ({ component, canViewDetails, setSelectedComponent }) => {
+  const { bg, color } = getStatusColor(component.status);
+
+  const handleViewDetailsClick = (event) => {
+    event.stopPropagation();
+    setSelectedComponent(component);
+  };
+
+  return (
+    <Grid item xs={3} sm={1.1} md={0.9}>
+      <Card
+        title={component.name} // This adds a native tooltip
+        sx={{
+          bgcolor: (theme) => theme.palette[bg.split('.')[0]][bg.split('.')[1]],
+          height: { xs: '40px', sm: '45px', md: '50px' },
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: { xs: '1px', sm: '1px', md: '1px' },
+          m: { xs: '1px', sm: '1px', md: '1px' },
+          border: '1px solid',
+          borderColor: (theme) =>
+            theme.palette[color.split('.')[0]][color.split('.')[1]],
+          cursor: 'pointer',
+        }}
+      >
+        <CardContent
+          sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}
+        >
+          <Typography
+            variant="subtitle2"
+            sx={{
+              color: (theme) =>
+                theme.palette[color.split('.')[0]][color.split('.')[1]],
+              fontSize: { xs: '5px', sm: '6px', md: '7px' },
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {component.name}
+          </Typography>
+          {canViewDetails && (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleViewDetailsClick}
+              sx={{
+                mt: { xs: '1px', sm: '1px', md: '1px' },
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                color: (theme) =>
+                  theme.palette[color.split('.')[0]][color.split('.')[1]],
+                fontSize: { xs: '4px', sm: '5px', md: '6px' },
+                p: { xs: '1px 2px', sm: '1px 2px', md: '1px 2px' },
+                minWidth: 'auto',
+              }}
+            >
+              ดูข้อมูล
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </Grid>
+  );
+};
 
 const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdate, userRole }) => {
   const [open, setOpen] = useState(false);
@@ -146,7 +223,7 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
               <Box display="flex" flexWrap="wrap" justifyContent="flex-start" mb={2}>
                 {statusOrder.map((status) => {
                   const count = statusCounts[status] || 0;
-                  if (count > 0) {
+                  if (count >= 0) {
                     return (
                       <StatusChip
                         key={status}
@@ -364,7 +441,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
+const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabChange }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -391,6 +468,7 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+    onTabChange(newValue);
   };
 
   useEffect(() => {
@@ -523,7 +601,7 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
                   <ProjectRow
                     key={project.id}
                     project={project}
-                    onRowClick={onRowClick}
+                    onRowClick={onProjectSelect} // Change this line
                     isSmallScreen={isSmallScreen}
                     onProjectUpdate={handleProjectUpdate}
                     userRole={userRole}
@@ -534,7 +612,13 @@ const TopPerformers = memo(({ onRowClick, userRole, refreshTrigger }) => {
           </TableContainer>
         </Box>
       )}
-      {tabValue === '2' && <Tab2Content isSmallScreen={isSmallScreen} />}
+      {tabValue === '2' && (
+        <Tab2Content
+          isSmallScreen={isSmallScreen}
+          onProjectSelect={onProjectSelect}
+          userRole={userRole}
+        />
+      )}
       {filteredProjects.length === 0 && tabValue === '1' && (
         <TableBody>
           <TableRow>
