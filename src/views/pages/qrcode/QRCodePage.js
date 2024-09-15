@@ -295,7 +295,7 @@ const QRCodePage = () => {
   };
 
   const createQRCodeElement = (component, sectionName, projectName) => {
-    const qrCodeUrl = `https://sfcpcsystem.ngrok.io/forms/form-component-card/${component.id}`;
+    const qrCodeUrl = `${window.location.origin}/forms/form-component-card/${component.id}`;
 
     const qrCodeElement = document.createElement('div');
     qrCodeElement.style.backgroundColor = 'white';
@@ -571,7 +571,7 @@ const QRCodePage = () => {
                 const section = sections.find((s) => s.id === component.section_id);
                 const sectionName = section?.name || 'N/A';
                 const projectName = projects.find((p) => p.id === selectedProject)?.name;
-                const qrCodeUrl = `https://sfcpcsystem.ngrok.io/forms/form-component-card/${component.id}`;
+                const qrCodeUrl = `${window.location.origin}/forms/form-component-card/${component.id}`;
                 return (
                   <TableRow key={component.id}>
                     <TableCell>{projectName}</TableCell>

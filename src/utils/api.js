@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sfcpcbackend.ngrok.app/api';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://54.251.182.137:3000/api'
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://54.251.182.137:3000/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -147,6 +147,9 @@ const loginUser = async (data) => {
 const fetchUserProfile = async () => {
   try {
     const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
     const response = await api.get('/users/me', {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -207,7 +210,7 @@ const deleteSection = (sectionId) => api.delete(`/sections/${sectionId}`);
 const fetchComponentsBySectionId = (sectionId) => api.get(`/components/section/${sectionId}`);
 const fetchComponentsByProjectId = async (projectId) => {
   try {
-    const response = await api.get(`/components/project/${projectId}`);
+    const response = await publicApi.get(`/components/project/${projectId}`);
     console.log('API response:', response);
     return response.data;
   } catch (error) {

@@ -23,6 +23,7 @@ const Modern = () => {
   const [projectStats, setProjectStats] = useState([]);
   const [currentTab, setCurrentTab] = useState('1');
   const [userRole, setUserRole] = useState(null);
+  const [showTopCards, setShowTopCards] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
@@ -124,12 +125,10 @@ const Modern = () => {
 
   const handleTabChange = useCallback((newTab) => {
     setCurrentTab(newTab);
-    if (newTab === '2') {
-      setSelectedProject(null);
-      setProjectStats([]);
-    }
+    setShowTopCards(newTab === '1');
+    setSelectedProject(null);
+    setProjectStats([]);
   }, []);
-
 
   return (
     <Box
@@ -177,7 +176,8 @@ const Modern = () => {
           padding: theme.spacing(3),
         }}
       >
-        <Grid container spacing={3}>
+         <Grid container spacing={3}>
+        {showTopCards && (
           <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
             <TopCards
               stats={projectStats}
@@ -185,24 +185,26 @@ const Modern = () => {
               isResetState={currentTab === '2'}
             />
           </Grid>
-          <Grid item xs={12} lg={8}>
-            <TopPerformers
-              projects={projects}
-              onProjectSelect={handleProjectSelect}
-              userRole={userRole}
-              refreshTrigger={refreshTrigger}
-              onTabChange={handleTabChange}
-            />
-          </Grid>
-          <Grid item xs={12} lg={4}>
-            <WeeklyStats
-              projectId={selectedProject ? selectedProject.id : null}
-              projectName={selectedProject ? selectedProject.name : 'All Projects'}
-              userRole={userRole}
-              currentTab={currentTab}
-            />
-          </Grid>
+        )}
+        <Grid item xs={12} lg={8}>
+          <TopPerformers
+            projects={projects}
+            onProjectSelect={handleProjectSelect}
+            userRole={userRole}
+            refreshTrigger={refreshTrigger}
+            onTabChange={handleTabChange}
+          />
         </Grid>
+        <Grid item xs={12} lg={4}>
+          <WeeklyStats
+            key={`${currentTab}-${selectedProject?.id || 'no-project'}`}
+            projectId={selectedProject ? selectedProject.id : null}
+            projectName={selectedProject ? selectedProject.name : 'All Projects'}
+            userRole={userRole}
+            currentTab={currentTab}
+          />
+        </Grid>
+      </Grid>
         {!isMobile && <Welcome />}
       </Box>
     </Box>

@@ -21,14 +21,14 @@ import {
 } from '@mui/icons-material';
 import { publicApi, api } from 'src/utils/api';
 
-const COMPONENT_HEIGHT = 600; // Fixed height for the component
-const IMAGE_HEIGHT = 400; // Fixed height for the image container
+const COMPONENT_HEIGHT = 600;
+const IMAGE_HEIGHT = 400;
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: alpha(theme.palette.background.paper, 0.9),
   display: 'flex',
   flexDirection: 'column',
-  height: COMPONENT_HEIGHT, // Fixed height for the entire component
+  height: COMPONENT_HEIGHT,
   borderRadius: theme.shape.borderRadius,
   overflow: 'hidden',
 }));
@@ -36,7 +36,7 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 const ImageContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
   width: '100%',
-  height: IMAGE_HEIGHT, // Fixed height for the image container
+  height: IMAGE_HEIGHT,
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -47,7 +47,7 @@ const ImageContainer = styled(Box)(({ theme }) => ({
 const StyledImage = styled('img')({
   maxWidth: '100%',
   maxHeight: '100%',
-  objectFit: 'contain', // Resize the image to fit within the container
+  objectFit: 'contain',
   cursor: 'pointer',
 });
 
@@ -84,7 +84,7 @@ const UploadButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const WeeklyStats = ({ projectId, projectName, userRole }) => {
+const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
   const [images, setImages] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -99,20 +99,26 @@ const WeeklyStats = ({ projectId, projectName, userRole }) => {
   const canUpload = userRole === 'Admin' || userRole === 'Site User';
 
   const fetchImages = useCallback(async () => {
+    if (!projectId) return;
     try {
       const response = await publicApi.get(`/projects/${projectId}/images`);
       setImages(response.data);
+      setError(null);
     } catch (error) {
       console.error('Error fetching project images:', error);
       setError('Failed to load images. Please try again later.');
+      setImages([]);
     }
   }, [projectId]);
 
   useEffect(() => {
+    setImages([]);
+    setCurrentIndex(0);
+    setError(null);
     if (projectId) {
       fetchImages();
-    }
-  }, [projectId, fetchImages]);
+    } 
+  }, [projectId, fetchImages, currentTab]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : images.length - 1));
@@ -174,43 +180,49 @@ const WeeklyStats = ({ projectId, projectName, userRole }) => {
   return (
     <StyledPaper elevation={3}>
       <Typography variant="h6" sx={{ fontWeight: 'bold', p: 1, textAlign: 'center' }}>
-        {projectName}
+        {projectName || 'No Project Selected'}
       </Typography>
 
       <ImageContainer>
-        {images.length > 0 ? (
-          <>
-            <StyledImage
-              src={images[currentIndex]?.image_url}
-              alt={`Project ${currentIndex + 1}`}
-              onClick={handleImageClick}
-            />
-            <NavigationButton 
-              onClick={handlePrevious} 
-              sx={{ left: 10 }}
-              disabled={images.length <= 1}
-            >
-              <ChevronLeft />
-            </NavigationButton>
-            <NavigationButton 
-              onClick={handleNext} 
-              sx={{ right: 10 }}
-              disabled={images.length <= 1}
-            >
-              <ChevronRight />
-            </NavigationButton>
-            <ImageCounter>
-              {currentIndex + 1} / {images.length}
-            </ImageCounter>
-          </>
+        {projectId ? (
+          images.length > 0 ? (
+            <>
+              <StyledImage
+                src={images[currentIndex]?.image_url}
+                alt={`Project ${currentIndex + 1}`}
+                onClick={handleImageClick}
+              />
+              <NavigationButton 
+                onClick={handlePrevious} 
+                sx={{ left: 10 }}
+                disabled={images.length <= 1}
+              >
+                <ChevronLeft />
+              </NavigationButton>
+              <NavigationButton 
+                onClick={handleNext} 
+                sx={{ right: 10 }}
+                disabled={images.length <= 1}
+              >
+                <ChevronRight />
+              </NavigationButton>
+              <ImageCounter>
+                {currentIndex + 1} / {images.length}
+              </ImageCounter>
+            </>
+          ) : (
+            <Typography align="center" color="text.secondary">
+              No images available for this project.
+            </Typography>
+          )
         ) : (
           <Typography align="center" color="text.secondary">
-            No images available for this project.
+            Please select a project to view images.
           </Typography>
         )}
       </ImageContainer>
 
-      {canUpload && (
+      {canUpload && projectId && (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
           <input
             type="file"

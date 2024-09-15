@@ -23,7 +23,6 @@ import {
   Card,
   CardContent,
   Tooltip,
-  Popper ,
 } from '@mui/material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -32,7 +31,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
 import ComponentDialog from './ComponentDialog';
 import Tab2Content from './Tab2Content';
-import ClickAwayListener from '@mui/material/ClickAwayListener';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -45,15 +43,18 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 }));
 
 const COLORS = {
+  planning: '#64b5f6',
   manufactured: '#82ca9d',
-  transported: '#ffc658',
+  in_transit: '#ffc658',
+  accepted: '#8e44ad',
+  installed: '#27ae60',
   rejected: '#ff6b6b',
 };
 
 const STATUS_THAI = {
-  planning: 'แผนผลิต',
+  planning: 'วางแผน',
   manufactured: 'ผลิตแล้ว',
-  in_transit: 'อยู่ระหว่างขนส่ง',
+  in_transit: 'ขนส่งสำเร็จ',
   accepted: 'ตรวจรับแล้ว',
   installed: 'ติดตั้งแล้ว',
   rejected: 'ถูกปฏิเสธ',
@@ -62,20 +63,7 @@ const STATUS_THAI = {
 const statusOrder = ['planning', 'manufactured', 'in_transit', 'accepted', 'installed', 'rejected'];
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'manufactured':
-      return { bg: 'primary.light', color: 'primary.main' };
-    case 'in_transit':
-      return { bg: 'info.light', color: 'info.main' };
-    case 'accepted':
-      return { bg: 'secondary.light', color: 'secondary.main' };
-    case 'installed':
-      return { bg: 'warning.light', color: 'warning.main' };
-    case 'rejected':
-      return { bg: 'error.light', color: 'error.main' };
-    default:
-      return { bg: 'grey.light', color: 'grey.main' };
-  }
+  return { bg: COLORS[status], color: '#ffffff' };
 };
 
 const StatusChip = memo(({ status, label }) => {
@@ -99,7 +87,7 @@ const StatusChip = memo(({ status, label }) => {
   );
 });
 
-const ComponentCard = ({ component, canViewDetails, setSelectedComponent }) => {
+const ComponentCard = memo(({ component, setSelectedComponent }) => {
   const { bg, color } = getStatusColor(component.status);
 
   const handleViewDetailsClick = (event) => {
@@ -109,40 +97,38 @@ const ComponentCard = ({ component, canViewDetails, setSelectedComponent }) => {
 
   return (
     <Grid item xs={3} sm={1.1} md={0.9}>
-      <Card
-        title={component.name} // This adds a native tooltip
-        sx={{
-          bgcolor: (theme) => theme.palette[bg.split('.')[0]][bg.split('.')[1]],
-          height: { xs: '40px', sm: '45px', md: '50px' },
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          p: { xs: '1px', sm: '1px', md: '1px' },
-          m: { xs: '1px', sm: '1px', md: '1px' },
-          border: '1px solid',
-          borderColor: (theme) =>
-            theme.palette[color.split('.')[0]][color.split('.')[1]],
-          cursor: 'pointer',
-        }}
-      >
-        <CardContent
-          sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}
+      <Tooltip title={component.name} arrow>
+        <Card
+          sx={{
+            bgcolor: bg,
+            height: { xs: '40px', sm: '45px', md: '50px' },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            p: { xs: '1px', sm: '1px', md: '1px' },
+            m: { xs: '1px', sm: '1px', md: '1px' },
+            border: '1px solid',
+            borderColor: bg,
+            cursor: 'pointer',
+          }}
+          onClick={handleViewDetailsClick}
         >
-          <Typography
-            variant="subtitle2"
-            sx={{
-              color: (theme) =>
-                theme.palette[color.split('.')[0]][color.split('.')[1]],
-              fontSize: { xs: '5px', sm: '6px', md: '7px' },
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
+          <CardContent
+            sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}
           >
-            {component.name}
-          </Typography>
-          {canViewDetails && (
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: color,
+                fontSize: { xs: '5px', sm: '6px', md: '7px' },
+                fontWeight: 'bold',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {component.name}
+            </Typography>
             <Button
               variant="contained"
               size="small"
@@ -150,8 +136,7 @@ const ComponentCard = ({ component, canViewDetails, setSelectedComponent }) => {
               sx={{
                 mt: { xs: '1px', sm: '1px', md: '1px' },
                 bgcolor: 'rgba(255, 255, 255, 0.2)',
-                color: (theme) =>
-                  theme.palette[color.split('.')[0]][color.split('.')[1]],
+                color: color,
                 fontSize: { xs: '4px', sm: '5px', md: '6px' },
                 p: { xs: '1px 2px', sm: '1px 2px', md: '1px 2px' },
                 minWidth: 'auto',
@@ -159,12 +144,12 @@ const ComponentCard = ({ component, canViewDetails, setSelectedComponent }) => {
             >
               ดูข้อมูล
             </Button>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Tooltip>
     </Grid>
   );
-};
+});
 
 const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdate, userRole }) => {
   const [open, setOpen] = useState(false);
@@ -198,7 +183,7 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
     onComponentUpdate();
   }, [onComponentUpdate]);
 
-  const canViewDetails = userRole === 'Admin' || userRole === 'Site User';
+  const canEdit = userRole === 'Admin' || userRole === 'Site User';
 
   return (
     <>
@@ -236,64 +221,13 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
                 })}
               </Box>
               <Grid container spacing={0.1}>
-                {sortedComponents.map((component) => {
-                  const { bg, color } = getStatusColor(component.status);
-                  return (
-                    <Grid item xs={3} sm={1.1} md={0.9} key={component.id}>
-                      <Card
-                        sx={{
-                          bgcolor: (theme) => theme.palette[bg.split('.')[0]][bg.split('.')[1]],
-                          height: { xs: '40px', sm: '45px', md: '50px' }, // Adjusted card height
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          p: { xs: '1px', sm: '1px', md: '1px' }, // Adjusted padding
-                          m: { xs: '1px', sm: '1px', md: '1px' },
-                          border: '1px solid', // Added border
-                          borderColor: (theme) =>
-                            theme.palette[color.split('.')[0]][color.split('.')[1]], // Dynamic border color
-                        }}
-                      >
-                        <CardContent
-                          sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}
-                        >
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              color: (theme) =>
-                                theme.palette[color.split('.')[0]][color.split('.')[1]],
-                              fontSize: { xs: '5px', sm: '6px', md: '7px' },
-                              fontWeight: 'bold',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {component.name}
-                          </Typography>
-                          {canViewDetails && (
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => setSelectedComponent(component)}
-                              sx={{
-                                mt: { xs: '1px', sm: '1px', md: '1px' },
-                                bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                color: (theme) =>
-                                  theme.palette[color.split('.')[0]][color.split('.')[1]],
-                                fontSize: { xs: '4px', sm: '5px', md: '6px' },
-                                p: { xs: '1px 2px', sm: '1px 2px', md: '1px 2px' },
-                                minWidth: 'auto',
-                              }}
-                            >
-                              ดูข้อมูล
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  );
-                })}
+                {sortedComponents.map((component) => (
+                  <ComponentCard
+                    key={component.id}
+                    component={component}
+                    setSelectedComponent={setSelectedComponent}
+                  />
+                ))}
               </Grid>
             </Box>
           </Collapse>
@@ -306,102 +240,148 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
           component={selectedComponent}
           projectCode={projectCode}
           onComponentUpdate={handleComponentUpdate}
+          canEdit={canEdit}
         />
       )}
     </>
   );
 });
 
-const ProjectRow = memo(({ project, onRowClick, isSmallScreen, onProjectUpdate, userRole }) => {
-  const [open, setOpen] = useState(false);
+const ProjectRow = memo(
+  ({ project, onRowClick, isSmallScreen, onProjectUpdate, userRole, selectedProjectId }) => {
+    const [open, setOpen] = useState(false);
 
-  const numberOfSections = project.sections.length;
-  const totalComponents = project.sections.reduce(
-    (acc, section) => acc + section.components.length,
-    0,
-  );
+    const theme = useTheme();
 
-  const handleRowClick = useCallback(() => {
-    onRowClick(project);
-  }, [onRowClick, project]);
+    const isSelected = project.id === selectedProjectId;
 
-  const handleIconClick = useCallback(
-    (event) => {
-      event.stopPropagation();
-      setOpen((prevOpen) => !prevOpen);
-    },
-    [open],
-  );
+    useEffect(() => {
+      if (isSelected) {
+        setOpen(true);
+      }
+    }, [isSelected]);
 
-  const handleSectionUpdate = useCallback(
-    (sectionId, updatedComponents) => {
-      const updatedSections = project.sections.map((section) =>
-        section.id === sectionId ? { ...section, components: updatedComponents } : section,
-      );
-      onProjectUpdate(project.id, { ...project, sections: updatedSections });
-    },
-    [project, onProjectUpdate],
-  );
+    const numberOfSections = project.sections.length;
+    const totalComponents = project.sections.reduce(
+      (acc, section) => acc + section.components.length,
+      0,
+    );
 
-  // Sort sections based on their names or IDs
-  const sortedSections = [...project.sections].sort((a, b) => {
-    if (a.name && b.name) {
-      return a.name.localeCompare(b.name);
-    }
-    return a.id - b.id;
-  });
+    const handleRowClick = useCallback(() => {
+      onRowClick(project);
+    }, [onRowClick, project]);
 
-  return (
-    <>
-      <TableRow
-        onClick={handleRowClick}
-        style={{ cursor: 'pointer' }}
-        sx={{
-          '&:hover': {
-            backgroundColor: (theme) => alpha(theme.palette.primary.main, 0.5),
-            color: (theme) => theme.palette.common.white,
-          },
-        }}
-      >
-        <TableCell>
-          <IconButton size="small" onClick={handleIconClick}>
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-        </TableCell>
-        <TableCell>{project.project_code}</TableCell>
-        {!isSmallScreen && <TableCell>{project.name}</TableCell>}
-        {!isSmallScreen && <TableCell align="right">{numberOfSections}</TableCell>}
-        <TableCell align="right">{totalComponents}</TableCell>
-      </TableRow>
+    const handleIconClick = useCallback(
+      (event) => {
+        event.stopPropagation();
+        setOpen((prevOpen) => !prevOpen);
+      },
+      [],
+    );
 
-      <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={isSmallScreen ? 3 : 5}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box margin={1}>
-              <Typography variant="h6" gutterBottom component="div">
-                ชั้น
-              </Typography>
-              <Table size="small">
-                <TableBody>
-                  {sortedSections.map((section) => (
-                    <SectionRow
-                      key={section.id}
-                      section={section}
-                      projectCode={project.project_code}
-                      isSmallScreen={isSmallScreen}
-                      onComponentUpdate={handleSectionUpdate}
-                      userRole={userRole}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-    </>
-  );
-});
+    const handleSectionUpdate = useCallback(
+      (sectionId, updatedComponents) => {
+        const updatedSections = project.sections.map((section) =>
+          section.id === sectionId ? { ...section, components: updatedComponents } : section,
+        );
+        onProjectUpdate(project.id, { ...project, sections: updatedSections });
+      },
+      [project, onProjectUpdate],
+    );
+
+    const sortedSections = [...project.sections].sort((a, b) => {
+      if (a.name && b.name) {
+        return a.name.localeCompare(b.name);
+      }
+      return a.id - b.id;
+    });
+
+    return (
+      <>
+        <TableRow
+          onClick={handleRowClick}
+          style={{ cursor: 'pointer' }}
+          sx={{
+            backgroundColor: isSelected ? alpha('#64b5f6', 0.5) : 'inherit',
+            color: isSelected ? '#ffffff' : 'inherit',
+            '&:hover': {
+              backgroundColor: alpha('#64b5f6', 0.5),
+              color: '#ffffff',
+            },
+          }}
+        >
+          <TableCell>
+            <IconButton size="small" onClick={handleIconClick}>
+              {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+          </TableCell>
+          <TableCell>{project.project_code}</TableCell>
+          {!isSmallScreen && <TableCell>{project.name}</TableCell>}
+          {!isSmallScreen && <TableCell align="right">{numberOfSections}</TableCell>}
+          <TableCell align="right">{totalComponents}</TableCell>
+        </TableRow>
+
+        <TableRow>
+          <TableCell
+            style={{ paddingBottom: 0, paddingTop: 0 }}
+            colSpan={isSmallScreen ? 3 : 5}
+          >
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <Box
+                margin={1}
+                sx={{
+                  border: '1px solid grey',
+                  borderRadius: 1,
+                  overflowY: 'auto',
+                  maxHeight: '400px',
+                }}
+              >
+                {/* Sticky Header */}
+                <Box
+                  sx={{
+                    position: 'sticky',
+                    top: 0,
+                    backgroundColor: alpha('#64b5f6', 0.9),
+                    color: '#fff',
+                    padding: theme.spacing(1),
+                    zIndex: 1,
+                    borderBottom: '1px solid grey',
+                  }}
+                >
+                  <Typography variant="h6" component="div">
+                    {project.name || `Project ${project.project_code}`}
+                  </Typography>
+                </Box>
+                {/* End of Sticky Header */}
+
+                {/* เนื้อหาของโปรเจกต์ */}
+                <Box sx={{ padding: theme.spacing(2) }}>
+                  <Typography variant="h6" gutterBottom component="div">
+                    ชั้น
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      {sortedSections.map((section) => (
+                        <SectionRow
+                          key={section.id}
+                          section={section}
+                          projectCode={project.project_code}
+                          isSmallScreen={isSmallScreen}
+                          onComponentUpdate={handleSectionUpdate}
+                          userRole={userRole}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
+      </>
+    );
+  },
+);
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -433,6 +413,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   width: '100%',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
+    // vertical padding + font size from searchIcon
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
     transition: theme.transitions.create('width'),
     [theme.breakpoints.up('md')]: {
@@ -443,6 +424,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabChange }) => {
   const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -470,6 +452,16 @@ const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabCh
     setTabValue(newValue);
     onTabChange(newValue);
   };
+
+  const handleProjectSelect = useCallback(
+    (project) => {
+      setSelectedProjectId(project.id);
+      if (onProjectSelect) {
+        onProjectSelect(project);
+      }
+    },
+    [onProjectSelect],
+  );
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -568,7 +560,7 @@ const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabCh
             <SearchIcon />
           </SearchIconWrapper>
           <StyledInputBase
-            placeholder="Search…"
+            placeholder="ค้นหา…"
             inputProps={{ 'aria-label': 'search' }}
             value={searchTerm}
             onChange={handleSearchChange}
@@ -601,10 +593,11 @@ const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabCh
                   <ProjectRow
                     key={project.id}
                     project={project}
-                    onRowClick={onProjectSelect} // Change this line
+                    onRowClick={handleProjectSelect}
                     isSmallScreen={isSmallScreen}
                     onProjectUpdate={handleProjectUpdate}
                     userRole={userRole}
+                    selectedProjectId={selectedProjectId}
                   />
                 ))}
               </TableBody>

@@ -26,7 +26,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
 
   const fieldNameMap = {
     id: 'รหัสชิ้นงาน',
-    section_id: 'รหัสส่วน',
+    section_id: 'รหัสชั้น',
     name: 'ชื่อชิ้นงาน',
     type: 'ประเภทชิ้นงาน',
     width: 'ความกว้าง (มม.)',
@@ -43,8 +43,9 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
   };
 
   const statusDisplayMap = {
+    planning: 'แผนผลิต',
     manufactured: 'ผลิตแล้ว',
-    in_transit: 'อยู่ระหว่างขนส่ง',
+    // in_transit: 'อยู่ระหว่างขนส่ง',
     transported: 'ขนส่งสำเร็จ',
     accepted: 'ตรวจรับแล้ว',
     installed: 'ติดตั้งแล้ว',
