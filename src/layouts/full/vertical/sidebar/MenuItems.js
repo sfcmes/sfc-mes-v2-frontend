@@ -156,6 +156,12 @@ const Menuitems = [
         icon: IconPoint,
         href: '/auth/register',
       },
+      {
+        id: uniqueId(),
+        title: 'ตั้งค่าผู้ใช้งาน',
+        icon: IconPoint,
+        href: '/auth/manageuser',
+      },
     ],
   },
 ];

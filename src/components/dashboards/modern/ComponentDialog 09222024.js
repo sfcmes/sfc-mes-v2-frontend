@@ -34,7 +34,7 @@ import {
 import ComponentDetails from './ComponentDetails';
 import FileManagement from './FileManagement';
 
-const ComponentDialog = memo(({ open, onClose, component, onComponentUpdate, canEdit }) => {
+const ComponentDialog = memo(({ open, onClose, component, onComponentUpdate }) => {
   const [tabValue, setTabValue] = useState(0);
   const [componentDetails, setComponentDetails] = useState(null);
   const [componentFiles, setComponentFiles] = useState([]);
@@ -50,7 +50,7 @@ const ComponentDialog = memo(({ open, onClose, component, onComponentUpdate, can
   const statusDisplayMap = {
     planning: 'แผนผลิต',
     manufactured: 'ผลิตแล้ว',
-    transported: 'ขนส่งสำเร็จ',
+    in_transit: 'อยู่ระหว่างขนส่ง',
     accepted: 'ตรวจรับแล้ว',
     installed: 'ติดตั้งแล้ว',
     rejected: 'ถูกปฏิเสธ',
@@ -169,7 +169,7 @@ const ComponentDialog = memo(({ open, onClose, component, onComponentUpdate, can
     return <Typography color="error">{error}</Typography>;
   }
 
-  // const canEdit = isAuthenticated && (userRole.toLowerCase() === 'admin' || userRole.toLowerCase() === 'site user');
+  const canEdit = isAuthenticated && (userRole.toLowerCase() === 'admin' || userRole.toLowerCase() === 'site user');
 
   return (
     <>

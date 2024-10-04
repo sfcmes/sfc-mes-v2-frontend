@@ -19,16 +19,15 @@ import {
   DialogTitle,
   Snackbar,
   Alert,
-  Grid,
-  Divider,
-  Chip,
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { fetchComponentById, updateComponentStatus } from 'src/utils/api';
+import { useAuth } from 'src/contexts/AuthContext'; // Import the AuthContext
 
 const ComponentDetailsPage = () => {
+  console.log('ComponentDetailsPage rendered');
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, login } = useAuth();
   const [component, setComponent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,8 +36,17 @@ const ComponentDetailsPage = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   useEffect(() => {
-    loadComponentDetails();
-  }, [id]);
+    const checkAuthAndLoadComponent = async () => {
+      if (!user) {
+        // Redirect to login page
+        navigate('/login', { state: { from: `/component/${id}` } });
+        return;
+      }
+      loadComponentDetails();
+    };
+
+    checkAuthAndLoadComponent();
+  }, [id, user, navigate]);
 
   const loadComponentDetails = async () => {
     try {
@@ -47,28 +55,37 @@ const ComponentDetailsPage = () => {
       setComponent(data);
       setNewStatus(data.status); // Set current status as default
     } catch (err) {
-      setError('Failed to load component details. Please try again.');
+      setError('Failed to load component details');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusUpdate = () => {
+  const handleStatusUpdate = async () => {
     setOpenConfirmDialog(true);
   };
   
   const handleConfirmStatusUpdate = async () => {
     setOpenConfirmDialog(false);
+    await updateStatus();
+  };
+
+  const updateStatus = async () => {
     try {
       await updateComponentStatus(id, newStatus);
       await loadComponentDetails(); // Reload component details
       setSnackbar({ open: true, message: 'Status updated successfully', severity: 'success' });
     } catch (err) {
-      setError('Failed to update status. Please try again.');
+      setError('Failed to update status');
       setSnackbar({ open: true, message: 'Failed to update status', severity: 'error' });
       console.error(err);
     }
+  };
+
+  const handleConfirmReject = async () => {
+    setOpenConfirmDialog(false);
+    await updateStatus();
   };
 
   const handleCloseConfirmDialog = () => {
@@ -83,10 +100,6 @@ const ComponentDetailsPage = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const getStatusOptions = () => {
-    return ['Planning', 'In Progress', 'Completed', 'อยู่ระหว่างขนส่ง', 'ส่งชิ้นงานแล้ว', 'ขนส่งแล้ว', 'Accept', 'Reject', 'ติดตั้งแล้ว'];
-  };
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -97,56 +110,47 @@ const ComponentDetailsPage = () => {
 
   if (error) {
     return (
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Typography color="error" gutterBottom>{error}</Typography>
-        <Button variant="contained" onClick={loadComponentDetails}>Retry</Button>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <Typography color="error">{error}</Typography>
       </Box>
     );
   }
 
   if (!component) {
     return (
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Typography gutterBottom>No component found</Typography>
-        <Button variant="contained" onClick={() => navigate(-1)}>Go Back</Button>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <Typography>No component found</Typography>
       </Box>
     );
   }
 
+  const getStatusOptions = () => {
+    const baseOptions = ['Planning', 'In Progress', 'Completed'];
+    if (user.role === 'Transporter' && component.status === 'อยู่ระหว่างขนส่ง') {
+      return ['ส่งชิ้นงานแล้ว', 'Reject'];
+    } else if (user.role === 'Site User') {
+      if (component.status === 'ขนส่งแล้ว') {
+        return ['Accept', 'Reject'];
+      } else if (component.status === 'Accept') {
+        return ['ติดตั้งแล้ว', 'Reject'];
+      }
+    }
+    return baseOptions;
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)} sx={{ mb: 2 }}>
-        Back
-      </Button>
       <Paper elevation={3} sx={{ p: 3 }}>
         <Typography variant="h4" gutterBottom>
           Component Details
         </Typography>
-        <Divider sx={{ mb: 2 }} />
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <Typography><strong>Name:</strong> {component.name}</Typography>
-            <Typography><strong>Type:</strong> {component.type}</Typography>
-            <Typography><strong>Width:</strong> {component.width} mm</Typography>
-            <Typography><strong>Height:</strong> {component.height} mm</Typography>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Typography><strong>Project:</strong> {component.project?.name || 'N/A'}</Typography>
-            <Typography><strong>Section:</strong> {component.section?.name || 'N/A'}</Typography>
-            <Typography>
-              <strong>Current Status:</strong> 
-              <Chip 
-                label={component.status} 
-                color={component.status === 'Completed' ? 'success' : 'default'} 
-                size="small" 
-                sx={{ ml: 1 }}
-              />
-            </Typography>
-          </Grid>
-        </Grid>
+        <Typography>Name: {component.name}</Typography>
+        <Typography>Type: {component.type}</Typography>
+        <Typography>Width: {component.width} mm</Typography>
+        <Typography>Height: {component.height} mm</Typography>
+        <Typography>Current Status: {component.status}</Typography>
 
         <Box sx={{ mt: 2 }}>
-          <Typography variant="h6" gutterBottom>Update Status</Typography>
           <Select
             value={newStatus}
             onChange={(e) => setNewStatus(e.target.value)}
@@ -163,7 +167,6 @@ const ComponentDetailsPage = () => {
             ))}
           </Select>
           <Button
-            variant="contained"
             onClick={handleStatusUpdate}
             disabled={!newStatus || newStatus === component.status}
             sx={{ mt: 1 }}
@@ -172,11 +175,11 @@ const ComponentDetailsPage = () => {
           </Button>
         </Box>
 
-        <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
+        <Typography variant="h6" sx={{ mt: 2 }}>
           Files:
         </Typography>
         <List>
-          {component.files && component.files.length > 0 ? (
+          {component.files &&
             component.files.map((file, index) => (
               <ListItem key={index}>
                 <ListItemText
@@ -185,15 +188,9 @@ const ComponentDetailsPage = () => {
                       {file.name}
                     </Link>
                   }
-                  secondary={`Type: ${file.type || 'Unknown'}`}
                 />
               </ListItem>
-            ))
-          ) : (
-            <ListItem>
-              <ListItemText primary="No files available" />
-            </ListItem>
-          )}
+            ))}
         </List>
       </Paper>
 

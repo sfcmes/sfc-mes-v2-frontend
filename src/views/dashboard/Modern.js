@@ -4,7 +4,7 @@ import TopCards from '../../components/dashboards/modern/TopCards';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
 import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
-import { fetchProjects, fetchUserProfile } from 'src/utils/api';
+import { fetchProjects, fetchUserProfile, fetchUserProjects  } from 'src/utils/api';
 import videoBg from 'src/assets/videos/blue-sky-background-4k.mp4';
 
 const statusDisplayMap = {
@@ -30,6 +30,7 @@ const Modern = () => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const videoRef = useRef(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [userProjects, setUserProjects] = useState([]);
 
   const handleComponentUpdate = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
@@ -55,6 +56,12 @@ const Modern = () => {
         }
 
         setUserRole(userProfile ? userProfile.role : null);
+
+        // Fetch user projects if role is Site User
+        if (userProfile && userProfile.role === 'Site User') {
+          const userProjectsData = await fetchUserProjects(userProfile.id);
+          setUserProjects(userProjectsData.map(p => p.id));
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -193,6 +200,7 @@ const Modern = () => {
             userRole={userRole}
             refreshTrigger={refreshTrigger}
             onTabChange={handleTabChange}
+            userProjects={userProjects}
           />
         </Grid>
         <Grid item xs={12} lg={4}>

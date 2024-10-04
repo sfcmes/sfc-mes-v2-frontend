@@ -45,22 +45,22 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 const COLORS = {
   planning: '#64b5f6',
   manufactured: '#82ca9d',
-  in_transit: '#ffc658',
+  transported: '#ffc658',
   accepted: '#8e44ad',
   installed: '#27ae60',
   rejected: '#ff6b6b',
 };
 
 const STATUS_THAI = {
-  planning: 'วางแผน',
+  planning: 'รอผลิต',
   manufactured: 'ผลิตแล้ว',
-  in_transit: 'ขนส่งสำเร็จ',
+  transported: 'ขนส่งสำเร็จ',
   accepted: 'ตรวจรับแล้ว',
   installed: 'ติดตั้งแล้ว',
   rejected: 'ถูกปฏิเสธ',
 };
 
-const statusOrder = ['planning', 'manufactured', 'in_transit', 'accepted', 'installed', 'rejected'];
+const statusOrder = ['planning', 'manufactured', 'transported', 'accepted', 'installed', 'rejected'];
 
 const getStatusColor = (status) => {
   return { bg: COLORS[status], color: '#ffffff' };
@@ -113,9 +113,7 @@ const ComponentCard = memo(({ component, setSelectedComponent }) => {
           }}
           onClick={handleViewDetailsClick}
         >
-          <CardContent
-            sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}
-          >
+          <CardContent sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}>
             <Typography
               variant="subtitle2"
               sx={{
@@ -151,7 +149,7 @@ const ComponentCard = memo(({ component, setSelectedComponent }) => {
   );
 });
 
-const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdate, userRole }) => {
+const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdate, userRole, canEdit }) => {
   const [open, setOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
 
@@ -183,7 +181,7 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
     onComponentUpdate();
   }, [onComponentUpdate]);
 
-  const canEdit = userRole === 'Admin' || userRole === 'Site User';
+  // const canEdit = userRole === 'Admin' || userRole === 'Site User';
 
   return (
     <>
@@ -248,7 +246,15 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
 });
 
 const ProjectRow = memo(
-  ({ project, onRowClick, isSmallScreen, onProjectUpdate, userRole, selectedProjectId }) => {
+  ({
+    project,
+    onRowClick,
+    isSmallScreen,
+    onProjectUpdate,
+    userRole,
+    selectedProjectId,
+    canEdit,
+  }) => {
     const [open, setOpen] = useState(false);
 
     const theme = useTheme();
@@ -271,13 +277,10 @@ const ProjectRow = memo(
       onRowClick(project);
     }, [onRowClick, project]);
 
-    const handleIconClick = useCallback(
-      (event) => {
-        event.stopPropagation();
-        setOpen((prevOpen) => !prevOpen);
-      },
-      [],
-    );
+    const handleIconClick = useCallback((event) => {
+      event.stopPropagation();
+      setOpen((prevOpen) => !prevOpen);
+    }, []);
 
     const handleSectionUpdate = useCallback(
       (sectionId, updatedComponents) => {
@@ -322,10 +325,7 @@ const ProjectRow = memo(
         </TableRow>
 
         <TableRow>
-          <TableCell
-            style={{ paddingBottom: 0, paddingTop: 0 }}
-            colSpan={isSmallScreen ? 3 : 5}
-          >
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={isSmallScreen ? 3 : 5}>
             <Collapse in={open} timeout="auto" unmountOnExit>
               <Box
                 margin={1}
@@ -369,6 +369,7 @@ const ProjectRow = memo(
                           isSmallScreen={isSmallScreen}
                           onComponentUpdate={handleSectionUpdate}
                           userRole={userRole}
+                          canEdit={canEdit}
                         />
                       ))}
                     </TableBody>
@@ -422,220 +423,234 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabChange }) => {
-  const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [tabValue, setTabValue] = useState('1');
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+const TopPerformers = memo(
+  ({ onProjectSelect, userRole, refreshTrigger, onTabChange, userProjects }) => {
+    const [projects, setProjects] = useState([]);
+    const [selectedProjectId, setSelectedProjectId] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [tabValue, setTabValue] = useState('1');
+    const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const handleSearchChange = useCallback((event) => {
-    setSearchTerm(event.target.value);
-  }, []);
-
-  const handleSnackbarClose = useCallback(() => {
-    setSnackbarOpen(false);
-  }, []);
-
-  const handleProjectUpdate = useCallback((projectId, updatedProject) => {
-    setProjects((prevProjects) =>
-      prevProjects.map((project) => (project.id === projectId ? updatedProject : project)),
+    const canEditProject = useCallback(
+      (projectId) => {
+        if (userRole === 'Admin') return true;
+        if (userRole === 'Site User') {
+          return userProjects.includes(projectId);
+        }
+        return false;
+      },
+      [userRole, userProjects],
     );
-  }, []);
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-    onTabChange(newValue);
-  };
+    const handleSearchChange = useCallback((event) => {
+      setSearchTerm(event.target.value);
+    }, []);
 
-  const handleProjectSelect = useCallback(
-    (project) => {
-      setSelectedProjectId(project.id);
-      if (onProjectSelect) {
-        onProjectSelect(project);
-      }
-    },
-    [onProjectSelect],
-  );
+    const handleSnackbarClose = useCallback(() => {
+      setSnackbarOpen(false);
+    }, []);
 
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await fetchProjects();
-        console.log(`Fetched ${response.data.length} projects`);
+    const handleProjectUpdate = useCallback((projectId, updatedProject) => {
+      setProjects((prevProjects) =>
+        prevProjects.map((project) => (project.id === projectId ? updatedProject : project)),
+      );
+    }, []);
 
-        const projectsWithComponents = await Promise.all(
-          response.data.map(async (project) => {
-            try {
-              const components = await fetchComponentsByProjectId(project.id);
-
-              if (!Array.isArray(components)) {
-                console.error(
-                  `Components data is not an array for project ${project.project_code}`,
-                  components,
-                );
-                return null;
-              }
-
-              const sections = components.reduce((acc, component) => {
-                let section = acc.find((sec) => sec.id === component.section_id);
-                if (!section) {
-                  section = {
-                    id: component.section_id,
-                    name: component.section_name || `Section ${component.section_id}`,
-                    components: [],
-                  };
-                  acc.push(section);
-                }
-                section.components.push(component);
-                return acc;
-              }, []);
-
-              return { ...project, sections };
-            } catch (error) {
-              console.error(`Error processing project ${project.project_code}:`, error.message);
-              return null;
-            }
-          }),
-        );
-
-        setProjects(projectsWithComponents.filter((project) => project !== null));
-      } catch (err) {
-        console.error('Error fetching projects:', err.message);
-        setError('Failed to load projects. Please try again.');
-      } finally {
-        setLoading(false);
-      }
+    const handleTabChange = (event, newValue) => {
+      setTabValue(newValue);
+      onTabChange(newValue);
     };
 
-    loadProjects();
-  }, [refreshTrigger]);
-
-  const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="300px">
-        <Typography color="error">{error}</Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: { xs: 1, sm: 2, md: 3 },
-        backgroundColor: alpha(theme.palette.background.paper, 0.9),
-      }}
-    >
-      <Box
-        display="flex"
-        flexDirection={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h5" sx={{ fontWeight: 'bold', mb: { xs: 2, sm: 0 } }}>
-          ข้อมูลโครงการ
-        </Typography>
-        <Search>
-          <SearchIconWrapper>
-            <SearchIcon />
-          </SearchIconWrapper>
-          <StyledInputBase
-            placeholder="ค้นหา…"
-            inputProps={{ 'aria-label': 'search' }}
-            value={searchTerm}
-            onChange={handleSearchChange}
-          />
-        </Search>
-      </Box>
-      <Tabs value={tabValue} onChange={handleTabChange} aria-label="Top Performers Tabs">
-        <Tab label="ชิ้นงานพรีคาสท์" value="1" />
-        <Tab label="ชิ้นงานอื่นๆ" value="2" />
-      </Tabs>
-      {tabValue === '1' && (
-        <Box sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
-          <TableContainer sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
-            <Table
-              stickyHeader
-              aria-label="collapsible table"
-              size={isSmallScreen ? 'small' : 'medium'}
-            >
-              <TableHead>
-                <TableRow>
-                  <StyledTableCell />
-                  <StyledTableCell>รหัสโครงการ</StyledTableCell>
-                  {!isSmallScreen && <StyledTableCell>ชื่อโครงการ</StyledTableCell>}
-                  {!isSmallScreen && <StyledTableCell align="right">จำนวนชั้น</StyledTableCell>}
-                  <StyledTableCell align="right">จำนวนชิ้นงาน</StyledTableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredProjects.map((project) => (
-                  <ProjectRow
-                    key={project.id}
-                    project={project}
-                    onRowClick={handleProjectSelect}
-                    isSmallScreen={isSmallScreen}
-                    onProjectUpdate={handleProjectUpdate}
-                    userRole={userRole}
-                    selectedProjectId={selectedProjectId}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      )}
-      {tabValue === '2' && (
-        <Tab2Content
-          isSmallScreen={isSmallScreen}
-          onProjectSelect={onProjectSelect}
-          userRole={userRole}
-        />
-      )}
-      {filteredProjects.length === 0 && tabValue === '1' && (
-        <TableBody>
-          <TableRow>
-            <TableCell colSpan={5}>
-              <Box display="flex" justifyContent="center" alignItems="center" height="100px">
-                <Alert severity="info">ไม่พบข้อมูล</Alert>
-              </Box>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      )}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        message={snackbarMessage}
-        action={
-          <Button color="inherit" size="small" onClick={handleSnackbarClose}>
-            ปิด
-          </Button>
+    const handleProjectSelect = useCallback(
+      (project) => {
+        setSelectedProjectId(project.id);
+        if (onProjectSelect) {
+          onProjectSelect(project);
         }
-      />
-    </Paper>
-  );
-});
+      },
+      [onProjectSelect],
+    );
+
+    useEffect(() => {
+      const loadProjects = async () => {
+        try {
+          setLoading(true);
+          const response = await fetchProjects();
+          console.log(`Fetched ${response.data.length} projects`);
+
+          const projectsWithComponents = await Promise.all(
+            response.data.map(async (project) => {
+              try {
+                const components = await fetchComponentsByProjectId(project.id);
+
+                if (!Array.isArray(components)) {
+                  console.error(
+                    `Components data is not an array for project ${project.project_code}`,
+                    components,
+                  );
+                  return null;
+                }
+
+                const sections = components.reduce((acc, component) => {
+                  let section = acc.find((sec) => sec.id === component.section_id);
+                  if (!section) {
+                    section = {
+                      id: component.section_id,
+                      name: component.section_name || `Section ${component.section_id}`,
+                      components: [],
+                    };
+                    acc.push(section);
+                  }
+                  section.components.push(component);
+                  return acc;
+                }, []);
+
+                return { ...project, sections };
+              } catch (error) {
+                console.error(`Error processing project ${project.project_code}:`, error.message);
+                return null;
+              }
+            }),
+          );
+
+          setProjects(projectsWithComponents.filter((project) => project !== null));
+        } catch (err) {
+          console.error('Error fetching projects:', err.message);
+          setError('Failed to load projects. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadProjects();
+    }, [refreshTrigger]);
+
+    const filteredProjects = projects.filter((project) =>
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+
+    if (loading) {
+      return (
+        <Box display="flex" justifyContent="center" alignItems="center" height="300px">
+          <CircularProgress />
+        </Box>
+      );
+    }
+
+    if (error) {
+      return (
+        <Box display="flex" justifyContent="center" alignItems="center" height="300px">
+          <Typography color="error">{error}</Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <Paper
+        elevation={3}
+        sx={{
+          p: { xs: 1, sm: 2, md: 3 },
+          backgroundColor: alpha(theme.palette.background.paper, 0.9),
+        }}
+      >
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', sm: 'row' }}
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: { xs: 2, sm: 0 } }}>
+            ข้อมูลโครงการ
+          </Typography>
+          <Search>
+            <SearchIconWrapper>
+              <SearchIcon />
+            </SearchIconWrapper>
+            <StyledInputBase
+              placeholder="ค้นหา…"
+              inputProps={{ 'aria-label': 'search' }}
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </Search>
+        </Box>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="Top Performers Tabs">
+          <Tab label="ชิ้นงานพรีคาสท์" value="1" />
+          <Tab label="ชิ้นงานอื่นๆ" value="2" />
+        </Tabs>
+        {tabValue === '1' && (
+          <Box sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
+            <TableContainer sx={{ maxHeight: '50vh', overflowY: 'auto' }}>
+              <Table
+                stickyHeader
+                aria-label="collapsible table"
+                size={isSmallScreen ? 'small' : 'medium'}
+              >
+                <TableHead>
+                  <TableRow>
+                    <StyledTableCell />
+                    <StyledTableCell>รหัสโครงการ</StyledTableCell>
+                    {!isSmallScreen && <StyledTableCell>ชื่อโครงการ</StyledTableCell>}
+                    {!isSmallScreen && <StyledTableCell align="right">จำนวนชั้น</StyledTableCell>}
+                    <StyledTableCell align="right">จำนวนชิ้นงาน</StyledTableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredProjects.map((project) => (
+                    <ProjectRow
+                      key={project.id}
+                      project={project}
+                      onRowClick={handleProjectSelect}
+                      isSmallScreen={isSmallScreen}
+                      onProjectUpdate={handleProjectUpdate}
+                      userRole={userRole}
+                      selectedProjectId={selectedProjectId}
+                      canEdit={canEditProject(project.id)}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        )}
+        {tabValue === '2' && (
+          <Tab2Content
+            isSmallScreen={isSmallScreen}
+            onProjectSelect={onProjectSelect}
+            userRole={userRole}
+          />
+        )}
+        {filteredProjects.length === 0 && tabValue === '1' && (
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={5}>
+                <Box display="flex" justifyContent="center" alignItems="center" height="100px">
+                  <Alert severity="info">ไม่พบข้อมูล</Alert>
+                </Box>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        )}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={handleSnackbarClose}
+          message={snackbarMessage}
+          action={
+            <Button color="inherit" size="small" onClick={handleSnackbarClose}>
+              ปิด
+            </Button>
+          }
+        />
+      </Paper>
+    );
+  },
+);
 
 export default TopPerformers;

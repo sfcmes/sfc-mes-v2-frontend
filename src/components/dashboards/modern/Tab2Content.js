@@ -46,7 +46,7 @@ const COLORS = {
 };
 
 const STATUS_THAI = {
-  planning: 'วางแผน',
+  planning: 'รอผลิต',
   manufactured: 'ผลิตแล้ว',
   transported: 'ขนส่งสำเร็จ',
   rejected: 'ถูกปฏิเสธ',

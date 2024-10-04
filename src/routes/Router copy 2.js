@@ -109,7 +109,6 @@ const MuiTypography = Loadable(lazy(() => import('../views/ui-components/MuiTypo
 
 // const Login2 = Loadable(lazy(() => import('../views/authentication/auth2/Login2')));
 const Register = Loadable(lazy(() => import('../views/authentication/auth1/Register')));
-const ManageUser = Loadable(lazy(() => import('../views/authentication/auth1/ManageUser')));
 // const Register2 = Loadable(lazy(() => import('../views/authentication/auth2/Register2')));
 const ForgotPassword = Loadable(lazy(() => import('../views/authentication/auth1/ForgotPassword')));
 // const ForgotPassword2 = Loadable(
@@ -125,6 +124,7 @@ const Landingpage = Loadable(lazy(() => import('../views/pages/landingpage/Landi
 
 /* authentication */
 const Login = Loadable(lazy(() => import('../views/authentication/auth1/Login')));
+const ComponentCardLogin = Loadable(lazy(() => import('../views/authentication/ComponentCardLogin')));
 
 // New authentication wrapper component
 const AuthWrapper = ({ children }) => {
@@ -232,12 +232,12 @@ const Router = [
       { path: '/auth/404', element: <Error /> },
       { path: '/auth/login', element: <Login /> },
       { path: '/auth/register', element: <Register /> },
-      { path: '/auth/manageuser', element: <ManageUser /> },
       { path: '*', element: <Navigate to="/auth/404" /> },
       { path: '/forms/form-component-card/:id', element: <FormComponentCard/>},
       { path: '*', element: <Navigate to="/auth/404" /> },
     ],
   },
+  
 ];
 
 export default Router;

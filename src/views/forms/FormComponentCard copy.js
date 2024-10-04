@@ -4,14 +4,13 @@ import {
   Box,
   Typography,
   CircularProgress,
-  Button,
+  Button, // Import Button here
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   useMediaQuery,
   useTheme,
-  TextField,
 } from '@mui/material';
 import {
   fetchComponentByQR,
@@ -19,7 +18,6 @@ import {
   fetchComponentFiles,
   openFile,
   publicApi,
-  checkUsernameAndRole,
 } from 'src/utils/api';
 import ComponentCard from './ComponentCard';
 
@@ -29,10 +27,6 @@ const FormComponentCard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null });
-  const [username, setUsername] = useState('');
-  const [usernameError, setUsernameError] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isUserVerified, setIsUserVerified] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -43,7 +37,7 @@ const FormComponentCard = () => {
       const filesData = await fetchComponentFiles(id);
       setComponent({ ...componentData, files: filesData });
     } catch (err) {
-      setError('ไม่สามารถโหลดข้อมูลชิ้นงานได้');
+      setError('Failed to load component data');
       console.error(err);
     } finally {
       setLoading(false);
@@ -54,42 +48,16 @@ const FormComponentCard = () => {
     fetchComponentData();
   }, [id]);
 
-  const handleVerifyUser = async () => {
-    if (!username) {
-      setUsernameError('กรุณาใส่ชื่อผู้ใช้งาน');
-      return;
-    }
-    try {
-      const { isValid, role } = await checkUsernameAndRole(username);
-      if (isValid) {
-        setIsAdmin(role === 'Admin');
-        setIsUserVerified(true);
-        setUsernameError('');
-      } else {
-        setUsernameError('ชื่อผู้ใช้งานไม่ถูกต้อง');
-        setIsUserVerified(false);
-      }
-    } catch (err) {
-      setError('ไม่สามารถตรวจสอบชื่อผู้ใช้งานได้');
-      console.error(err);
-      setIsUserVerified(false);
-    }
-  };
-
   const handleStatusChange = async (newStatus) => {
-    if (!isUserVerified) {
-      setUsernameError('กรุณายืนยันชื่อผู้ใช้งานก่อน');
-      return;
-    }
     setConfirmDialog({ open: true, action: () => updateStatus(newStatus) });
   };
 
   const updateStatus = async (newStatus) => {
     try {
-      await updateComponentStatus(id, newStatus, username);
-      await fetchComponentData();
+      await updateComponentStatus(id, newStatus);
+      await fetchComponentData(); // Refresh component data after status update
     } catch (err) {
-      setError('ไม่สามารถอัพเดทสถานะชิ้นงานได้');
+      setError('Failed to update component status');
       console.error(err);
     }
   };
@@ -98,51 +66,21 @@ const FormComponentCard = () => {
     try {
       await openFile(fileUrl);
     } catch (err) {
-      setError('ไม่สามารถเปิดไฟล์ได้');
+      setError('Failed to open file');
       console.error(err);
     }
   };
 
   if (loading) return <CircularProgress />;
   if (error) return <Typography color="error">{error}</Typography>;
-  if (!component) return <Typography>ไม่พบข้อมูลชิ้นงาน</Typography>;
+  if (!component) return <Typography>No component found</Typography>;
 
   return (
     <Box sx={{ padding: isMobile ? 2 : 4 }}>
-      <Box display="flex" alignItems="center" mb={2}>
-        <TextField
-          label="ชื่อผู้ใช้งาน"
-          variant="outlined"
-          value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-            setUsernameError('');
-            setIsUserVerified(false);
-          }}
-          error={!!usernameError}
-          helperText={usernameError}
-          fullWidth
-          sx={{ mr: 2 }}
-        />
-        <Button
-          variant="contained"
-          onClick={handleVerifyUser}
-          disabled={!username}
-        >
-          ตกลง
-        </Button>
-      </Box>
-      {isUserVerified && (
-        <Typography color="success.main" mb={2}>
-          ยืนยันตัวตนสำเร็จ {isAdmin ? '(Admin)' : '(ผู้ใช้ทั่วไป)'}
-        </Typography>
-      )}
       <ComponentCard
         component={component}
-        onStatusChange={(newStatus) => handleStatusChange(newStatus)}
+        onStatusChange={fetchComponentData} // Auto-refresh the component data
         onOpenFile={handleFileOpen}
-        disableActions={!isUserVerified}
-        isAdmin={isAdmin}
       />
 
       <Dialog

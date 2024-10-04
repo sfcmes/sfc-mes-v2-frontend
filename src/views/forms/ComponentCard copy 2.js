@@ -23,32 +23,39 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { fetchProjectDetailsByComponentId, updateComponentStatus } from 'src/utils/api';
 
+// Status translation map
 const statusTranslation = {
-  planning: 'รอผลิต',
+  planning: 'แผนผลิต',
   manufactured: 'ผลิตแล้ว',
-  transported: 'อยู่ระหว่างขนส่ง',
+  in_transit: 'อยู่ระหว่างขนส่ง',
+  transported: 'ขนส่งสำเร็จ',
   accepted: 'ตรวจรับแล้ว',
-  installed: 'ติดตั้งแล้ว',
-  rejected: 'ถูกปฏิเสธ',
+  rejected: 'ปฏิเสธ',
 };
 
-const statusOrder = ['planning', 'manufactured', 'transported', 'accepted', 'installed'];
+const statusOrder = [
+  'manufactured',
+  'in_transit',
+  'transported',
+  'accepted',
+];
 
-const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, isAdmin }) => {
+const ComponentCard = ({ component, onOpenFile, onStatusChange }) => {
   const [projectDetails, setProjectDetails] = useState({ project_name: '', project_code: '' });
   const [statusHistory, setStatusHistory] = useState([]);
   const [openRejectDialog, setOpenRejectDialog] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
+  // Fetch project details and status history when the component is loaded or updated
   useEffect(() => {
     const loadComponentData = async () => {
       try {
         const details = await fetchProjectDetailsByComponentId(component.id);
         setProjectDetails(details.projectDetails);
-        setStatusHistory(details.statusHistory || []);
+        setStatusHistory(details.statusHistory || []); // Ensure it's always an array
       } catch (error) {
         console.error('Failed to load component data:', error);
-        setStatusHistory([]);
+        setStatusHistory([]); // Set to empty array in case of error
       }
     };
 
@@ -57,39 +64,31 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'planning': return { bg: 'info.light', color: 'info.main' };
-      case 'manufactured': return { bg: 'primary.light', color: 'primary.main' };
-      case 'transported': return { bg: 'warning.light', color: 'warning.main' };
-      case 'accepted': return { bg: 'success.light', color: 'success.main' };
-      case 'installed': return { bg: 'secondary.light', color: 'secondary.main' };
-      case 'rejected': return { bg: 'error.light', color: 'error.main' };
-      default: return { bg: 'grey.light', color: 'grey.main' };
+      case 'manufactured':
+        return { bg: 'primary.light', color: 'primary.main' };
+      case 'in_transit':
+        return { bg: 'warning.light', color: 'warning.main' };
+      case 'transported':
+        return { bg: 'secondary.light', color: 'secondary.main' };
+      case 'accepted':
+        return { bg: 'success.light', color: 'success.main' };
+      case 'rejected':
+        return { bg: 'error.light', color: 'error.main' };
+      default:
+        return { bg: 'grey.light', color: 'grey.main' };
     }
   };
 
   const statusStyle = getStatusStyle(component.status);
 
-  const getNextStatus = (currentStatus) => {
-    const currentIndex = statusOrder.indexOf(currentStatus);
-    if (currentIndex < statusOrder.length - 1) {
-      return statusOrder[currentIndex + 1];
-    }
-    return null;
-  };
-
   const handleAccept = async () => {
-    if (disableActions) return;
     try {
-      let newStatus;
-      if (isAdmin) {
-        newStatus = getNextStatus(component.status);
-      } else if (component.status === 'transported') {
-        newStatus = 'accepted';
-      }
-
-      if (newStatus) {
-        await onStatusChange(newStatus);
-        setOpenSnackbar(true);
+      const currentStatusIndex = statusOrder.indexOf(component.status);
+      if (currentStatusIndex < statusOrder.length - 1) {
+        const nextStatus = statusOrder[currentStatusIndex + 1];
+        await updateComponentStatus(component.id, nextStatus);
+        onStatusChange(); // Trigger auto-refresh in the parent component
+        setOpenSnackbar(true); // Show success snackbar
       }
     } catch (error) {
       console.error('Failed to update component status:', error);
@@ -97,10 +96,10 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
   };
 
   const handleRejectConfirm = async () => {
-    if (disableActions) return;
     try {
-      await onStatusChange('rejected');
+      await updateComponentStatus(component.id, 'rejected');
       setOpenRejectDialog(false);
+      onStatusChange(); // Trigger auto-refresh in the parent component
     } catch (error) {
       console.error('Failed to reject component:', error);
     }
@@ -112,9 +111,6 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
     }
     setOpenSnackbar(false);
   };
-
-  const canAccept = isAdmin || component.status === 'transported';
-  const nextStatus = getNextStatus(component.status);
 
   return (
     <BlankCard>
@@ -135,7 +131,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
 
         <Stack direction="row" spacing={2} alignItems="center" mb={3}>
           <Chip
-            label={statusTranslation[component.status] || component.status}
+            label={statusTranslation[component.status] || component.status} // Use Thai translation
             sx={{
               bgcolor: statusStyle.bg,
               color: statusStyle.color,
@@ -145,7 +141,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
           />
           <Typography variant="body2" color="textSecondary">
             <CalendarTodayIcon fontSize="small" sx={{ verticalAlign: 'text-bottom', mr: 0.5 }} />
-            อัพเดทล่าสุด: {new Date(component.updated_at).toLocaleDateString('th-TH')}
+            อัพเดทล่าสุด: {new Date(component.updated_at).toLocaleDateString()}
           </Typography>
         </Stack>
 
@@ -168,21 +164,17 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
         </Stack>
 
         <Stack spacing={2}>
-          {canAccept && (isAdmin ? nextStatus : true) && (
-            <Button
-              size="large"
-              variant="contained"
-              color="primary"
-              startIcon={<CheckCircleIcon />}
-              onClick={handleAccept}
-              fullWidth
-              disabled={disableActions || component.status === 'installed'}
-            >
-              {isAdmin 
-                ? `อัพเดทเป็น ${statusTranslation[nextStatus]}`
-                : 'ยอมรับชิ้นงาน'}
-            </Button>
-          )}
+          <Button
+            size="large"
+            variant="contained"
+            color="primary"
+            startIcon={<CheckCircleIcon />}
+            onClick={handleAccept}
+            fullWidth
+            disabled={component.status === 'accepted' || component.status === 'rejected'}
+          >
+            รับชิ้นงาน
+          </Button>
           <Button
             size="large"
             variant="outlined"
@@ -190,7 +182,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
             startIcon={<CancelIcon />}
             onClick={() => setOpenRejectDialog(true)}
             fullWidth
-            disabled={component.status === 'rejected' || disableActions}
+            disabled={component.status === 'rejected'}
           >
             ปฏิเสธชิ้นงาน
           </Button>
@@ -203,7 +195,8 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
               const fileUrl =
                 component.files && component.files.length > 0 ? component.files[0].s3_url : null;
               if (fileUrl) {
-                onOpenFile(fileUrl);
+                // Open file URL in a new tab
+                window.open(fileUrl, '_blank');
               }
             }}
             fullWidth
@@ -213,6 +206,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
           </Button>
         </Stack>
 
+        {/* Status History Display */}
         <Box mt={3}>
           <Typography variant="h6" fontWeight="500" mb={1}>
             ประวัติการเปลี่ยนแปลงสถานะ
@@ -220,7 +214,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
           {statusHistory && statusHistory.length > 0 ? (
             statusHistory.map((entry, index) => (
               <Typography key={index} variant="body2" color="textSecondary">
-                {new Date(entry.timestamp).toLocaleDateString('th-TH')}: {statusTranslation[entry.status] || entry.status}
+                {new Date(entry.timestamp).toLocaleDateString()}: {statusTranslation[entry.status] || entry.status}
               </Typography>
             ))
           ) : (
@@ -230,6 +224,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
           )}
         </Box>
 
+        {/* Reject Confirmation Dialog */}
         <Dialog
           open={openRejectDialog}
           onClose={() => setOpenRejectDialog(false)}
@@ -237,7 +232,7 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
           <DialogTitle>ยืนยันการปฏิเสธ</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              คุณแน่ใจว่าต้องการปฏิเสธชิ้นงานนี้หรือไม่? การดำเนินการนี้จะเปลี่ยนสถานะเป็น "ปฏิเสธ"
+              คุณแน่ใจว่าต้องการปฏิเสธชิ้นงานนี้หรือไม่? การดำเนินการนี้จะเปลี่ยนสถานะเป็น "ปฏิเสธ".
             </DialogContentText>
           </DialogContent>
           <DialogActions>
@@ -250,9 +245,10 @@ const ComponentCard = ({ component, onOpenFile, onStatusChange, disableActions, 
           </DialogActions>
         </Dialog>
 
+        {/* Snackbar */}
         <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
           <Alert onClose={handleCloseSnackbar} severity="success">
-            อัพเดทสถานะชิ้นงานเรียบร้อยแล้ว!
+            Component status updated!
           </Alert>
         </Snackbar>
       </CardContent>

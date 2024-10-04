@@ -337,26 +337,9 @@ const fetchSectionByName = async (projectId, sectionName) => {
   }
 };
 
-const checkUsername = async (username) => {
+const updateComponentStatus = async (componentId, newStatus) => {
   try {
-    const response = await publicApi.post('/users/check-username', { username });
-    return response.data.isValid;
-  } catch (error) {
-    console.error('Error checking username:', error);
-    throw error;
-  }
-};
-
-const updateComponentStatus = async (componentId, newStatus, username) => {
-  try {
-    let response;
-    if (username) {
-      // Public API call with username
-      response = await publicApi.put(`/components/${componentId}/status`, { status: newStatus, username });
-    } else {
-      // Authenticated API call
-      response = await api.put(`/components/${componentId}/status-auth`, { status: newStatus });
-    }
+    const response = await publicApi.put(`/components/${componentId}`, { status: newStatus });
     console.log('Updated component status:', response.data);
     return response.data;
   } catch (error) {
@@ -612,48 +595,12 @@ const deleteProjectImage = async (projectId, imageId) => {
   }
 };
 
-const assignProjectsToUser = async (userId, projectIds) => {
-  try {
-    const response = await api.post(`/users/${userId}/projects`, { projectIds });
-    return response.data;
-  } catch (error) {
-    console.error('Error assigning projects to user:', error);
-    throw error;
-  }
-};
-
-const fetchUserProjects = async (userId) => {
-  try {
-    const response = await api.get(`/users/${userId}/projects`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching user projects:', error);
-    throw error;
-  }
-};
-
-const checkUsernameAndRole = async (username) => {
-  try {
-    const response = await publicApi.post('/users/check-username-and-role', { username });
-    return {
-      isValid: response.data.isValid,
-      role: response.data.role
-    };
-  } catch (error) {
-    console.error('Error checking username and role:', error);
-    throw error;
-  }
-};
-
 export {
   api,
   publicApi,
   fetchUsers,
   deleteProjectImage,
-  fetchUserProjects,
-  checkUsernameAndRole,
   checkAuthToken,
-  assignProjectsToUser,
   fetchComponentByQR,
   updateUserPassword,
   fetchProjectDetailsByComponentId,
@@ -687,7 +634,6 @@ export {
   downloadFile,
   openFile,
   fetchSectionByName,
-  checkUsername,
   updateComponentStatus,
   uploadComponentFile,
   deleteFileRevision,

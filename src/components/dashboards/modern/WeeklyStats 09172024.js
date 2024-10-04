@@ -9,8 +9,6 @@ import {
   Snackbar,
   Alert,
   Paper,
-  Menu,
-  MenuItem,
 } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import {
@@ -20,10 +18,8 @@ import {
   Close as CloseIcon,
   ZoomIn as ZoomInIcon,
   ZoomOut as ZoomOutIcon,
-  MoreVert as MoreVertIcon,
-  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { publicApi, api, deleteProjectImage } from 'src/utils/api';
+import { publicApi, api } from 'src/utils/api';
 
 const COMPONENT_HEIGHT = 600;
 const IMAGE_HEIGHT = 400;
@@ -98,8 +94,6 @@ const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedImageId, setSelectedImageId] = useState(null);
   const fileInputRef = useRef(null);
 
   const canUpload = userRole === 'Admin' || userRole === 'Site User';
@@ -123,7 +117,7 @@ const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
     setError(null);
     if (projectId) {
       fetchImages();
-    }
+    } 
   }, [projectId, fetchImages, currentTab]);
 
   const handlePrevious = useCallback(() => {
@@ -183,38 +177,6 @@ const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
     setSnackbarOpen(false);
   }, []);
 
-  const handleMenuOpen = (event, imageId) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedImageId(imageId);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedImageId(null);
-  };
-
-  const handleDeleteImage = async () => {
-    if (!selectedImageId) return;
-
-    try {
-      await deleteProjectImage(projectId, selectedImageId);
-      setImages(images.filter(img => img.id !== selectedImageId));
-      setSnackbarMessage('Image deleted successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-      if (currentIndex >= images.length - 1) {
-        setCurrentIndex(Math.max(0, images.length - 2));
-      }
-    } catch (error) {
-      console.error('Error deleting image:', error);
-      setSnackbarMessage('Failed to delete image');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    } finally {
-      handleMenuClose();
-    }
-  };
-
   return (
     <StyledPaper elevation={3}>
       <Typography variant="h6" sx={{ fontWeight: 'bold', p: 1, textAlign: 'center' }}>
@@ -247,20 +209,6 @@ const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
               <ImageCounter>
                 {currentIndex + 1} / {images.length}
               </ImageCounter>
-              {canUpload && (
-                <IconButton
-                  onClick={(e) => handleMenuOpen(e, images[currentIndex].id)}
-                  sx={{
-                    position: 'absolute',
-                    top: 10,
-                    right: 10,
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    color: 'white',
-                  }}
-                >
-                  <MoreVertIcon />
-                </IconButton>
-              )}
             </>
           ) : (
             <Typography align="center" color="text.secondary">
@@ -356,17 +304,6 @@ const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
           {isZoomed ? <ZoomOutIcon /> : <ZoomInIcon />}
         </IconButton>
       </Dialog>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleDeleteImage}>
-          <DeleteIcon sx={{ mr: 1 }} />
-          Delete Image
-        </MenuItem>
-      </Menu>
 
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
         <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
