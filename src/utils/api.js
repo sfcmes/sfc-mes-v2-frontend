@@ -511,9 +511,19 @@ const createPrecastComponent = async (formData) => {
 const fetchProjectsWithOtherComponents = async () => {
   try {
     const response = await publicApi.get('/other-components/projects-with-other-components');
-    return response.data;
+    console.log('Fetched projects with other components:', response.data);
+    // ตรวจสอบโครงสร้างข้อมูล
+    if (Array.isArray(response.data)) {
+      return response.data.map(project => ({
+        ...project,
+        components: Array.isArray(project.components) ? project.components : []
+      }));
+    } else {
+      console.error('Invalid data structure received from API');
+      return [];
+    }
   } catch (error) {
-    console.error('Error fetching projects with other components:', error);
+    console.error('Error fetching projects with other components:', error.response?.data || error.message);
     if (error.response && error.response.status === 500) {
       throw new Error('Server error occurred. Please try again later.');
     }
@@ -521,14 +531,129 @@ const fetchProjectsWithOtherComponents = async () => {
   }
 };
 
+// const updateOtherComponentStatus = async (componentId, fromStatus, toStatus, quantity, userId) => {
+//   const client = await db.getClient();
+
+//   try {
+//     await client.query("BEGIN");
+
+//     const fromStatusId = await getStatusIdByName(fromStatus);
+//     const toStatusId = await getStatusIdByName(toStatus);
+
+//     // Fetch the total quantity of the component
+//     const { rows: [component] } = await client.query(
+//       "SELECT total_quantity FROM other_components WHERE id = $1",
+//       [componentId]
+//     );
+//     const totalQuantity = component.total_quantity;
+
+//     // Fetch current quantities for all statuses
+//     const { rows: currentStatuses } = await client.query(
+//       `SELECT ocs.name, ocst.quantity 
+//        FROM other_component_status_tracking ocst 
+//        JOIN other_component_statuses ocs ON ocst.status_id = ocs.id 
+//        WHERE ocst.other_component_id = $1`,
+//       [componentId]
+//     );
+
+//     const currentQuantities = currentStatuses.reduce((acc, status) => {
+//       acc[status.name] = status.quantity;
+//       return acc;
+//     }, {});
+
+//     // Calculate total quantity excluding 'manufactured' and 'transported'
+//     const totalExcludingManufacturedAndTransported = Object.entries(currentQuantities)
+//       .filter(([status]) => status !== 'manufactured' && status !== 'transported')
+//       .reduce((sum, [, value]) => sum + value, 0);
+
+//     // Check if the update would exceed 100% for statuses other than 'manufactured' and 'transported'
+//     if (toStatus !== 'manufactured' && toStatus !== 'transported') {
+//       if (totalExcludingManufacturedAndTransported - (fromStatus !== 'manufactured' && fromStatus !== 'transported' ? quantity : 0) + quantity > totalQuantity) {
+//         throw new Error("Update would exceed 100% of total quantity");
+//       }
+//     }
+
+//     // Decrease quantity in the 'from' status, except when it's 'manufactured' or 'transported'
+//     if (fromStatus !== 'manufactured' && fromStatus !== 'transported') {
+//       await client.query(
+//         `UPDATE other_component_status_tracking
+//          SET quantity = quantity - $1
+//          WHERE other_component_id = $2 AND status_id = $3`,
+//         [quantity, componentId, fromStatusId]
+//       );
+//     }
+
+//     // Increase quantity in the 'to' status
+//     if (toStatus === 'manufactured' || toStatus === 'transported') {
+//       // For 'manufactured' and 'transported', allow exceeding 100% but cap at 100%
+//       const currentToQuantity = currentQuantities[toStatus] || 0;
+//       const newQuantity = Math.min(currentToQuantity + quantity, totalQuantity);
+//       const actualIncrease = newQuantity - currentToQuantity;
+
+//       await client.query(
+//         `INSERT INTO other_component_status_tracking (other_component_id, status_id, quantity, created_by)
+//          VALUES ($1, $2, $3, $4)
+//          ON CONFLICT (other_component_id, status_id) 
+//          DO UPDATE SET quantity = LEAST(other_component_status_tracking.quantity + $3, $5)`,
+//         [componentId, toStatusId, actualIncrease, userId, totalQuantity]
+//       );
+
+//       // If moving from 'manufactured' to 'transported'
+//       if (fromStatus === 'manufactured' && toStatus === 'transported') {
+//         // Check if there's enough quantity in 'manufactured' to move
+//         if (currentQuantities['manufactured'] < quantity) {
+//           throw new Error("Cannot transport more than manufactured quantity");
+//         }
+//         // We don't update 'manufactured' quantity here, it remains unchanged
+//       }
+//     } else {
+//       // For other statuses, just add the quantity
+//       await client.query(
+//         `INSERT INTO other_component_status_tracking (other_component_id, status_id, quantity, created_by)
+//          VALUES ($1, $2, $3, $4)
+//          ON CONFLICT (other_component_id, status_id) 
+//          DO UPDATE SET quantity = other_component_status_tracking.quantity + $3`,
+//         [componentId, toStatusId, quantity, userId]
+//       );
+//     }
+
+//     // Fetch updated component data
+//     const { rows: [updatedComponent] } = await client.query(
+//       "SELECT * FROM other_components WHERE id = $1",
+//       [componentId]
+//     );
+
+//     // Fetch updated statuses
+//     const { rows: statuses } = await client.query(
+//       `SELECT ocs.name, ocst.quantity 
+//        FROM other_component_status_tracking ocst 
+//        JOIN other_component_statuses ocs ON ocst.status_id = ocs.id 
+//        WHERE ocst.other_component_id = $1`,
+//       [componentId]
+//     );
+
+//     await client.query("COMMIT");
+
+//     return {
+//       ...updatedComponent,
+//       statuses: statuses.reduce((acc, status) => ({ ...acc, [status.name]: status.quantity }), {})
+//     };
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+//     console.error('Error in updateOtherComponentStatus:', error);
+//     throw error;
+//   } finally {
+//     client.release();
+//   }
+// };
+
 const updateOtherComponentStatus = async (componentId, fromStatus, toStatus, quantity) => {
   try {
     const response = await api.put(`/other-components/${componentId}/status`, {
       fromStatus,
       toStatus,
-      quantity,
+      quantity
     });
-    console.log('Updated other component status:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error updating other component status:', error);

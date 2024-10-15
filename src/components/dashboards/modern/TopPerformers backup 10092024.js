@@ -23,15 +23,11 @@ import {
   Card,
   CardContent,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
 } from '@mui/material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
-import CloseIcon from '@mui/icons-material/Close';
 import { fetchProjects, fetchComponentsByProjectId } from 'src/utils/api';
 import ComponentDialog from './ComponentDialog';
 import Tab2Content from './Tab2Content';
@@ -153,84 +149,6 @@ const ComponentCard = memo(({ component, setSelectedComponent }) => {
   );
 });
 
-const ProjectModal = memo(({ project, open, onClose, userRole, canEdit }) => {
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-  const [selectedComponent, setSelectedComponent] = useState(null);
-
-  const handleComponentUpdate = useCallback(
-    (updatedComponent) => {
-      if (!updatedComponent || !updatedComponent.id) {
-        console.error('Updated component is missing or undefined:', updatedComponent);
-        return;
-      }
-      // Update the component in the project
-      const updatedSections = project.sections.map((section) => ({
-        ...section,
-        components: section.components.map((comp) =>
-          comp.id === updatedComponent.id ? updatedComponent : comp
-        ),
-      }));
-      // You may want to update the project state here or pass this information to a parent component
-    },
-    [project]
-  );
-
-  return (
-    <Dialog
-      fullScreen={fullScreen}
-      open={open}
-      onClose={onClose}
-      aria-labelledby="project-dialog-title"
-    >
-      <DialogTitle id="project-dialog-title">
-        {project.name || `Project ${project.project_code}`}
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Typography variant="h6" gutterBottom>
-          ชั้น
-        </Typography>
-        {project.sections.map((section) => (
-          <Box key={section.id} mb={2}>
-            <Typography variant="subtitle1">{section.name || `Section ${section.id}`}</Typography>
-            <Grid container spacing={1}>
-              {section.components.map((component) => (
-                <ComponentCard
-                  key={component.id}
-                  component={component}
-                  setSelectedComponent={setSelectedComponent}
-                />
-              ))}
-            </Grid>
-          </Box>
-        ))}
-      </DialogContent>
-      {selectedComponent && (
-        <ComponentDialog
-          open={Boolean(selectedComponent)}
-          onClose={() => setSelectedComponent(null)}
-          component={selectedComponent}
-          projectCode={project.project_code}
-          onComponentUpdate={handleComponentUpdate}
-          canEdit={canEdit}
-        />
-      )}
-    </Dialog>
-  );
-});
-
 const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdate, userRole, canEdit }) => {
   const [open, setOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
@@ -263,6 +181,8 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
     onComponentUpdate();
   }, [onComponentUpdate]);
 
+  // const canEdit = userRole === 'Admin' || userRole === 'Site User';
+
   return (
     <>
       <TableRow>
@@ -286,7 +206,7 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
               <Box display="flex" flexWrap="wrap" justifyContent="flex-start" mb={2}>
                 {statusOrder.map((status) => {
                   const count = statusCounts[status] || 0;
-                  if (count > 0) {
+                  if (count >= 0) {
                     return (
                       <StatusChip
                         key={status}
@@ -336,17 +256,16 @@ const ProjectRow = memo(
     canEdit,
   }) => {
     const [open, setOpen] = useState(false);
-    const [modalOpen, setModalOpen] = useState(false);
+
     const theme = useTheme();
-    const isMediumScreen = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
     const isSelected = project.id === selectedProjectId;
 
     useEffect(() => {
-      if (isSelected && !isSmallScreen && !isMediumScreen) {
+      if (isSelected) {
         setOpen(true);
       }
-    }, [isSelected, isSmallScreen, isMediumScreen]);
+    }, [isSelected]);
 
     const numberOfSections = project.sections.length;
     const totalComponents = project.sections.reduce(
@@ -355,19 +274,13 @@ const ProjectRow = memo(
     );
 
     const handleRowClick = useCallback(() => {
-      if (isSmallScreen || isMediumScreen) {
-        setModalOpen(true);
-      } else {
-        onRowClick(project);
-      }
-    }, [isSmallScreen, isMediumScreen, onRowClick, project]);
+      onRowClick(project);
+    }, [onRowClick, project]);
 
     const handleIconClick = useCallback((event) => {
       event.stopPropagation();
-      if (!isSmallScreen && !isMediumScreen) {
-        setOpen((prevOpen) => !prevOpen);
-      }
-    }, [isSmallScreen, isMediumScreen]);
+      setOpen((prevOpen) => !prevOpen);
+    }, []);
 
     const handleSectionUpdate = useCallback(
       (sectionId, updatedComponents) => {
@@ -411,67 +324,61 @@ const ProjectRow = memo(
           <TableCell align="right">{totalComponents}</TableCell>
         </TableRow>
 
-        {!isSmallScreen && !isMediumScreen && (
-          <TableRow>
-            <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
-              <Collapse in={open} timeout="auto" unmountOnExit>
+        <TableRow>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={isSmallScreen ? 3 : 5}>
+            <Collapse in={open} timeout="auto" unmountOnExit>
+              <Box
+                margin={1}
+                sx={{
+                  border: '1px solid grey',
+                  borderRadius: 1,
+                  overflowY: 'auto',
+                  maxHeight: '400px',
+                }}
+              >
+                {/* Sticky Header */}
                 <Box
-                  margin={1}
                   sx={{
-                    border: '1px solid grey',
-                    borderRadius: 1,
-                    overflowY: 'auto',
-                    maxHeight: '400px',
+                    position: 'sticky',
+                    top: 0,
+                    backgroundColor: alpha('#64b5f6', 0.9),
+                    color: '#fff',
+                    padding: theme.spacing(1),
+                    zIndex: 1,
+                    borderBottom: '1px solid grey',
                   }}
                 >
-                  <Box
-                    sx={{
-                      position: 'sticky',
-                      top: 0,
-                      backgroundColor: alpha('#64b5f6', 0.9),
-                      color: '#fff',
-                      padding: theme.spacing(1),
-                      zIndex: 1,
-                      borderBottom: '1px solid grey',
-                    }}
-                  >
-                    <Typography variant="h6" component="div">
-                      {project.name || `Project ${project.project_code}`}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ padding: theme.spacing(2) }}>
-                    <Typography variant="h6" gutterBottom component="div">
-                      ชั้น
-                    </Typography>
-                    <Table size="small">
-                      <TableBody>
-                        {sortedSections.map((section) => (
-                          <SectionRow
-                            key={section.id}
-                            section={section}
-                            projectCode={project.project_code}
-                            isSmallScreen={isSmallScreen}
-                            onComponentUpdate={handleSectionUpdate}
-                            userRole={userRole}
-                            canEdit={canEdit}
-                          />
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
+                  <Typography variant="h6" component="div">
+                    {project.name || `Project ${project.project_code}`}
+                  </Typography>
                 </Box>
-              </Collapse>
-            </TableCell>
-          </TableRow>
-        )}
+                {/* End of Sticky Header */}
 
-        <ProjectModal
-          project={project}
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          userRole={userRole}
-          canEdit={canEdit}
-        />
+                {/* เนื้อหาของโปรเจกต์ */}
+                <Box sx={{ padding: theme.spacing(2) }}>
+                  <Typography variant="h6" gutterBottom component="div">
+                    ชั้น
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      {sortedSections.map((section) => (
+                        <SectionRow
+                          key={section.id}
+                          section={section}
+                          projectCode={project.project_code}
+                          isSmallScreen={isSmallScreen}
+                          onComponentUpdate={handleSectionUpdate}
+                          userRole={userRole}
+                          canEdit={canEdit}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Box>
+            </Collapse>
+          </TableCell>
+        </TableRow>
       </>
     );
   },
@@ -507,6 +414,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   width: '100%',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
+    // vertical padding + font size from searchIcon
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
     transition: theme.transitions.create('width'),
     [theme.breakpoints.up('md')]: {
@@ -527,7 +435,6 @@ const TopPerformers = memo(
     const [tabValue, setTabValue] = useState('1');
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-    const isMediumScreen = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
     const canEditProject = useCallback(
       (projectId) => {
@@ -700,7 +607,7 @@ const TopPerformers = memo(
                       key={project.id}
                       project={project}
                       onRowClick={handleProjectSelect}
-                      isSmallScreen={isSmallScreen || isMediumScreen}
+                      isSmallScreen={isSmallScreen}
                       onProjectUpdate={handleProjectUpdate}
                       userRole={userRole}
                       selectedProjectId={selectedProjectId}

@@ -26,6 +26,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -100,29 +101,25 @@ const ComponentCard = memo(({ component, setSelectedComponent }) => {
   };
 
   return (
-    <Grid item xs={3} sm={1.1} md={0.9}>
+    <Grid item xs={6} sm={4} md={3} lg={2}>
       <Tooltip title={component.name} arrow>
         <Card
           sx={{
             bgcolor: bg,
-            height: { xs: '40px', sm: '45px', md: '50px' },
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            p: { xs: '1px', sm: '1px', md: '1px' },
-            m: { xs: '1px', sm: '1px', md: '1px' },
-            border: '1px solid',
-            borderColor: bg,
+            p: 1,
             cursor: 'pointer',
           }}
           onClick={handleViewDetailsClick}
         >
-          <CardContent sx={{ textAlign: 'center', p: { xs: '1px', sm: '1px', md: '1px' } }}>
+          <CardContent sx={{ p: 1 }}>
             <Typography
               variant="subtitle2"
               sx={{
                 color: color,
-                fontSize: { xs: '5px', sm: '6px', md: '7px' },
                 fontWeight: 'bold',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -136,12 +133,12 @@ const ComponentCard = memo(({ component, setSelectedComponent }) => {
               size="small"
               onClick={handleViewDetailsClick}
               sx={{
-                mt: { xs: '1px', sm: '1px', md: '1px' },
+                mt: 1,
                 bgcolor: 'rgba(255, 255, 255, 0.2)',
                 color: color,
-                fontSize: { xs: '4px', sm: '5px', md: '6px' },
-                p: { xs: '1px 2px', sm: '1px 2px', md: '1px 2px' },
-                minWidth: 'auto',
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.3)',
+                },
               }}
             >
               ดูข้อมูล
@@ -231,110 +228,8 @@ const ProjectModal = memo(({ project, open, onClose, userRole, canEdit }) => {
   );
 });
 
-const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdate, userRole, canEdit }) => {
-  const [open, setOpen] = useState(false);
-  const [selectedComponent, setSelectedComponent] = useState(null);
-
-  const sortedComponents = section.components.sort(
-    (a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status),
-  );
-
-  const statusCounts = section.components.reduce((acc, component) => {
-    acc[component.status] = (acc[component.status] || 0) + 1;
-    return acc;
-  }, {});
-
-  const handleComponentUpdate = useCallback(
-    (updatedComponent) => {
-      if (!updatedComponent || !updatedComponent.id) {
-        console.error('Updated component is missing or undefined:', updatedComponent);
-        return;
-      }
-      const updatedComponents = section.components.map((comp) =>
-        comp.id === updatedComponent.id ? updatedComponent : comp,
-      );
-      onComponentUpdate(section.id, updatedComponents);
-    },
-    [section.components, section.id, onComponentUpdate],
-  );
-
-  const handleDialogClose = useCallback(() => {
-    setSelectedComponent(null);
-    onComponentUpdate();
-  }, [onComponentUpdate]);
-
-  return (
-    <>
-      <TableRow>
-        <TableCell>
-          <IconButton size="small" onClick={() => setOpen(!open)}>
-            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          </IconButton>
-        </TableCell>
-        <TableCell colSpan={isSmallScreen ? 1 : 2}>
-          {section.name || `Section ${section.id}`}
-        </TableCell>
-        {!isSmallScreen && <TableCell align="right">{section.components.length} ชิ้นงาน</TableCell>}
-      </TableRow>
-      <TableRow>
-        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box margin={1}>
-              <Typography variant="h6" gutterBottom component="div">
-                ชิ้นงาน
-              </Typography>
-              <Box display="flex" flexWrap="wrap" justifyContent="flex-start" mb={2}>
-                {statusOrder.map((status) => {
-                  const count = statusCounts[status] || 0;
-                  if (count > 0) {
-                    return (
-                      <StatusChip
-                        key={status}
-                        status={status}
-                        label={`${STATUS_THAI[status]}: ${count}`}
-                      />
-                    );
-                  }
-                  return null;
-                })}
-              </Box>
-              <Grid container spacing={0.1}>
-                {sortedComponents.map((component) => (
-                  <ComponentCard
-                    key={component.id}
-                    component={component}
-                    setSelectedComponent={setSelectedComponent}
-                  />
-                ))}
-              </Grid>
-            </Box>
-          </Collapse>
-        </TableCell>
-      </TableRow>
-      {selectedComponent && (
-        <ComponentDialog
-          open={Boolean(selectedComponent)}
-          onClose={handleDialogClose}
-          component={selectedComponent}
-          projectCode={projectCode}
-          onComponentUpdate={handleComponentUpdate}
-          canEdit={canEdit}
-        />
-      )}
-    </>
-  );
-});
-
 const ProjectRow = memo(
-  ({
-    project,
-    onRowClick,
-    isSmallScreen,
-    onProjectUpdate,
-    userRole,
-    selectedProjectId,
-    canEdit,
-  }) => {
+  ({ project, onRowClick, isSmallScreen, onProjectUpdate, userRole, selectedProjectId, canEdit }) => {
     const [open, setOpen] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
     const theme = useTheme();
@@ -348,12 +243,6 @@ const ProjectRow = memo(
       }
     }, [isSelected, isSmallScreen, isMediumScreen]);
 
-    const numberOfSections = project.sections.length;
-    const totalComponents = project.sections.reduce(
-      (acc, section) => acc + section.components.length,
-      0,
-    );
-
     const handleRowClick = useCallback(() => {
       if (isSmallScreen || isMediumScreen) {
         setModalOpen(true);
@@ -362,29 +251,31 @@ const ProjectRow = memo(
       }
     }, [isSmallScreen, isMediumScreen, onRowClick, project]);
 
-    const handleIconClick = useCallback((event) => {
-      event.stopPropagation();
-      if (!isSmallScreen && !isMediumScreen) {
-        setOpen((prevOpen) => !prevOpen);
-      }
-    }, [isSmallScreen, isMediumScreen]);
+    const handleIconClick = useCallback(
+      (event) => {
+        event.stopPropagation();
+        if (!isSmallScreen && !isMediumScreen) {
+          setOpen((prevOpen) => !prevOpen);
+        }
+      },
+      [isSmallScreen, isMediumScreen]
+    );
 
     const handleSectionUpdate = useCallback(
       (sectionId, updatedComponents) => {
         const updatedSections = project.sections.map((section) =>
-          section.id === sectionId ? { ...section, components: updatedComponents } : section,
+          section.id === sectionId ? { ...section, components: updatedComponents } : section
         );
         onProjectUpdate(project.id, { ...project, sections: updatedSections });
       },
-      [project, onProjectUpdate],
+      [project, onProjectUpdate]
     );
 
-    const sortedSections = [...project.sections].sort((a, b) => {
-      if (a.name && b.name) {
-        return a.name.localeCompare(b.name);
-      }
-      return a.id - b.id;
-    });
+    const numberOfSections = project.sections.length;
+    const totalComponents = project.sections.reduce(
+      (acc, section) => acc + section.components.length,
+      0
+    );
 
     return (
       <>
@@ -415,50 +306,26 @@ const ProjectRow = memo(
           <TableRow>
             <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
               <Collapse in={open} timeout="auto" unmountOnExit>
-                <Box
-                  margin={1}
-                  sx={{
-                    border: '1px solid grey',
-                    borderRadius: 1,
-                    overflowY: 'auto',
-                    maxHeight: '400px',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      position: 'sticky',
-                      top: 0,
-                      backgroundColor: alpha('#64b5f6', 0.9),
-                      color: '#fff',
-                      padding: theme.spacing(1),
-                      zIndex: 1,
-                      borderBottom: '1px solid grey',
-                    }}
-                  >
-                    <Typography variant="h6" component="div">
-                      {project.name || `Project ${project.project_code}`}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ padding: theme.spacing(2) }}>
-                    <Typography variant="h6" gutterBottom component="div">
-                      ชั้น
-                    </Typography>
-                    <Table size="small">
-                      <TableBody>
-                        {sortedSections.map((section) => (
-                          <SectionRow
-                            key={section.id}
-                            section={section}
-                            projectCode={project.project_code}
-                            isSmallScreen={isSmallScreen}
-                            onComponentUpdate={handleSectionUpdate}
-                            userRole={userRole}
-                            canEdit={canEdit}
+                <Box margin={1}>
+                  <Typography variant="h6" gutterBottom component="div">
+                    ชั้น
+                  </Typography>
+                  {project.sections.map((section) => (
+                    <Box key={section.id} mb={2}>
+                      <Typography variant="subtitle1">
+                        {section.name || `Section ${section.id}`}
+                      </Typography>
+                      <Grid container spacing={1}>
+                        {section.components.map((component) => (
+                          <ComponentCard
+                            key={component.id}
+                            component={component}
+                            setSelectedComponent={() => {}}
                           />
                         ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
+                      </Grid>
+                    </Box>
+                  ))}
                 </Box>
               </Collapse>
             </TableCell>
@@ -474,7 +341,7 @@ const ProjectRow = memo(
         />
       </>
     );
-  },
+  }
 );
 
 const Search = styled('div')(({ theme }) => ({
@@ -537,7 +404,7 @@ const TopPerformers = memo(
         }
         return false;
       },
-      [userRole, userProjects],
+      [userRole, userProjects]
     );
 
     const handleSearchChange = useCallback((event) => {
@@ -550,7 +417,7 @@ const TopPerformers = memo(
 
     const handleProjectUpdate = useCallback((projectId, updatedProject) => {
       setProjects((prevProjects) =>
-        prevProjects.map((project) => (project.id === projectId ? updatedProject : project)),
+        prevProjects.map((project) => (project.id === projectId ? updatedProject : project))
       );
     }, []);
 
@@ -566,7 +433,7 @@ const TopPerformers = memo(
           onProjectSelect(project);
         }
       },
-      [onProjectSelect],
+      [onProjectSelect]
     );
 
     useEffect(() => {
@@ -584,7 +451,7 @@ const TopPerformers = memo(
                 if (!Array.isArray(components)) {
                   console.error(
                     `Components data is not an array for project ${project.project_code}`,
-                    components,
+                    components
                   );
                   return null;
                 }
@@ -608,7 +475,7 @@ const TopPerformers = memo(
                 console.error(`Error processing project ${project.project_code}:`, error.message);
                 return null;
               }
-            }),
+            })
           );
 
           setProjects(projectsWithComponents.filter((project) => project !== null));
@@ -624,7 +491,7 @@ const TopPerformers = memo(
     }, [refreshTrigger]);
 
     const filteredProjects = projects.filter((project) =>
-      project.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      project.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (loading) {
@@ -743,7 +610,7 @@ const TopPerformers = memo(
         />
       </Paper>
     );
-  },
+  }
 );
 
 export default TopPerformers;

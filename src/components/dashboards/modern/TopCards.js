@@ -7,11 +7,10 @@ import accepted from 'src/assets/animated-icons/accepted.gif';
 import installed from 'src/assets/animated-icons/installed.gif';
 import rejected from 'src/assets/animated-icons/rejected.gif';
 
-// Define COLORS and STATUS_THAI to match TopPerformers
 const COLORS = {
   planning: '#64b5f6',
   manufactured: '#82ca9d',
-  in_transit: '#ffc658', // Same as 'transported' in Tab2Content
+  in_transit: '#ffc658',
   accepted: '#8e44ad',
   installed: '#27ae60',
   rejected: '#ff6b6b',
@@ -26,7 +25,6 @@ const STATUS_THAI = {
   rejected: 'ถูกปฏิเสธ',
 };
 
-// Simplify getStatusColor to match the color usage in TopPerformers
 const getStatusColor = (status) => {
   return { bg: COLORS[status], color: '#ffffff' };
 };
@@ -52,7 +50,8 @@ const statusOrder = ['manufactured', 'in_transit', 'accepted', 'installed', 'rej
 
 const TopCards = ({ stats, projectName, isResetState }) => {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isIphoneSE = useMediaQuery('(max-width:375px)');
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
   const totalComponents = isResetState ? 0 : stats.reduce((sum, stat) => sum + stat.count, 0);
   const planningCount = isResetState
@@ -60,7 +59,6 @@ const TopCards = ({ stats, projectName, isResetState }) => {
     : stats.find((stat) => stat.status === 'planning')?.count || 0;
   const inProgressCount = isResetState ? 0 : totalComponents - planningCount;
 
-  // Prepare displayStats to include all statuses
   const displayStats = statusOrder.map((status) => {
     const stat = stats.find((s) => s.status === status) || { count: 0 };
     const percent =
@@ -74,54 +72,41 @@ const TopCards = ({ stats, projectName, isResetState }) => {
   });
 
   return (
-    <Box>
+    <Box sx={{ mb: 2 }}>
       <Paper
         elevation={3}
         sx={{
-          p: 2,
-          mb: 3,
+          p: isIphoneSE ? 0.5 : isSmall ? 2 : 3,
+          mb: isIphoneSE ? 1 : 3,
           borderRadius: 2,
           backgroundColor: alpha(theme.palette.background.paper, 0.9),
         }}
       >
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6}>
-            <Typography variant="h6" fontWeight={600}>
-              โครงการ: {isResetState ? ' ' : projectName}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle1" align="right">
-              จำนวนชิ้นงานทั้งหมด: {totalComponents}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle1">
-              อยู่ระหว่างดำเนินการ: {inProgressCount}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle1" align="right">
-              อยู่ในขั้นตอนการวางแผน: {planningCount}
-            </Typography>
-          </Grid>
-        </Grid>
+        <Typography
+          variant={isIphoneSE ? 'subtitle2' : isSmall ? 'h6' : 'h5'}
+          fontWeight={600}
+          noWrap
+          mb={1}
+        >
+          โครงการ: {isResetState ? 'Not Selected' : projectName}
+        </Typography>
       </Paper>
-      <Grid container spacing={3}>
+      <Grid container spacing={isIphoneSE ? 0.5 : 3}>
         {displayStats.map((stat, i) => {
           const { bg, color } = getStatusColor(stat.status);
           return (
-            <Grid item xs={6} sm={4} md={2.4} key={i}>
+            <Grid item xs={3} sm={4} md={2.4} key={i}>
               <Box
-                textAlign="center"
-                borderRadius={2}
                 sx={{
+                  backgroundColor: bg,
+                  color: color,
+                  borderRadius: 2,
+                  p: isIphoneSE ? 0.5 : 2,
+                  textAlign: 'center',
                   transition: 'transform 0.3s ease-in-out',
                   '&:hover': {
                     transform: 'scale(1.05)',
                   },
-                  backgroundColor: bg,
-                  color: color,
                 }}
               >
                 <Box
@@ -129,19 +114,50 @@ const TopCards = ({ stats, projectName, isResetState }) => {
                   src={getStatusGif(stat.status)}
                   alt={stat.displayTitle}
                   sx={{
-                    width: 50,
-                    height: 50,
+                    width: isIphoneSE ? '30px' : '50px',
+                    height: isIphoneSE ? '30px' : '50px',
                     objectFit: 'contain',
-                    mt: 2,
+                    mt: isIphoneSE ? 0.5 : 1,
+                    mb: isIphoneSE ? 0.5 : 1,
                   }}
                 />
-                <Typography mt={1} variant="subtitle1" fontWeight={600}>
+                <Typography
+                  variant={isIphoneSE ? 'caption' : 'subtitle1'}
+                  fontWeight={600}
+                  align="center"
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    lineHeight: 1.2,
+                    fontSize: isIphoneSE ? '0.6rem' : 'inherit',
+                    mt: 0.5,
+                    mb: 0.5,
+                  }}
+                >
                   {stat.displayTitle}
                 </Typography>
-                <Typography variant="h4" fontWeight={600}>
+                <Typography
+                  variant={isIphoneSE ? 'body2' : 'h4'}
+                  fontWeight={600}
+                  align="center"
+                  sx={{
+                    fontSize: isIphoneSE ? '0.8rem' : 'inherit',
+                    lineHeight: isIphoneSE ? 1.1 : 'inherit',
+                  }}
+                >
                   {stat.percent}%
                 </Typography>
-                <Typography variant="body2" pb={2}>
+                <Typography
+                  variant={isIphoneSE ? 'caption' : 'body2'}
+                  align="center"
+                  sx={{
+                    fontSize: isIphoneSE ? '0.5rem' : 'inherit',
+                    mb: 0.5,
+                  }}
+                >
                   ({stat.count})
                 </Typography>
               </Box>

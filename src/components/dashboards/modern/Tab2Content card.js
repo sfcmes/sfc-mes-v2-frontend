@@ -52,40 +52,54 @@ const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const DoughnutChart = memo(({ data, status }) => {
+const DoughnutChart = memo(({ data, status, isSmallScreen }) => {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  const { bg } = getStatusColor(status);
+  const { bg, color } = getStatusColor(status);
+  const [openPopup, setOpenPopup] = useState(false);
 
   const statusQuantity = data.statuses[status] || 0;
   const totalForPercentage = data.total > 0 ? data.total : 1;
 
   const percentage = ((statusQuantity / totalForPercentage) * 100).toFixed(1);
 
+  const handleOpenPopup = () => {
+    setOpenPopup(true);
+  };
+
+  const handleClosePopup = () => {
+    setOpenPopup(false);
+  };
+
+  if (isSmallScreen) {
+    return (
+      <Card sx={{ backgroundColor: bg, color: '#fff', p: 1 }} onClick={handleOpenPopup}>
+        <Typography variant="subtitle2">{STATUS_THAI[status]}</Typography>
+        <Typography variant="h6">{statusQuantity} ชิ้น</Typography>
+        <Typography variant="body2">{percentage}%</Typography>
+      </Card>
+    );
+  }
+
   const options = {
-    chart: {
-      type: 'donut',
-      background: 'transparent',
-      parentHeightOffset: 0,
-    },
+    chart: { type: 'donut', background: 'transparent' },
     labels: [STATUS_THAI[status], 'อื่นๆ'],
     colors: [bg, theme.palette.grey[300]],
     legend: { show: false },
     plotOptions: {
       pie: {
         donut: {
-          size: '70%',
+          size: '85%',
           labels: {
             show: true,
             name: {
-              show: false,
-              fontSize: isSmallScreen ? '12px' : '14px',
+              show: true,
+              fontSize: '16px',
               color: theme.palette.text.secondary,
-              offsetY: 0,
+              offsetY: -10,
             },
             value: {
               show: true,
-              fontSize: isSmallScreen ? '14px' : '16px',
+              fontSize: '18px',
               color: theme.palette.text.primary,
               formatter: () => `${percentage}%`,
             },
@@ -93,9 +107,9 @@ const DoughnutChart = memo(({ data, status }) => {
               show: true,
               showAlways: true,
               label: STATUS_THAI[status],
-              fontSize: isSmallScreen ? '12px' : '14px',
+              fontSize: '16px',
               color: theme.palette.text.secondary,
-              formatter: () => `${percentage}%`,
+              formatter: () => `${statusQuantity} ชิ้น`,
             },
           },
         },
@@ -104,7 +118,7 @@ const DoughnutChart = memo(({ data, status }) => {
     dataLabels: { enabled: false },
     tooltip: {
       y: {
-        formatter: (value) => `${value}`,
+        formatter: (value) => `${value} ชิ้น`,
       },
     },
     stroke: { show: false },
@@ -112,10 +126,13 @@ const DoughnutChart = memo(({ data, status }) => {
       {
         breakpoint: 600,
         options: {
+          chart: {
+            width: '100%',
+          },
           plotOptions: {
             pie: {
               donut: {
-                size: '60%',
+                size: '80%',
               },
             },
           },
@@ -127,23 +144,46 @@ const DoughnutChart = memo(({ data, status }) => {
   const series = [statusQuantity, Math.max(totalForPercentage - statusQuantity, 0)];
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        maxWidth: 120,
-        height: 120,
-        margin: '0 auto',
-        cursor: 'pointer',
-      }}
-    >
-      <Chart options={options} series={series} type="donut" width="100%" height="100%" />
-    </Box>
+    <>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: 350,
+          minWidth: 300,
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Chart options={options} series={series} type="donut" width="280" height="280" />
+      </Box>
+      <Dialog
+        open={openPopup}
+        onClose={handleClosePopup}
+        fullWidth
+        maxWidth="md"
+        TransitionComponent={Transition}
+      >
+        <DialogTitle>{STATUS_THAI[status]} (Full View)</DialogTitle>
+        <DialogContent>
+          <Chart options={options} series={series} type="donut" width="100%" height="400" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClosePopup} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 });
 
-const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData }) => {
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
+
+
+
+const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData, isSmallScreen }) => {
   const [statusUpdate, setStatusUpdate] = useState({
     fromStatus: '',
     toStatus: '',
@@ -167,15 +207,17 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
         return;
       }
 
-      const validTransitions = {
-        planning: ['manufactured', 'rejected'],
-        manufactured: ['transported', 'rejected', 'planning'],
-        transported: ['rejected', 'manufactured', 'planning'],
-        rejected: ['planning']
-      };
-
-      if (!validTransitions[fromStatus].includes(toStatus)) {
-        setError('การเปลี่ยนสถานะไม่ถูกต้อง');
+      const currentTotal = Object.entries(component.statuses)
+        .filter(([status]) => status !== 'manufactured' && status !== 'transported')
+        .reduce((sum, [, value]) => sum + value, 0);
+      if (
+        fromStatus !== 'manufactured' &&
+        fromStatus !== 'transported' &&
+        toStatus !== 'manufactured' &&
+        toStatus !== 'transported' &&
+        currentTotal + quantityNumber > component.total
+      ) {
+        setError('จำนวนรวมเกินกว่าจำนวนทั้งหมดของชิ้นงาน');
         return;
       }
 
@@ -186,31 +228,20 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
           setError('');
           refreshData();
         })
-        .catch((err) => {
-          setError(err.message || 'เกิดข้อผิดพลาดในการอัพเดตสถานะ');
+        .catch(() => {
+          setError('เกิดข้อผิดพลาดในการอัพเดตสถานะ');
         })
         .finally(() => {
           setIsUpdating(false);
         });
     },
-    [statusUpdate, component, onUpdateStatus, refreshData],
+    [statusUpdate, component, onUpdateStatus, refreshData]
   );
 
   const statusOrder = ['planning', 'manufactured', 'transported', 'rejected'];
 
   return (
-    <Card
-      sx={{
-        mb: 2,
-        width: '100%',
-        border: '1px solid #e0e0e0',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-        '&:hover': {
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-        },
-      }}
-    >
+    <Card sx={{ mb: 2, width: '100%' }}>
       <CardContent>
         <Typography variant="subtitle1">{component.name}</Typography>
         <Typography variant="body2" color="text.secondary">
@@ -219,11 +250,11 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
         <Box mt={2}>
           <Grid container spacing={2} justifyContent="center">
             {statusOrder.map((status) => (
-              <Grid item xs={6} sm={3} key={status}>
-                <Typography variant="caption" sx={{ color: COLORS[status], fontWeight: 'bold' }}>
+              <Grid item xs={12} sm={3} key={status}>
+                <Typography variant="caption" style={{ color: COLORS[status], fontWeight: 'bold' }}>
                   {STATUS_THAI[status]}: {component.statuses[status] || 0}
                 </Typography>
-                <DoughnutChart data={component} status={status} />
+                <DoughnutChart data={component} status={status} isSmallScreen={isSmallScreen} />
               </Grid>
             ))}
           </Grid>
@@ -235,12 +266,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
                     <InputLabel>จากสถานะ</InputLabel>
                     <Select
                       value={statusUpdate.fromStatus}
-                      onChange={(e) =>
-                        setStatusUpdate((prev) => ({
-                          ...prev,
-                          fromStatus: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setStatusUpdate((prev) => ({ ...prev, fromStatus: e.target.value }))}
                     >
                       {statusOrder.map((status) => (
                         <MenuItem key={status} value={status}>
@@ -255,12 +281,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
                     <InputLabel>ไปยังสถานะ</InputLabel>
                     <Select
                       value={statusUpdate.toStatus}
-                      onChange={(e) =>
-                        setStatusUpdate((prev) => ({
-                          ...prev,
-                          toStatus: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setStatusUpdate((prev) => ({ ...prev, toStatus: e.target.value }))}
                     >
                       {statusOrder.map((status) => (
                         <MenuItem key={status} value={status}>
@@ -278,12 +299,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
                     inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
                     label="จำนวน"
                     value={statusUpdate.quantity}
-                    onChange={(e) =>
-                      setStatusUpdate((prev) => ({
-                        ...prev,
-                        quantity: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => setStatusUpdate((prev) => ({ ...prev, quantity: e.target.value }))}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -313,10 +329,9 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
 });
 
 const ProjectRowTab2 = memo(
-  ({ project, isLoggedIn, onUpdateStatus, refreshData, onProjectSelect }) => {
+  ({ project, isLoggedIn, onUpdateStatus, refreshData, userRole, onProjectSelect, isSmallScreen }) => {
     const [open, setOpen] = useState(false);
     const theme = useTheme();
-    const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleOpen = () => {
       setOpen(true);
@@ -337,19 +352,7 @@ const ProjectRowTab2 = memo(
 
     return (
       <>
-        <Card
-          sx={{
-            mb: 2,
-            cursor: 'pointer',
-            border: '1px solid #e0e0e0',
-            borderRadius: '8px',
-            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-            '&:hover': {
-              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-            },
-          }}
-          onClick={handleOpen}
-        >
+        <Card sx={{ mb: 2, cursor: 'pointer' }} onClick={handleOpen}>
           <CardContent>
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Typography variant="h6">{memoizedProject.name}</Typography>
@@ -357,11 +360,11 @@ const ProjectRowTab2 = memo(
                 <KeyboardArrowRightIcon />
               </IconButton>
             </Box>
-            <Typography variant="body2" >
+            <Typography variant="body2" color="text.secondary">
               รหัสโครงการ: {memoizedProject.project_code}
             </Typography>
-            <Typography variant="body2" >
-              จำนวน Type ของชิ้นงาน: {memoizedProject.components.length}
+            <Typography variant="body2" color="text.secondary">
+              จำนวนชิ้นงานอื่นๆ: {memoizedProject.components.length}
             </Typography>
           </CardContent>
         </Card>
@@ -371,8 +374,8 @@ const ProjectRowTab2 = memo(
           open={open}
           onClose={handleClose}
           TransitionComponent={Transition}
-          maxWidth="lg"
-          fullWidth
+          maxWidth={isSmallScreen ? false : 'lg'}
+          fullWidth={!isSmallScreen}
         >
           {isSmallScreen ? (
             <AppBar sx={{ position: 'relative' }}>
@@ -412,6 +415,7 @@ const ProjectRowTab2 = memo(
                     isLoggedIn={isLoggedIn}
                     onUpdateStatus={onUpdateStatus}
                     refreshData={refreshData}
+                    isSmallScreen={isSmallScreen}
                   />
                 </Grid>
               ))}
@@ -427,16 +431,17 @@ const ProjectRowTab2 = memo(
         </Dialog>
       </>
     );
-  },
+  }
 );
 
-const Tab2Content = memo(({ onProjectSelect }) => {
+const Tab2Content = memo(({ onProjectSelect, userRole }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const loadProjects = useCallback(async () => {
     try {
@@ -466,43 +471,33 @@ const Tab2Content = memo(({ onProjectSelect }) => {
         });
         return;
       }
-  
       try {
         await updateOtherComponentStatus(componentId, fromStatus, toStatus, parseInt(quantity, 10));
-  
+
         setProjects((prevProjects) =>
           prevProjects.map((project) => ({
             ...project,
             components: project.components.map((component) => {
               if (component.id === componentId) {
                 const updatedStatuses = { ...component.statuses };
-  
-                // ลดจำนวนจากสถานะต้นทาง (ยกเว้น manufactured)
+
                 if (fromStatus !== 'manufactured') {
-                  updatedStatuses[fromStatus] = Math.max(
-                    0,
-                    (updatedStatuses[fromStatus] || 0) - quantity
-                  );
+                  updatedStatuses[fromStatus] = Math.max(0, (updatedStatuses[fromStatus] || 0) - quantity);
                 }
-  
-                // เพิ่มจำนวนไปยังสถานะปลายทาง
+
                 updatedStatuses[toStatus] = (updatedStatuses[toStatus] || 0) + quantity;
-  
-                // กรณีพิเศษสำหรับ manufactured และ transported
+
                 if (fromStatus === 'manufactured' && toStatus === 'transported') {
-                  // ไม่ลด manufactured เมื่อย้ายไป transported
-                  updatedStatuses['manufactured'] = component.statuses['manufactured'] || 0;
+                  updatedStatuses['manufactured'] = updatedStatuses['manufactured'] || 0;
                 }
-  
-                console.log('Updated statuses:', updatedStatuses);
-  
+
                 return { ...component, statuses: updatedStatuses };
               }
               return component;
             }),
           }))
         );
-  
+
         setSnackbar({ open: true, message: 'สถานะอัพเดตเรียบร้อยแล้ว', severity: 'success' });
       } catch (err) {
         console.error('Failed to update status:', err);
@@ -513,7 +508,7 @@ const Tab2Content = memo(({ onProjectSelect }) => {
         });
       }
     },
-    [isLoggedIn, setProjects, setSnackbar]
+    [isLoggedIn]
   );
 
   const handleCloseSnackbar = () => {
@@ -539,7 +534,9 @@ const Tab2Content = memo(({ onProjectSelect }) => {
                 isLoggedIn={isLoggedIn}
                 onUpdateStatus={handleUpdateStatus}
                 refreshData={loadProjects}
+                userRole={userRole}
                 onProjectSelect={onProjectSelect}
+                isSmallScreen={isSmallScreen}
               />
             </Grid>
           ))}
