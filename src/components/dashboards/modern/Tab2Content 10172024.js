@@ -33,13 +33,9 @@ import Chart from 'react-apexcharts';
 import { fetchProjectsWithOtherComponents, updateOtherComponentStatus } from 'src/utils/api';
 
 // นำเข้าไอคอน
-// import tiebeamIcon from 'src/assets/card-icons/tiebeam.png';
-// import carstopIcon from 'src/assets/card-icons/carstop.png';
-// import holeIcon from 'src/assets/card-icons/hole.png';
-import tiebeamIcon from 'src/assets/card-icons/tiebeam.gif';
-import carstopIcon from 'src/assets/card-icons/carstop.gif';
-import holeIcon from 'src/assets/card-icons/hole.gif';
-import otherIcon from 'src/assets/card-icons/other.gif';
+import tiebeamIcon from 'src/assets/card-icons/tiebeam.png';
+import carstopIcon from 'src/assets/card-icons/carstop.png';
+import holeIcon from 'src/assets/card-icons/hole.png';
 
 const COLORS = {
   planning: '#64b5f6',
@@ -224,7 +220,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, refreshData 
     >
       <CardContent>
         <Typography variant="subtitle1">{component.name}</Typography>
-        <Typography variant="subtitle1" >
+        <Typography variant="body2" color="text.secondary">
           จำนวนทั้งหมด: {component.total}
         </Typography>
         <Box mt={2}>
@@ -328,21 +324,26 @@ const ProjectRowTab2 = memo(
     const [open, setOpen] = useState(false);
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     // ฟังก์ชันสำหรับเลือกไอคอนตามรหัสโครงการ
     const getProjectIcon = (projectCode) => {
-      if (projectCode.startsWith('เสาเอ็น')) {
+      if (
+        projectCode.startsWith('เสาเอ็น') 
+      ) {
         return tiebeamIcon;
       }
-      if (projectCode.startsWith('คันกั้นล้อ')) {
+      if (
+        projectCode.startsWith('คันกั้นล้อ') 
+      ) {
         return carstopIcon;
       }
-      if (projectCode.startsWith('บ่อ')) {
+      if (
+        projectCode.startsWith('บ่อ')
+      ) {
         return holeIcon;
       }
       // เพิ่มเงื่อนไขอื่น ๆ ถ้าจำเป็น
-      return otherIcon; // หรือกำหนดไอคอนเริ่มต้น
+      return null; // หรือกำหนดไอคอนเริ่มต้น
     };
 
     const handleOpen = () => {
@@ -367,69 +368,39 @@ const ProjectRowTab2 = memo(
     return (
       <>
         <Card
-      sx={{
-        mb: '0.75rem',
-        p: '0.75rem',
-        borderRadius: '0.75rem',
-        boxShadow: '0 0.125rem 0.625rem rgba(0, 0, 0, 0.1)',
-        '&:hover': {
-          boxShadow: '0 0.25rem 0.9375rem rgba(0, 0, 0, 0.2)',
-        },
-        cursor: 'pointer',
-        backgroundColor: theme.palette.primary.main,
-      }}
-      onClick={handleOpen}
-    >
-      <CardContent sx={{ p: 0 }}>
-        <Box
           sx={{
-            height: '4rem',
-            width: '4rem',
-            margin: '0 auto',
-            border: `0.1875rem solid ${theme.palette.secondary.main}`,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            mb: 2,
+            p: 2,
+            borderRadius: '12px',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+            '&:hover': {
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            },
+            cursor: 'pointer',
+            backgroundColor: theme.palette.background.paper,
           }}
+          onClick={handleOpen}
         >
-          <Avatar
-            src={projectIcon}
-            sx={{
-              height: '3.5rem',
-              width: '3.5rem',
-              borderRadius: '50%',
-            }}
-            variant="circular"
-          />
-        </Box>
-        <Stack direction="column" spacing={0.5} mt={1.5} alignItems="center">
-          <Typography 
-            sx={{ 
-              fontSize: '0.9rem',
-              fontWeight: 'bold',
-              mb: '0.25rem'
-            }}
-          >
-            {project.name}
-          </Typography>
-          <Typography 
-            sx={{ 
-              fontSize: '0.75rem',
-            }}
-          >
-            รหัสโครงการ: {project.project_code}
-          </Typography>
-          <Typography 
-            sx={{ 
-              fontSize: '0.75rem',
-            }}
-          >
-            Type ของชิ้นงาน: {project.components.length}
-          </Typography>
-        </Stack>
-      </CardContent>
-    </Card>
+          <CardContent>
+            <Avatar
+              src={projectIcon}
+              sx={{ height: 80, width: 80, margin: '0 auto' }}
+              variant="rounded"
+            />
+            <Stack direction="column" spacing={2} mt={3} alignItems="center">
+              <Typography variant="h6" mb={1}>
+                {memoizedProject.name}
+              </Typography>
+              <Typography variant="subtitle2" color="textSecondary">
+                รหัสโครงการ: {memoizedProject.project_code}
+              </Typography>
+              <Typography variant="subtitle2" color="textSecondary">
+                จำนวน Type ของชิ้นงาน: {memoizedProject.components.length}
+              </Typography>
+            </Stack>
+            {/* สามารถเพิ่มเนื้อหาเพิ่มเติมได้ตามต้องการ */}
+          </CardContent>
+        </Card>
 
         <Dialog
           fullScreen={isSmallScreen}

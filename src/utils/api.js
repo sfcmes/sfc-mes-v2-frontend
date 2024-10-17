@@ -182,6 +182,7 @@ const fetchProjects = async () => {
   }
 };
 
+
 const logoutUser = async () => {
   try {
     // Optionally, if you have a server-side logout endpoint:
@@ -770,6 +771,35 @@ const checkUsernameAndRole = async (username) => {
   }
 };
 
+const fetchOtherComponentsByProjectIdV2 = async (projectId) => {
+  try {
+    const response = await api.get(`/other-components/project/${projectId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching other components:', error);
+    throw error;
+  }
+};
+
+const updateOtherComponentDetails = async (componentId, data) => {
+  try {
+    const response = await api.put(`/other-components/${componentId}/details`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating other component details:', error);
+    throw error;
+  }
+};
+
+const deleteOtherComponentById = async (componentId) => {
+  try {
+    await api.delete(`/other-components/${componentId}`);
+  } catch (error) {
+    console.error('Error deleting other component:', error);
+    throw error;
+  }
+};
+
 export {
   api,
   publicApi,
@@ -824,6 +854,9 @@ export {
   fetchProjectsWithOtherComponents,
   updateOtherComponentStatus,
   createComponentsBatch,
+  fetchOtherComponentsByProjectIdV2,
+  updateOtherComponentDetails,
+  deleteOtherComponentById,
 };
 
 export default api; // Keep the default export

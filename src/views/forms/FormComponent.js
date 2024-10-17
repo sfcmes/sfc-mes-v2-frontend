@@ -10,6 +10,8 @@ import ParentCard from '../../components/shared/ParentCard';
 // custom components
 import FVComponent from '../../components/forms/form-validation/FVComponent';
 import ExcelUploadForm from '../../components/forms/form-validation/ExcelUploadForm'; // Updated import path
+import OtherComponentManager from '../../components/forms/form-validation/OtherComponentManager';
+import PrecastComponentManager from '../../components/forms/form-validation/PrecastComponentManager'; // New component
 import { createComponent, fetchProjects, addComponentHistory, fetchSectionsByProjectId } from 'src/utils/api'; // Adjust the path based on your file structure
 
 const BCrumb = [
@@ -33,6 +35,8 @@ const FormComponent = () => {
             <TabList onChange={handleChange} aria-label="component management tabs">
               <Tab label="เพิ่มชิ้นงานเข้าระบบรายชิ้น" value="1" />
               <Tab label="เพิ่มชิ้นงานเข้าระบบด้วย Excel" value="2" />
+              <Tab label="จัดการชิ้นงานอื่นๆ" value="3" /> {/* New tab */}
+              <Tab label="จัดการชิ้นงานพรีคาสท์" value="4"/> {/* New tab */}
             </TabList>
           </Box>
           <TabPanel value="1">
@@ -49,6 +53,20 @@ const FormComponent = () => {
               </Grid>
             </Grid>
           </TabPanel>
+          <TabPanel value="3">
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <OtherComponentManager />
+              </Grid>
+            </Grid>
+          </TabPanel>
+          <TabPanel value="4">
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <PrecastComponentManager />
+              </Grid>
+            </Grid>
+          </TabPanel>
         </TabContext>
       </ParentCard>
     </PageContainer>
@@ -56,6 +74,3 @@ const FormComponent = () => {
 };
 
 export default FormComponent;
-FormComponent.js
-
-

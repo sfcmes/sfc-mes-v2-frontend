@@ -4,7 +4,7 @@ import TopCards from '../../components/dashboards/modern/TopCards';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
 import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
-import { fetchProjects, fetchUserProfile, fetchUserProjects  } from 'src/utils/api';
+import { fetchProjects, fetchUserProfile, fetchUserProjects } from 'src/utils/api';
 import videoBg from 'src/assets/videos/blue-sky-background-4k.mp4';
 
 const statusDisplayMap = {
@@ -60,7 +60,7 @@ const Modern = () => {
         // Fetch user projects if role is Site User
         if (userProfile && userProfile.role === 'Site User') {
           const userProjectsData = await fetchUserProjects(userProfile.id);
-          setUserProjects(userProjectsData.map(p => p.id));
+          setUserProjects(userProjectsData.map((p) => p.id));
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -126,8 +126,8 @@ const Modern = () => {
 
   const handleProjectSelect = useCallback((project) => {
     setSelectedProject(project);
-    const stats = calculateProjectStats(project);
-    setProjectStats(stats);
+    setProjectStats(calculateProjectStats(project));
+    setRefreshTrigger((prev) => prev + 1); // Force re-render
   }, []);
 
   const handleTabChange = useCallback((newTab) => {
@@ -177,42 +177,43 @@ const Modern = () => {
           backdropFilter: 'blur(10px)',
           backgroundColor: `rgba(${theme.palette.background.default.replace(
             /^\w+\((\d+,\s*\d+,\s*\d+).*$/,
-            '$1'
+            '$1',
           )}, 0.3)`,
           borderRadius: theme.shape.borderRadius,
           padding: theme.spacing(3),
         }}
       >
-         <Grid container spacing={3}>
-        {showTopCards && (
-          <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
-            <TopCards
-              stats={projectStats}
-              projectName={selectedProject ? selectedProject.name : 'Not Selected'}
-              isResetState={currentTab === '2'}
+        <Grid container spacing={3}>
+          {showTopCards && (
+            <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
+              <TopCards
+                key={`topcards-${refreshTrigger}-${selectedProject?.id || 'no-project'}`}
+                stats={projectStats}
+                projectName={selectedProject ? selectedProject.name : 'Not Selected'}
+                isResetState={currentTab === '2'}
+              />
+            </Grid>
+          )}
+          <Grid item xs={12} lg={8}>
+            <TopPerformers
+              projects={projects}
+              onProjectSelect={handleProjectSelect}
+              userRole={userRole}
+              refreshTrigger={refreshTrigger}
+              onTabChange={handleTabChange}
+              userProjects={userProjects}
             />
           </Grid>
-        )}
-        <Grid item xs={12} lg={8}>
-          <TopPerformers
-            projects={projects}
-            onProjectSelect={handleProjectSelect}
-            userRole={userRole}
-            refreshTrigger={refreshTrigger}
-            onTabChange={handleTabChange}
-            userProjects={userProjects}
-          />
+          <Grid item xs={12} lg={4}>
+            <WeeklyStats
+              key={`weeklystats-${refreshTrigger}-${selectedProject?.id || 'no-project'}-${currentTab}`}
+              projectId={selectedProject ? selectedProject.id : null}
+              projectName={selectedProject ? selectedProject.name : 'All Projects'}
+              userRole={userRole}
+              currentTab={currentTab}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12} lg={4}>
-          <WeeklyStats
-            key={`${currentTab}-${selectedProject?.id || 'no-project'}`}
-            projectId={selectedProject ? selectedProject.id : null}
-            projectName={selectedProject ? selectedProject.name : 'All Projects'}
-            userRole={userRole}
-            currentTab={currentTab}
-          />
-        </Grid>
-      </Grid>
         {!isMobile && <Welcome />}
       </Box>
     </Box>

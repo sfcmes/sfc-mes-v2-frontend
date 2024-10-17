@@ -24,12 +24,6 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
   const [fileRevisions, setFileRevisions] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const fieldOrder = [
-    'id', 'section_id', 'name', 'type', 'width', 'height', 'thickness', 
-    'weight', 'extension', 'reduction', 'area', 'volume', 'created_at', 
-    'updated_at', 'status'
-  ];
-
   const fieldNameMap = {
     id: 'รหัสชิ้นงาน',
     section_id: 'รหัสชั้น',
@@ -38,11 +32,11 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
     width: 'ความกว้าง (มม.)',
     height: 'ความสูง (มม.)',
     thickness: 'ความหนา (มม.)',
-    weight: 'น้ำหนัก (ตัน)',
     extension: 'ส่วนขยาย (ตร.ม.)',
     reduction: 'ส่วนลด (ตร.ม.)',
     area: 'พื้นที่ (ตร.ม.)',
     volume: 'ปริมาตร (ลบ.ม.)',
+    weight: 'น้ำหนัก (ตัน)',
     created_at: 'สร้างเมื่อ',
     updated_at: 'อัปเดตเมื่อ',
     status: 'สถานะ',
@@ -51,6 +45,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
   const statusDisplayMap = {
     planning: 'แผนผลิต',
     manufactured: 'ผลิตแล้ว',
+    // in_transit: 'อยู่ระหว่างขนส่ง',
     transported: 'ขนส่งสำเร็จ',
     accepted: 'ตรวจรับแล้ว',
     installed: 'ติดตั้งแล้ว',
@@ -89,47 +84,47 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
 
   const handleEditSave = async () => {
     try {
-      setIsLoading(true);
-      const dataToSend = {};
-      editableFields.forEach(field => {
-        if (editedDetails[field] !== undefined) {
-          dataToSend[field] = editedDetails[field];
+        setIsLoading(true);
+        const dataToSend = {};
+        editableFields.forEach(field => {
+            if (editedDetails[field] !== undefined) {
+                dataToSend[field] = editedDetails[field];
+            }
+        });
+        console.log('Sending updated details:', dataToSend);
+        const updatedComponent = await updateComponent(componentId, dataToSend);
+        console.log('Received updated component:', updatedComponent);
+        
+        if (updatedComponent) {
+            setComponentDetails(updatedComponent);
+            setEditedDetails(updatedComponent);
+            setIsEditing(false);
+            if (setSnackbarMessage && setSnackbarOpen) {
+                setSnackbarMessage('ข้อมูลชิ้นงานถูกอัปเดตเรียบร้อยแล้ว');
+                setSnackbarOpen(true);
+            }
+            if (onUpdate) {
+                onUpdate(updatedComponent);  // Ensure this line passes the updated component
+            }
+        } else {
+            throw new Error('Unexpected response format from server');
         }
-      });
-      console.log('Sending updated details:', dataToSend);
-      const updatedComponent = await updateComponent(componentId, dataToSend);
-      console.log('Received updated component:', updatedComponent);
-      
-      if (updatedComponent) {
-        setComponentDetails(updatedComponent);
-        setEditedDetails(updatedComponent);
-        setIsEditing(false);
-        if (setSnackbarMessage && setSnackbarOpen) {
-          setSnackbarMessage('ข้อมูลชิ้นงานถูกอัปเดตเรียบร้อยแล้ว');
-          setSnackbarOpen(true);
+    
+        if (selectedFile) {
+            await handleFileUpload();
         }
-        if (onUpdate) {
-          onUpdate(updatedComponent);
-        }
-      } else {
-        throw new Error('Unexpected response format from server');
-      }
-  
-      if (selectedFile) {
-        await handleFileUpload();
-      }
     } catch (err) {
-      console.error('Error updating component details:', err);
-      if (setSnackbarMessage && setSnackbarOpen) {
-        setSnackbarMessage('ไม่สามารถอัปเดตข้อมูลชิ้นงานได้ กรุณาลองใหม่อีกครั้ง');
-        setSnackbarOpen(true);
-      }
+        console.error('Error updating component details:', err);
+        if (setSnackbarMessage && setSnackbarOpen) {
+            setSnackbarMessage('ไม่สามารถอัปเดตข้อมูลชิ้นงานได้ กรุณาลองใหม่อีกครั้ง');
+            setSnackbarOpen(true);
+        }
     } finally {
-      setIsLoading(false);
-      setSelectedFile(null);
-      await fetchDetails(); // Refresh the component details
+        setIsLoading(false);
+        setSelectedFile(null);
+        await fetchDetails(); // Refresh the component details
     }
-  };
+};
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -154,10 +149,6 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
     }
   };
 
-  const formatNumber = (value) => {
-    return typeof value === 'number' ? value.toFixed(3) : value;
-  };
-
   if (isLoading) return <CircularProgress />;
   if (error) return <Typography color="error">{error}</Typography>;
   if (!componentDetails) return <Typography>ไม่พบข้อมูลชิ้นงาน</Typography>;
@@ -171,9 +162,8 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
         <Grid item xs={12}>
           <Table>
             <TableBody>
-              {fieldOrder.map((key) => {
-                const value = componentDetails[key];
-                if (value !== undefined && typeof value !== 'object') {
+              {Object.entries(componentDetails).map(([key, value]) => {
+                if (key !== 'history' && typeof value !== 'object') {
                   return (
                     <TableRow key={key}>
                       <TableCell component="th" scope="row">
@@ -194,9 +184,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
                             ? format(new Date(value), 'dd/MM/yyyy HH:mm:ss')
                             : key === 'status'
                               ? statusDisplayMap[value] || value
-                              : ['width', 'height', 'thickness', 'weight', 'extension', 'reduction', 'area', 'volume'].includes(key)
-                                ? formatNumber(value)
-                                : value.toString()
+                              : value.toString()
                         )}
                       </TableCell>
                     </TableRow>

@@ -176,6 +176,21 @@ const ProjectModal = memo(({ project, open, onClose, userRole, canEdit }) => {
     [project]
   );
 
+  const getStatusCounts = (components) => {
+    const counts = statusOrder.reduce((acc, status) => {
+      acc[status] = 0;
+      return acc;
+    }, {});
+
+    components.forEach((component) => {
+      if (counts.hasOwnProperty(component.status)) {
+        counts[component.status]++;
+      }
+    });
+
+    return counts;
+  };
+
   return (
     <Dialog
       fullScreen={fullScreen}
@@ -202,20 +217,41 @@ const ProjectModal = memo(({ project, open, onClose, userRole, canEdit }) => {
         <Typography variant="h6" gutterBottom>
           ชั้น
         </Typography>
-        {project.sections.map((section) => (
-          <Box key={section.id} mb={2}>
-            <Typography variant="subtitle1">{section.name || `Section ${section.id}`}</Typography>
-            <Grid container spacing={1}>
-              {section.components.map((component) => (
-                <ComponentCard
-                  key={component.id}
-                  component={component}
-                  setSelectedComponent={setSelectedComponent}
-                />
-              ))}
-            </Grid>
-          </Box>
-        ))}
+        {project.sections.map((section, index) => {
+          const statusCounts = getStatusCounts(section.components);
+          return (
+            <Box 
+              key={section.id} 
+              mb={2} 
+              sx={{
+                borderBottom: index < project.sections.length - 1 ? `1px solid ${theme.palette.divider}` : 'none',
+                pb: 2
+              }}
+            >
+              <Typography variant="subtitle1" gutterBottom>
+                {section.name || `Section ${section.id}`}
+              </Typography>
+              <Box display="flex" flexWrap="wrap" mb={1}>
+                {statusOrder.map((status) => (
+                  <StatusChip
+                    key={status}
+                    status={status}
+                    label={`${STATUS_THAI[status]}: ${statusCounts[status]}`}
+                  />
+                ))}
+              </Box>
+              <Grid container spacing={1}>
+                {section.components.map((component) => (
+                  <ComponentCard
+                    key={component.id}
+                    component={component}
+                    setSelectedComponent={setSelectedComponent}
+                  />
+                ))}
+              </Grid>
+            </Box>
+          );
+        })}
       </DialogContent>
       {selectedComponent && (
         <ComponentDialog
@@ -286,7 +322,7 @@ const SectionRow = memo(({ section, projectCode, isSmallScreen, onComponentUpdat
               <Box display="flex" flexWrap="wrap" justifyContent="flex-start" mb={2}>
                 {statusOrder.map((status) => {
                   const count = statusCounts[status] || 0;
-                  if (count > 0) {
+                  if (count >= 0) {
                     return (
                       <StatusChip
                         key={status}
