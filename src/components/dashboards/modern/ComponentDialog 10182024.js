@@ -22,8 +22,6 @@ import {
   List,
   ListItem,
   ListItemText,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import {
   fetchComponentById,
@@ -48,9 +46,6 @@ const ComponentDialog = memo(({ open, onClose, component, onComponentUpdate, can
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const statusDisplayMap = {
     planning: 'แผนผลิต',
@@ -176,137 +171,118 @@ const ComponentDialog = memo(({ open, onClose, component, onComponentUpdate, can
 
   // const canEdit = isAuthenticated && (userRole.toLowerCase() === 'admin' || userRole.toLowerCase() === 'site user');
 
-  const renderTabContent = () => {
-    switch (tabValue) {
-      case 0:
-        return componentDetails && (
-          <ComponentDetails 
-            componentId={component.id}
-            componentDetails={componentDetails}
-            userRole={userRole}
-            onUpdate={(updatedDetails) => {
-              setComponentDetails(updatedDetails);
-              onComponentUpdate(updatedDetails);
-            }}
-            setSnackbarMessage={setSnackbarMessage}
-            setSnackbarOpen={setSnackbarOpen}
-            canEdit={canEdit}
-          />
-        );
-      case 1:
-        return componentDetails && componentDetails.history && (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              ประวัติสถานะ
-            </Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>สถานะ</TableCell>
-                  <TableCell>วันที่อัพเดต</TableCell>
-                  <TableCell>อัพเดตโดย</TableCell>
-                  <TableCell>หมายเหตุ</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {componentDetails.history.map((historyItem, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      {statusDisplayMap[historyItem.status] || historyItem.status}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(historyItem.updated_at).toLocaleString('th-TH')}
-                    </TableCell>
-                    <TableCell>{historyItem.username}</TableCell>
-                    <TableCell>{historyItem.notes || '-'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        );
-      case 2:
-        return (
-          <Box mt={2}>
-            <Typography variant="h6" gutterBottom>
-              ไฟล์ที่เกี่ยวข้อง
-            </Typography>
-            <List>
-              {componentFiles.map((file, index) => (
-                <ListItem key={index}>
-                  <ListItemText 
-                    primary={`Revision ${file.revision}`} 
-                    secondary={new Date(file.created_at).toLocaleString('th-TH')}
-                  />
-                  <Button onClick={() => handleFileOpen(file.s3_url)}>
-                    เปิดไฟล์
-                  </Button>
-                </ListItem>
-              ))}
-            </List>
-            {componentFiles.length === 0 && (
-              <Typography>ไม่มีไฟล์ที่เกี่ยวข้อง</Typography>
-            )}
-          </Box>
-        );
-      case 3:
-        return canEdit && (
-          <Box mt={2}>
-            <Typography variant="h6" gutterBottom>
-              อัพเดทสถานะ
-            </Typography>
-            <Select value={newStatus} onChange={handleStatusChange} fullWidth margin="normal">
-              {Object.entries(statusDisplayMap).map(([value, label]) => (
-                <MenuItem key={value} value={value}>
-                  {label}
-                </MenuItem>
-              ))}
-            </Select>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleStatusUpdate}
-              disabled={isUpdating}
-              sx={{ mt: 2 }}
-            >
-              {isUpdating ? 'กำลังอัพเดท...' : 'อัพเดทสถานะ'}
-            </Button>
-          </Box>
-        );
-      case 4:
-        return canEdit && (
-          <FileManagement
-            componentId={component.id}
-            setSnackbarMessage={setSnackbarMessage}
-            setSnackbarOpen={setSnackbarOpen}
-            files={componentFiles}
-            onFilesUpdate={setComponentFiles}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
         <DialogTitle>รายละเอียด: {componentDetails?.name}</DialogTitle>
         <DialogContent>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange}
-            variant={isSmallScreen ? "scrollable" : "standard"}
-            scrollButtons={isSmallScreen ? "auto" : "auto"}
-            allowScrollButtonsMobile
-          >
+          <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="รายละเอียดชิ้นงาน" />
             <Tab label="ประวัติสถานะ" />
             <Tab label="ไฟล์" />
             {canEdit && <Tab label="อัพเดทสถานะ" />}
             {canEdit && <Tab label="จัดการไฟล์" />}
           </Tabs>
-          {renderTabContent()}
+          {tabValue === 0 && componentDetails && (
+            <ComponentDetails 
+              componentId={component.id}
+              componentDetails={componentDetails}
+              userRole={userRole}
+              onUpdate={(updatedDetails) => {
+                setComponentDetails(updatedDetails);
+                onComponentUpdate(updatedDetails);
+              }}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+              canEdit={canEdit}
+            />
+          )}
+          {tabValue === 1 && componentDetails && componentDetails.history && (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                ประวัติสถานะ
+              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>สถานะ</TableCell>
+                    <TableCell>วันที่อัพเดต</TableCell>
+                    <TableCell>อัพเดตโดย</TableCell>
+                    <TableCell>หมายเหตุ</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {componentDetails.history.map((historyItem, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {statusDisplayMap[historyItem.status] || historyItem.status}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(historyItem.updated_at).toLocaleString('th-TH')}
+                      </TableCell>
+                      <TableCell>{historyItem.username}</TableCell>
+                      <TableCell>{historyItem.notes || '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
+          {tabValue === 2 && (
+            <Box mt={2}>
+              <Typography variant="h6" gutterBottom>
+                ไฟล์ที่เกี่ยวข้อง
+              </Typography>
+              <List>
+                {componentFiles.map((file, index) => (
+                  <ListItem key={index}>
+                    <ListItemText 
+                      primary={`Revision ${file.revision}`} 
+                      secondary={new Date(file.created_at).toLocaleString('th-TH')}
+                    />
+                    <Button onClick={() => handleFileOpen(file.s3_url)}>
+                      เปิดไฟล์
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+              {componentFiles.length === 0 && (
+                <Typography>ไม่มีไฟล์ที่เกี่ยวข้อง</Typography>
+              )}
+            </Box>
+          )}
+          {tabValue === 3 && canEdit && (
+            <Box mt={2}>
+              <Typography variant="h6" gutterBottom>
+                อัพเดทสถานะ
+              </Typography>
+              <Select value={newStatus} onChange={handleStatusChange} fullWidth margin="normal">
+                {Object.entries(statusDisplayMap).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleStatusUpdate}
+                disabled={isUpdating}
+                sx={{ mt: 2 }}
+              >
+                {isUpdating ? 'กำลังอัพเดท...' : 'อัพเดทสถานะ'}
+              </Button>
+            </Box>
+          )}
+          {tabValue === 4 && canEdit && (
+            <FileManagement
+              componentId={component.id}
+              setSnackbarMessage={setSnackbarMessage}
+              setSnackbarOpen={setSnackbarOpen}
+              files={componentFiles}
+              onFilesUpdate={setComponentFiles}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose} color="primary">

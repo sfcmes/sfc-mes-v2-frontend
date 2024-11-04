@@ -50,9 +50,8 @@ const statusOrder = ['manufactured', 'in_transit', 'accepted', 'installed', 'rej
 
 const TopCards = ({ stats, projectName, isResetState }) => {
   const theme = useTheme();
-  const isXsScreen = useMediaQuery(theme.breakpoints.only('xs'));
-  const isSmScreen = useMediaQuery(theme.breakpoints.only('sm'));
-  const isMdScreen = useMediaQuery(theme.breakpoints.only('md'));
+  const isIphoneSE = useMediaQuery('(max-width:375px)');
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
 
   const totalComponents = isResetState ? 0 : stats.reduce((sum, stat) => sum + stat.count, 0);
   const planningCount = isResetState
@@ -62,7 +61,8 @@ const TopCards = ({ stats, projectName, isResetState }) => {
 
   const displayStats = statusOrder.map((status) => {
     const stat = stats.find((s) => s.status === status) || { count: 0 };
-    const percent = totalComponents > 0 ? ((stat.count / totalComponents) * 100).toFixed(1) : 0;
+    const percent =
+      totalComponents > 0 ? ((stat.count / totalComponents) * 100).toFixed(1) : 0;
     return {
       status,
       displayTitle: STATUS_THAI[status],
@@ -72,45 +72,41 @@ const TopCards = ({ stats, projectName, isResetState }) => {
   });
 
   return (
-    <Box sx={{ mb: isXsScreen ? 1 : 2 }}>
+    <Box sx={{ mb: 2 }}>
       <Paper
         elevation={3}
         sx={{
-          p: isXsScreen ? 1 : { xs: 1, sm: 2, md: 3 },
-          mb: isXsScreen ? 1 : 3,
-          borderRadius: isXsScreen ? 0 : 2,
+          p: isIphoneSE ? 0.5 : isSmall ? 2 : 3,
+          mb: isIphoneSE ? 1 : 3,
+          borderRadius: 2,
           backgroundColor: alpha(theme.palette.background.paper, 0.9),
         }}
       >
         <Typography
-          variant={isXsScreen ? 'subtitle1' : 'h6'}
+          variant={isIphoneSE ? 'subtitle2' : isSmall ? 'h6' : 'h5'}
           fontWeight={600}
           noWrap
-          mb={isXsScreen ? 0.5 : 1}
+          mb={1}
         >
-          โครงการ: {isResetState ? 'เลือกโครงการ' : projectName}
+          โครงการ: {isResetState ? 'Not Selected' : projectName}
         </Typography>
       </Paper>
-      <Grid container spacing={isXsScreen ? 0.5 : (isSmScreen ? 1 : 2)}>
+      <Grid container spacing={isIphoneSE ? 0.5 : 3}>
         {displayStats.map((stat, i) => {
           const { bg, color } = getStatusColor(stat.status);
           return (
-            <Grid item xs={2.4} sm={2.4} md={2.4} lg={2.4} xl={2.4} key={i}>
+            <Grid item xs={3} sm={4} md={2.4} key={i}>
               <Box
                 sx={{
                   backgroundColor: bg,
                   color: color,
-                  borderRadius: isXsScreen ? 1 : 2,
-                  p: isXsScreen ? 0.5 : (isSmScreen ? 1 : 1.5),
+                  borderRadius: 2,
+                  p: isIphoneSE ? 0.5 : 2,
                   textAlign: 'center',
                   transition: 'transform 0.3s ease-in-out',
                   '&:hover': {
-                    transform: isXsScreen ? 'none' : 'scale(1.05)',
+                    transform: 'scale(1.05)',
                   },
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
                 }}
               >
                 <Box
@@ -118,14 +114,15 @@ const TopCards = ({ stats, projectName, isResetState }) => {
                   src={getStatusGif(stat.status)}
                   alt={stat.displayTitle}
                   sx={{
-                    width: isXsScreen ? '20px' : (isSmScreen ? '25px' : '40px'),
-                    height: isXsScreen ? '20px' : (isSmScreen ? '25px' : '40px'),
+                    width: isIphoneSE ? '30px' : '50px',
+                    height: isIphoneSE ? '30px' : '50px',
                     objectFit: 'contain',
-                    margin: 'auto',
+                    mt: isIphoneSE ? 0.5 : 1,
+                    mb: isIphoneSE ? 0.5 : 1,
                   }}
                 />
                 <Typography
-                  variant={isXsScreen ? 'caption' : (isSmScreen ? 'body2' : 'subtitle2')}
+                  variant={isIphoneSE ? 'caption' : 'subtitle1'}
                   fontWeight={600}
                   align="center"
                   sx={{
@@ -135,30 +132,30 @@ const TopCards = ({ stats, projectName, isResetState }) => {
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     lineHeight: 1.2,
-                    fontSize: isXsScreen ? '0.5rem' : (isSmScreen ? '0.7rem' : '0.9rem'),
-                    mt: isXsScreen ? 0.2 : (isSmScreen ? 0.5 : 1),
-                    mb: isXsScreen ? 0.2 : (isSmScreen ? 0.5 : 1),
+                    fontSize: isIphoneSE ? '0.6rem' : 'inherit',
+                    mt: 0.5,
+                    mb: 0.5,
                   }}
                 >
                   {stat.displayTitle}
                 </Typography>
                 <Typography
-                  variant={isXsScreen ? 'caption' : (isSmScreen ? 'body2' : 'h6')}
+                  variant={isIphoneSE ? 'body2' : 'h4'}
                   fontWeight={600}
                   align="center"
                   sx={{
-                    fontSize: isXsScreen ? '0.6rem' : (isSmScreen ? '0.8rem' : '1rem'),
-                    lineHeight: isXsScreen ? 1 : (isSmScreen ? 1.1 : 1.2),
+                    fontSize: isIphoneSE ? '0.8rem' : 'inherit',
+                    lineHeight: isIphoneSE ? 1.1 : 'inherit',
                   }}
                 >
                   {stat.percent}%
                 </Typography>
                 <Typography
-                  variant={isXsScreen ? 'caption' : (isSmScreen ? 'caption' : 'body2')}
+                  variant={isIphoneSE ? 'caption' : 'body2'}
                   align="center"
                   sx={{
-                    fontSize: isXsScreen ? '0.4rem' : (isSmScreen ? '0.5rem' : '0.7rem'),
-                    mb: isXsScreen ? 0.2 : (isSmScreen ? 0.5 : 0.5),
+                    fontSize: isIphoneSE ? '0.5rem' : 'inherit',
+                    mb: 0.5,
                   }}
                 >
                   ({stat.count})

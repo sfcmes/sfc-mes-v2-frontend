@@ -738,6 +738,7 @@ const TopPerformers = memo(
             isSmallScreen={isSmallScreen}
             onProjectSelect={onProjectSelect}
             userRole={userRole}
+            userProjects={userProjects}
           />
         )}
         {filteredProjects.length === 0 && tabValue === '1' && (

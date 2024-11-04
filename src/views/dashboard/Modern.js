@@ -31,6 +31,8 @@ const Modern = () => {
   const videoRef = useRef(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [userProjects, setUserProjects] = useState([]);
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
 
   const handleComponentUpdate = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
@@ -144,7 +146,7 @@ const Modern = () => {
         overflow: 'hidden',
         width: '100%',
         minHeight: '100vh',
-        padding: theme.spacing(2),
+        padding: isSmallScreen ? theme.spacing(1) : theme.spacing(2),
       }}
     >
       {isDesktop && (
@@ -179,11 +181,11 @@ const Modern = () => {
             /^\w+\((\d+,\s*\d+,\s*\d+).*$/,
             '$1'
           )}, 0.3)`,
-          borderRadius: theme.shape.borderRadius,
-          padding: theme.spacing(3),
+          borderRadius: isSmallScreen ? 0 : theme.shape.borderRadius,
+          padding: isSmallScreen ? theme.spacing(1) : theme.spacing(3),
         }}
       >
-         <Grid container spacing={3}>
+         <Grid container spacing={isSmallScreen ? 1 : 3}>
         {showTopCards && (
           <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
             <TopCards

@@ -26,8 +26,6 @@ import {
   Stack,
   Avatar,
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
-import LockIcon from '@mui/icons-material/Lock';
 import { useTheme } from '@mui/material/styles';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
@@ -158,7 +156,7 @@ const DoughnutChart = memo(({ data, status }) => {
   );
 });
 
-const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, userRole }) => {
+const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus }) => {
   const [statusUpdate, setStatusUpdate] = useState({
     fromStatus: '',
     toStatus: '',
@@ -210,18 +208,6 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, userRole }) 
 
   const statusOrder = ['planning', 'manufactured', 'transported', 'rejected'];
 
-  // เพิ่มฟังก์ชันคำนวณ surplus
-  const calculateSurplus = useCallback(() => {
-    const manufactured = component.statuses.manufactured || 0;
-    const rejected = component.statuses.rejected || 0;
-    if (manufactured > component.total && rejected > 0) {
-      return manufactured - component.total;
-    }
-    return 0;
-  }, [component]);
-
-  const surplus = calculateSurplus();
-
   return (
     <Card
       sx={{
@@ -236,30 +222,8 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, userRole }) 
       }}
     >
       <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Typography variant="subtitle1">{component.name}</Typography>
-          <Typography variant="subtitle1">จำนวนทั้งหมด: {component.total}</Typography>
-        </Box>
-        {surplus > 0 && (
-          <Box 
-            sx={{ 
-              backgroundColor: 'info.main',
-              color: 'info.contrastText',
-              p: 1,
-              borderRadius: 1,
-              mb: 2,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              fontSize: '0.875rem'
-            }}
-          >
-            <InfoIcon fontSize="small" />
-            <Typography variant="body2">
-              มีการผลิตเพิ่ม {surplus} ชิ้น เพื่อทดแทนชิ้นงานที่ถูกปฏิเสธ
-            </Typography>
-          </Box>
-        )}
+        <Typography variant="subtitle1">{component.name}</Typography>
+        <Typography variant="subtitle1">จำนวนทั้งหมด: {component.total}</Typography>
         <Box mt={2}>
           <Grid container spacing={2} justifyContent="center">
             {statusOrder.map((status) => (
@@ -271,7 +235,7 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, userRole }) 
               </Grid>
             ))}
           </Grid>
-          {isLoggedIn && userRole === 'Admin' && (
+          {isLoggedIn && (
             <form onSubmit={handleStatusUpdate}>
               <Grid container spacing={2} alignItems="flex-end" sx={{ mt: 1 }}>
                 <Grid item xs={12} sm={6}>
@@ -345,35 +309,12 @@ const ComponentRow = memo(({ component, isLoggedIn, onUpdateStatus, userRole }) 
               </Grid>
             </form>
           )}
-          {isLoggedIn && userRole !== 'Admin' && (
-            <Box 
-              sx={{ 
-                mt: 2,
-                p: 1.5,
-                backgroundColor: 'warning.light',
-                borderRadius: 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1
-              }}
-            >
-              <LockIcon color="warning" fontSize="small" />
-              <Typography color="warning.dark" variant="body2">
-                เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถอัพเดทข้อมูลได้
-              </Typography>
-            </Box>
-          )}
           {error && (
             <Typography color="error" sx={{ mt: 1 }} variant="body2">
               {error}
             </Typography>
           )}
         </Box>
-        {isLoggedIn && userRole !== 'Admin' && (
-          <Typography color="text.secondary" sx={{ mt: 2 }}>
-            *เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถอัพเดทข้อมูลได้
-          </Typography>
-        )}
       </CardContent>
     </Card>
   );
@@ -543,6 +484,14 @@ const Tab2Content = memo(({ onProjectSelect: parentOnProjectSelect, userRole, us
 
   const handleUpdateStatus = useCallback(
     async (componentId, fromStatus, toStatus, quantity) => {
+      console.log({
+        "selectedProject": selectedProject,
+        "userRole": userRole,
+        "userProjects": userProjects,
+        "componentId": componentId,
+        "projectId": selectedProject?.id
+      });
+      
       if (!isLoggedIn) {
         setSnackbar({
           open: true,
@@ -552,10 +501,16 @@ const Tab2Content = memo(({ onProjectSelect: parentOnProjectSelect, userRole, us
         return false;
       }
 
-      if (userRole !== 'Admin') {
+      const hasPermission =
+        userRole === 'Admin' ||
+        (userRole === 'Site User' &&
+          Array.isArray(userProjects) &&
+          userProjects.some((proj) => proj.project_id === selectedProject?.id));
+
+      if (!hasPermission) {
         setSnackbar({
           open: true,
-          message: 'เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถอัพเดทข้อมูลได้',
+          message: 'คุณไม่มีสิทธิ์ในการอัพเดตข้อมูลนี้',
           severity: 'error',
         });
         return false;
@@ -576,7 +531,7 @@ const Tab2Content = memo(({ onProjectSelect: parentOnProjectSelect, userRole, us
         return false;
       }
     },
-    [isLoggedIn, userRole, loadProjects, selectedProject],
+    [isLoggedIn, loadProjects, selectedProject, userRole, userProjects], // เพิ่ม dependencies
   );
 
   const handleProjectSelect = useCallback(
@@ -663,8 +618,13 @@ const Tab2Content = memo(({ onProjectSelect: parentOnProjectSelect, userRole, us
                 <Grid item xs={12} md={6} key={component.id}>
                   <ComponentRow
                     component={component}
-                    isLoggedIn={isLoggedIn}
-                    userRole={userRole}
+                    isLoggedIn={
+                      isLoggedIn &&
+                      (userRole === 'Admin' ||
+                        (userRole === 'Site User' &&
+                          Array.isArray(userProjects) &&
+                          userProjects.some((proj) => proj.project_id === selectedProject?.id)))
+                    }
                     onUpdateStatus={handleUpdateStatus}
                   />
                 </Grid>

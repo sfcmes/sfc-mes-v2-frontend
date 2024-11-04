@@ -11,8 +11,6 @@ import {
   Paper,
   Menu,
   MenuItem,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import { styled, alpha } from '@mui/material/styles';
 import {
@@ -220,17 +218,12 @@ const WeeklyStats = ({ projectId, projectName, userRole, currentTab }) => {
   };
 
   return (
-    <StyledPaper elevation={3} sx={{ height: isSmallScreen ? 'auto' : COMPONENT_HEIGHT }}>
-      <Typography variant="h6" sx={{ 
-        fontWeight: 'bold', 
-        p: isSmallScreen ? 1 : 2, 
-        textAlign: 'center',
-        fontSize: isSmallScreen ? '1rem' : '1.25rem'
-      }}>
+    <StyledPaper elevation={3}>
+      <Typography variant="h6" sx={{ fontWeight: 'bold', p: 1, textAlign: 'center' }}>
         {projectName || 'No Project Selected'}
       </Typography>
 
-      <ImageContainer sx={{ height: isSmallScreen ? 250 : IMAGE_HEIGHT }}>
+      <ImageContainer>
         {projectId ? (
           images.length > 0 ? (
             <>
