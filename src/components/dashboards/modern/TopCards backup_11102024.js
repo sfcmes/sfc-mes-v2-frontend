@@ -10,7 +10,7 @@ import rejected from 'src/assets/animated-icons/rejected.gif';
 const COLORS = {
   planning: '#64b5f6',
   manufactured: '#82ca9d',
-  transported: '#ffc658',
+  in_transit: '#ffc658',
   accepted: '#8e44ad',
   installed: '#27ae60',
   rejected: '#ff6b6b',
@@ -19,21 +19,21 @@ const COLORS = {
 const STATUS_THAI = {
   planning: 'วางแผน',
   manufactured: 'ผลิตแล้ว',
-  transported: 'ขนส่งสำเร็จ',
+  in_transit: 'ขนส่งสำเร็จ',
   accepted: 'ตรวจรับแล้ว',
   installed: 'ติดตั้งแล้ว',
   rejected: 'ถูกปฏิเสธ',
 };
 
 const getStatusColor = (status) => {
-  return { bg: COLORS[status] || '#gray', color: '#ffffff' };
+  return { bg: COLORS[status], color: '#ffffff' };
 };
 
 const getStatusGif = (status) => {
   switch (status) {
     case 'manufactured':
       return producedGif;
-    case 'transported':
+    case 'in_transit':
       return transporting;
     case 'accepted':
       return accepted;
@@ -46,31 +46,28 @@ const getStatusGif = (status) => {
   }
 };
 
-// Updated status order - removed in_transit, using only transported
-const statusOrder = ['manufactured', 'transported', 'accepted', 'installed', 'rejected'];
+const statusOrder = ['manufactured', 'in_transit', 'accepted', 'installed', 'rejected'];
 
 const TopCards = ({ stats, projectName, isResetState }) => {
   const theme = useTheme();
   const isXsScreen = useMediaQuery(theme.breakpoints.only('xs'));
   const isSmScreen = useMediaQuery(theme.breakpoints.only('sm'));
+  const isMdScreen = useMediaQuery(theme.breakpoints.only('md'));
 
-  // Calculate total from ALL stats
   const totalComponents = isResetState ? 0 : stats.reduce((sum, stat) => sum + stat.count, 0);
+  const planningCount = isResetState
+    ? 0
+    : stats.find((stat) => stat.status === 'planning')?.count || 0;
+  const inProgressCount = isResetState ? 0 : totalComponents - planningCount;
 
-  // Process stats for display
   const displayStats = statusOrder.map((status) => {
-    const stat = stats.find(s => s.status === status) || { count: 0 };
-    
-    // Calculate percentage against TOTAL components (including planning)
-    const percent = totalComponents > 0 
-      ? ((stat.count / totalComponents) * 100).toFixed(1) 
-      : 0;
-
+    const stat = stats.find((s) => s.status === status) || { count: 0 };
+    const percent = totalComponents > 0 ? ((stat.count / totalComponents) * 100).toFixed(1) : 0;
     return {
       status,
       displayTitle: STATUS_THAI[status],
       count: isResetState ? 0 : stat.count,
-      percent: isResetState ? 0 : percent
+      percent: isResetState ? 0 : percent,
     };
   });
 

@@ -32,19 +32,12 @@ const Profile = () => {
 
   useEffect(() => {
     const loadUserProfile = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        // If no token, don't try to fetch profile
-        console.log('No auth token found');
-        return;
-      }
-      
       try {
         const userProfile = await fetchUserProfile();
         setUser(userProfile);
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
-        // Only redirect if it's truly an auth error
+        setError('Failed to load user profile. Please try logging in again.');
         if (error.response && error.response.status === 401) {
           navigate('/auth/login');
         }
@@ -84,20 +77,6 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
- // For public view, render a login button instead of profile
-  if (!localStorage.getItem('token')) {
-    return (
-      <Box>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => navigate('/auth/login')}
-        >
-          Login
-        </Button>
-      </Box>
-    );
-  }
   
   return (
     <Box>

@@ -11,11 +11,22 @@ import {
   Box,
   Paper,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import { fetchComponentById, updateComponent, uploadComponentFile } from 'src/utils/api';
+import { fetchComponentById, updateComponent, uploadComponentFile, deleteComponent } from 'src/utils/api';
 import { format } from 'date-fns';
 
-const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage, setSnackbarOpen }) => {
+const ComponentDetails = ({ 
+  componentId, 
+  userRole, 
+  onUpdate, 
+  setSnackbarMessage, 
+  setSnackbarOpen,
+  onClose 
+}) => {
   const [componentDetails, setComponentDetails] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedDetails, setEditedDetails] = useState({});
@@ -23,6 +34,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
   const [error, setError] = useState(null);
   const [fileRevisions, setFileRevisions] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fieldOrder = [
     'id', 'section_id', 'name', 'type', 'width', 'height', 'thickness', 
@@ -57,7 +69,10 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
     rejected: 'ถูกปฏิเสธ',
   };
 
-  const editableFields = ['name', 'type', 'width', 'height', 'thickness', 'extension', 'reduction', 'area', 'volume', 'weight'];
+  const editableFields = [
+    'name', 'type', 'width', 'height', 'thickness', 
+    'extension', 'reduction', 'area', 'volume', 'weight'
+  ];
 
   useEffect(() => {
     fetchDetails();
@@ -96,9 +111,8 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
           dataToSend[field] = editedDetails[field];
         }
       });
-      console.log('Sending updated details:', dataToSend);
+      
       const updatedComponent = await updateComponent(componentId, dataToSend);
-      console.log('Received updated component:', updatedComponent);
       
       if (updatedComponent) {
         setComponentDetails(updatedComponent);
@@ -127,7 +141,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
     } finally {
       setIsLoading(false);
       setSelectedFile(null);
-      await fetchDetails(); // Refresh the component details
+      await fetchDetails();
     }
   };
 
@@ -151,6 +165,38 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
       console.error('Error uploading file:', error);
       setSnackbarMessage('ไม่สามารถอัปโหลดไฟล์ได้ กรุณาลองใหม่อีกครั้ง');
       setSnackbarOpen(true);
+    }
+  };
+
+  // Delete handlers
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      setIsLoading(true);
+      await deleteComponent(componentId);
+      setSnackbarMessage('ลบข้อมูลชิ้นงานเรียบร้อยแล้ว');
+      setSnackbarOpen(true);
+      setDeleteDialogOpen(false);
+      if (onClose) {
+        onClose(); // Close the parent dialog after successful deletion
+      }
+      if (onUpdate) {
+        onUpdate(null); // Notify parent component about deletion
+      }
+    } catch (err) {
+      console.error('Error deleting component:', err);
+      setSnackbarMessage('ไม่สามารถลบข้อมูลชิ้นงานได้ กรุณาลองใหม่อีกครั้ง');
+      setSnackbarOpen(true);
+      setDeleteDialogOpen(false);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -207,6 +253,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
             </TableBody>
           </Table>
         </Grid>
+
         {fileRevisions.length > 0 && (
           <Grid item xs={12}>
             <Typography variant="h6" gutterBottom>ประวัติไฟล์</Typography>
@@ -223,6 +270,7 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
             </Table>
           </Grid>
         )}
+
         <Grid item xs={12}>
           <Box display="flex" flexDirection="column" alignItems="flex-start" gap={2}>
             {userRole && ['admin', 'site user'].includes(userRole.toLowerCase()) && (
@@ -256,15 +304,49 @@ const ComponentDetails = ({ componentId, userRole, onUpdate, setSnackbarMessage,
                     </Box>
                   </>
                 ) : (
-                  <Button variant="contained" color="primary" onClick={() => setIsEditing(true)}>
-                    แก้ไข
-                  </Button>
+                  <Box display="flex" gap={2}>
+                    <Button variant="contained" color="primary" onClick={() => setIsEditing(true)}>
+                      แก้ไข
+                    </Button>
+                    <Button variant="contained" color="error" onClick={handleDeleteClick}>
+                      ลบ
+                    </Button>
+                  </Box>
                 )}
               </>
             )}
           </Box>
         </Grid>
       </Grid>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>ยืนยันการลบข้อมูล</DialogTitle>
+        <DialogContent>
+          <Typography>
+            คุณต้องการลบข้อมูลชิ้นงาน "{componentDetails.name}" ใช่หรือไม่? 
+            การดำเนินการนี้ไม่สามารถยกเลิกได้
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            ยกเลิก
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={isLoading}
+          >
+            {isLoading ? 'กำลังลบ...' : 'ยืนยันการลบ'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };

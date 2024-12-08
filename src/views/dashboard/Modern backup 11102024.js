@@ -4,7 +4,7 @@ import TopCards from '../../components/dashboards/modern/TopCards';
 import TopPerformers from '../../components/dashboards/modern/TopPerformers';
 import WeeklyStats from '../../components/dashboards/modern/WeeklyStats';
 import Welcome from '../../layouts/full/shared/welcome/Welcome';
-import { fetchProjects, fetchUserProfile, fetchUserProjects } from 'src/utils/api';
+import { fetchProjects, fetchUserProfile, fetchUserProjects  } from 'src/utils/api';
 import videoBg from 'src/assets/videos/blue-sky-background-4k.mp4';
 
 const statusDisplayMap = {
@@ -33,6 +33,7 @@ const Modern = () => {
   const [userProjects, setUserProjects] = useState([]);
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
+
   const handleComponentUpdate = useCallback(() => {
     setRefreshTrigger((prev) => prev + 1);
   }, []);
@@ -40,8 +41,10 @@ const Modern = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Only fetch projects initially since it's public
-        const projectsResponse = await fetchProjects();
+        const [projectsResponse, userProfile] = await Promise.all([
+          fetchProjects(),
+          fetchUserProfile().catch(() => null),
+        ]);
 
         if (projectsResponse && Array.isArray(projectsResponse.data)) {
           const processedProjects = projectsResponse.data.map((project) => ({
@@ -50,38 +53,21 @@ const Modern = () => {
             components: parseInt(project.components, 10) || 0,
           }));
           setProjects(processedProjects);
+        } else {
+          console.error('Unexpected projects data structure:', projectsResponse);
         }
 
-        // Only attempt to fetch user data if there's a token
-        const token = localStorage.getItem('token');
-        if (token) {
-          try {
-            const userProfile = await fetchUserProfile();
-            setUserRole(userProfile ? userProfile.role : null);
+        setUserRole(userProfile ? userProfile.role : null);
 
-            if (userProfile && userProfile.role === 'Site User') {
-              const userProjectsData = await fetchUserProjects(userProfile.id);
-              setUserProjects(userProjectsData.map((p) => p.id));
-            }
-          } catch (error) {
-            // Silently handle auth errors - user is just not logged in
-            console.log('No authenticated user');
-            setUserRole(null);
-            setUserProjects([]);
-          }
-        } else {
-          setUserRole(null);
-          setUserProjects([]);
+        // Fetch user projects if role is Site User
+        if (userProfile && userProfile.role === 'Site User') {
+          const userProjectsData = await fetchUserProjects(userProfile.id);
+          setUserProjects(userProjectsData.map(p => p.id));
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-        // Set defaults for error state
-        setProjects([]);
-        setUserRole(null);
-        setUserProjects([]);
       }
     };
-
     fetchData();
 
     if (videoRef.current) {
@@ -193,42 +179,42 @@ const Modern = () => {
           backdropFilter: 'blur(10px)',
           backgroundColor: `rgba(${theme.palette.background.default.replace(
             /^\w+\((\d+,\s*\d+,\s*\d+).*$/,
-            '$1',
+            '$1'
           )}, 0.3)`,
           borderRadius: isSmallScreen ? 0 : theme.shape.borderRadius,
           padding: isSmallScreen ? theme.spacing(1) : theme.spacing(3),
         }}
       >
-        <Grid container spacing={isSmallScreen ? 1 : 3}>
-          {showTopCards && (
-            <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
-              <TopCards
-                stats={projectStats}
-                projectName={selectedProject ? selectedProject.name : 'Not Selected'}
-                isResetState={currentTab === '2'}
-              />
-            </Grid>
-          )}
-          <Grid item xs={12} lg={8}>
-            <TopPerformers
-              projects={projects}
-              onProjectSelect={handleProjectSelect}
-              userRole={userRole}
-              refreshTrigger={refreshTrigger}
-              onTabChange={handleTabChange}
-              userProjects={userProjects}
+         <Grid container spacing={isSmallScreen ? 1 : 3}>
+        {showTopCards && (
+          <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
+            <TopCards
+              stats={projectStats}
+              projectName={selectedProject ? selectedProject.name : 'Not Selected'}
+              isResetState={currentTab === '2'}
             />
           </Grid>
-          <Grid item xs={12} lg={4}>
-            <WeeklyStats
-              key={`${currentTab}-${selectedProject?.id || 'no-project'}`}
-              projectId={selectedProject ? selectedProject.id : null}
-              projectName={selectedProject ? selectedProject.name : 'All Projects'}
-              userRole={userRole}
-              currentTab={currentTab}
-            />
-          </Grid>
+        )}
+        <Grid item xs={12} lg={8}>
+          <TopPerformers
+            projects={projects}
+            onProjectSelect={handleProjectSelect}
+            userRole={userRole}
+            refreshTrigger={refreshTrigger}
+            onTabChange={handleTabChange}
+            userProjects={userProjects}
+          />
         </Grid>
+        <Grid item xs={12} lg={4}>
+          <WeeklyStats
+            key={`${currentTab}-${selectedProject?.id || 'no-project'}`}
+            projectId={selectedProject ? selectedProject.id : null}
+            projectName={selectedProject ? selectedProject.name : 'All Projects'}
+            userRole={userRole}
+            currentTab={currentTab}
+          />
+        </Grid>
+      </Grid>
         {!isMobile && <Welcome />}
       </Box>
     </Box>

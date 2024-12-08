@@ -55,9 +55,11 @@ const UserList = () => {
       const userProjectsMap = {};
       for (const user of userData) {
         try {
-          const userProjectsResponse = await fetchUserProjects(user.id);
-          const projectsList = userProjectsResponse.data || [];
-          userProjectsMap[user.id] = projectsList.map(p => p.project_id?.toString()).filter(Boolean);
+          const userProjectsData = await fetchUserProjects(user.id);
+          // Ensure we have an array, even if empty
+          userProjectsMap[user.id] = Array.isArray(userProjectsData) ?
+            userProjectsData.map(project => project.id) :
+            [];
         } catch (error) {
           console.error(`Error fetching projects for user ${user.id}:`, error);
           userProjectsMap[user.id] = [];
@@ -129,33 +131,18 @@ const UserList = () => {
   };
 
   const handleAssignProjects = (user) => {
-    console.log('Opening project assignment dialog:', {
-      user,
-      currentProjects: userProjects[user.id] || []
-    });
-    
     setEditUser(user);
     setSelectedProjects(userProjects[user.id] || []);
     setOpenProjectDialog(true);
   };
 
   const handleSaveProjects = async () => {
-    setLoading(true);
     try {
       if (roles[editUser.role_id] !== 'Admin') {
-        console.log('Assigning projects:', editUser.id, selectedProjects);
-        
-        const result = await assignProjectsToUser(editUser.id, selectedProjects);
-        console.log('Assignment result:', result);
-  
-        // Update local state immediately
+        await assignProjectsToUser(editUser.id, selectedProjects);
         const updatedUserProjects = { ...userProjects };
         updatedUserProjects[editUser.id] = selectedProjects;
         setUserProjects(updatedUserProjects);
-  
-        // Then refresh all data to ensure consistency
-        await fetchAllData();
-        
         setOpenProjectDialog(false);
         setSnackbarMessage('Projects assigned successfully');
         setSnackbarSeverity('success');
@@ -166,47 +153,34 @@ const UserList = () => {
       setSnackbarMessage('Failed to assign projects');
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
-    } finally {
-      setLoading(false);
     }
   };
 
   const renderProjectAccess = (user) => {
-    try {
-      if (roles[user.role_id] === 'Admin') {
-        return <Chip label="All Projects" color="primary" />;
-      } else if (roles[user.role_id] === 'Site User') {
-        const userProjectIds = userProjects[user.id] || [];
-        console.log('Rendering projects for user:', {
-          userId: user.id,
-          projectIds: userProjectIds,
-          projectsMap: userProjects,
-          availableProjects: projects
-        });
-  
-        return userProjectIds.length > 0 ? (
-          userProjectIds.map(projectId => {
-            const project = projects.find(p => p.id.toString() === projectId.toString());
-            return (
-              <Chip 
-                key={projectId} 
-                label={project?.name || `Project ${projectId}`} 
-                size="small" 
-                style={{ margin: '2px' }} 
-              />
-            );
-          })
-        ) : (
-          <Typography variant="body2" color="textSecondary">No projects assigned</Typography>
-        );
-      } else {
-        return <Chip label="No Projects Access" color="error" />;
-      }
-    } catch (error) {
-      console.error('Error rendering project access:', error);
-      return <Typography color="error">Error displaying projects</Typography>;
+    if (roles[user.role_id] === 'Admin') {
+      return <Chip label="All Projects" color="primary" />;
+    } else if (roles[user.role_id] === 'Site User') {
+      const userProjectIds = userProjects[user.id] || [];
+      return userProjectIds.length > 0 ? (
+        userProjectIds.map(projectId => {
+          const project = projects.find(p => p.id === projectId);
+          return (
+            <Chip 
+              key={projectId} 
+              label={project?.name || `Project ${projectId}`} 
+              size="small" 
+              style={{ margin: '2px' }} 
+            />
+          );
+        })
+      ) : (
+        <Typography variant="body2" color="textSecondary">No projects assigned</Typography>
+      );
+    } else {
+      return <Chip label="No Projects Access" color="error" />;
     }
   };
+
 
 
   const filteredUsers = users.filter(user => 

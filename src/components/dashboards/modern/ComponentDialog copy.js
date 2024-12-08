@@ -34,8 +34,6 @@ import {
   fetchUserById,
   fetchComponentFiles,
   openFile,
-  fetchUserProjects, // Add this
-  getProjectIdFromSectionId, // Add this
 } from 'src/utils/api';
 import ComponentDetails from './ComponentDetails';
 import FileManagement from './FileManagement';
@@ -65,7 +63,7 @@ const ComponentDialog = memo(
     userRole,
   }) => {
     // Changed initialization to use initialCanEdit
-    const [hasEditPermission, setHasEditPermission] = useState(false);
+    const [hasEditPermission, setHasEditPermission] = useState(initialCanEdit);
 
     // State management
     const [state, setState] = useState({
@@ -84,72 +82,8 @@ const ComponentDialog = memo(
     });
 
     useEffect(() => {
-      const checkPermissions = async () => {
-        try {
-          const userProfile = await fetchUserProfile();
-          console.log('Checking permissions for user:', userProfile);
-
-          // Set user role first
-          setState((prev) => ({ ...prev, userRole: userProfile.role }));
-
-          // Admin always has permission
-          if (userProfile.role === 'Admin') {
-            setHasEditPermission(true);
-            return;
-          }
-
-          // For Site User
-          let projectId = component?.project_id;
-
-          // Get project ID from section if not directly available
-          if (!projectId && component?.section_id) {
-            try {
-              projectId = await getProjectIdFromSectionId(component.section_id);
-              console.log('Got project ID from section:', projectId);
-            } catch (error) {
-              console.error('Error getting project ID from section:', error);
-              setHasEditPermission(false);
-              return;
-            }
-          }
-
-          if (!projectId) {
-            console.log('No project ID found');
-            setHasEditPermission(false);
-            return;
-          }
-
-          // Check Site User permissions
-          const userProjects = await fetchUserProjects(userProfile.id);
-          console.log('User projects:', userProjects);
-
-          if (!Array.isArray(userProjects?.data)) {
-            console.log('No valid user projects data');
-            setHasEditPermission(false);
-            return;
-          }
-
-          const hasAccess = userProjects.data.some(
-            (project) => project.project_id?.toString() === projectId?.toString(),
-          );
-
-          console.log('Permission check:', {
-            hasAccess,
-            userProjects: userProjects?.data,
-            projectId,
-          });
-
-          setHasEditPermission(hasAccess);
-        } catch (error) {
-          console.error('Error checking permissions:', error);
-          setHasEditPermission(false);
-        }
-      };
-
-      if (open) {
-        checkPermissions();
-      }
-    }, [open, component?.project_id, component?.section_id]);
+      setHasEditPermission(initialCanEdit);
+    }, [component?.id, initialCanEdit]);
 
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -202,7 +136,8 @@ const ComponentDialog = memo(
     }, []);
 
     const handleStatusUpdate = useCallback(async () => {
-      if (!hasEditPermission && state.userRole !== 'Admin') {
+      if (!hasEditPermission) {
+        // Changed from canEdit to hasEditPermission
         showSnackbar('คุณไม่มีสิทธิ์ในการอัพเดทสถานะ');
         return;
       }
@@ -214,33 +149,26 @@ const ComponentDialog = memo(
           throw new Error('กรุณาเลือกสถานะ');
         }
 
-        if (!component?.id) {
-          throw new Error('ไม่พบรหัสชิ้นงาน');
-        }
+        await updateComponentStatus(component.id, state.newStatus);
+        const updatedDetails = await fetchComponentById(component.id);
 
-        const response = await updateComponentStatus(component.id, state.newStatus);
+        // Update cache with new data
+        componentCache.set(component.id, {
+          details: updatedDetails,
+          timestamp: Date.now(),
+        });
 
-        if (response) {
-          const updatedDetails = await fetchComponentById(component.id);
+        setState((prev) => ({
+          ...prev,
+          componentDetails: updatedDetails,
+          isUpdating: false,
+          lastFetchTime: Date.now(),
+        }));
 
-          // Update cache with new data
-          componentCache.set(component.id, {
-            details: updatedDetails,
-            timestamp: Date.now(),
-          });
+        showSnackbar('อัพเดทสถานะเรียบร้อยแล้ว');
 
-          setState((prev) => ({
-            ...prev,
-            componentDetails: updatedDetails,
-            isUpdating: false,
-            lastFetchTime: Date.now(),
-          }));
-
-          showSnackbar('อัพเดทสถานะเรียบร้อยแล้ว');
-
-          if (onComponentUpdate) {
-            onComponentUpdate(updatedDetails);
-          }
+        if (onComponentUpdate) {
+          onComponentUpdate(updatedDetails);
         }
       } catch (error) {
         console.error('Error updating status:', error);
@@ -506,60 +434,44 @@ const ComponentDialog = memo(
                     <ListItemText
                       primary={`Revision ${file.revision}`}
                       secondary={new Date(file.created_at).toLocaleString('th-TH')}
-                      SS
                     />
-                    <Button
-                      onClick={() => {
-                        window.open(file.s3_url, '_blank');
-                        // หรือถ้าใช้ openFile อยู่แล้ว ก็ใช้แบบนี้
-                        // handleFileOpen(file.s3_url);
-                      }}
-                    >
-                      เปิดไฟล์
-                    </Button>
+                    <Button onClick={() => handleFileOpen(file.s3_url)}>เปิดไฟล์</Button>
                   </ListItem>
                 ))}
               </List>
               {state.componentFiles.length === 0 && <Typography>ไม่มีไฟล์ที่เกี่ยวข้อง</Typography>}
             </Box>
           );
-          case 3:
-            return (
-              <Box mt={2}>
-                <Typography variant="h6" gutterBottom>
-                  อัพเดทสถานะ
-                </Typography>
-                {(state.userRole === 'Admin' || hasEditPermission) ? (
-                  <>
-                    <Select
-                      value={state.newStatus || ''}
-                      onChange={handleStatusChange}
-                      fullWidth
-                      sx={{ mt: 2 }}
-                    >
-                      {Object.entries(STATUS_DISPLAY_MAP).map(([value, label]) => (
-                        <MenuItem key={value} value={value}>
-                          {label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleStatusUpdate}
-                      disabled={state.isUpdating}
-                      sx={{ mt: 2 }}
-                    >
-                      {state.isUpdating ? 'กำลังอัพเดท...' : 'อัพเดทสถานะ'}
-                    </Button>
-                  </>
-                ) : (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    คุณไม่มีสิทธิ์ในการอัพเดทสถานะสำหรับโปรเจคนี้
-                  </Alert>
-                )}
-              </Box>
-            );case 4:
+        case 3:
+          return hasEditPermission ? (
+            <Box mt={2}>
+              <Typography variant="h6" gutterBottom>
+                อัพเดทสถานะ
+              </Typography>
+              <Select
+                value={state.newStatus}
+                onChange={handleStatusChange}
+                fullWidth
+                margin="normal"
+              >
+                {Object.entries(STATUS_DISPLAY_MAP).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleStatusUpdate}
+                disabled={state.isUpdating}
+                sx={{ mt: 2 }}
+              >
+                {state.isUpdating ? 'กำลังอัพเดท...' : 'อัพเดทสถานะ'}
+              </Button>
+            </Box>
+          ) : null;
+        case 4:
           return hasEditPermission ? (
             <Box position="relative">
               <input
@@ -655,7 +567,7 @@ const ComponentDialog = memo(
               <Tab label="รายละเอียดชิ้นงาน" />
               <Tab label="ประวัติสถานะ" />
               <Tab label="ไฟล์" />
-              {(state.userRole === 'Admin' || hasEditPermission) && <Tab label="อัพเดทสถานะ" />}
+              {hasEditPermission && <Tab label="อัพเดทสถานะ" />}
               {hasEditPermission && <Tab label="จัดการไฟล์" />}
             </Tabs>
             <Box sx={{ mt: 2 }}>{renderTabContent()}</Box>

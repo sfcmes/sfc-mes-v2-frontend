@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sfcpcbackend.ngrok.app/api';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://54.251.182.137:3000/api'
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://54.251.182.137:3000/api'
+// const API_BASE_URL = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -173,12 +174,13 @@ const deleteUserById = (userId) => api.delete(`/users/${userId}`);
 
 const fetchProjects = async () => {
   try {
-    const response = await api.get('/projects');
+    // Use regular projects endpoint since it's now public
+    const response = await publicApi.get('/projects');
     console.log('Fetched projects:', response.data);
     return response;
   } catch (error) {
     console.error('Error fetching projects:', error);
-    throw error;
+    return { data: [] }; // Return empty array instead of throwing error
   }
 };
 
@@ -215,11 +217,9 @@ const fetchComponentsByProjectId = async (projectId) => {
     console.log('API response:', response);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching components for project ${projectId}:`, error);
-    if (error.response && error.response.status === 404) {
-      return { precast: [], other: [] };
-    }
-    throw error;
+    console.log(`No components found for project ${projectId}`);
+    // Return empty arrays instead of throwing error
+    return { precast: [], other: [] };
   }
 };
 
@@ -244,7 +244,7 @@ const updateComponent = async (componentId, data) => {
     throw error;
   }
 };
-const deleteComponent = (componentId) => api.delete(`/components/${componentId}`);
+// const deleteComponent = (componentId) => api.delete(`/components/${componentId}`);
 
 // const fetchComponentById = async (componentId) => {
 //   try {
@@ -738,23 +738,48 @@ const deleteProjectImage = async (projectId, imageId) => {
   }
 };
 
+// const assignProjectsToUser = async (userId, projectIds) => {
+//   try {
+//     const response = await api.post(`/users/${userId}/projects`, { projectIds });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error assigning projects to user:', error);
+//     throw error;
+//   }
+// };
+
 const assignProjectsToUser = async (userId, projectIds) => {
   try {
-    const response = await api.post(`/users/${userId}/projects`, { projectIds });
+    const response = await api.post(
+      `/users/${userId}/projects`, 
+      { projectIds },
+      {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'If-None-Match': ''  // Force fresh response
+        }
+      }
+    );
     return response.data;
   } catch (error) {
-    console.error('Error assigning projects to user:', error);
+    console.error('Error assigning projects:', error);
     throw error;
   }
 };
 
 const fetchUserProjects = async (userId) => {
   try {
-    const response = await api.get(`/users/${userId}/projects`);
+    const response = await api.get(`/users/${userId}/projects`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'If-None-Match': ''  // Force fresh response
+      }
+    });
+    console.log('User projects response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching user projects:', error);
-    throw error;
+    return { data: [] };
   }
 };
 
@@ -800,11 +825,73 @@ const deleteOtherComponentById = async (componentId) => {
   }
 };
 
+const deleteComponent = async (componentId) => {
+  try {
+    const response = await api.delete(`/components/${componentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting component:', error);
+    throw error;
+  }
+};
+
+const getProjectIdFromSectionId = async (sectionId) => {
+  try {
+    if (!sectionId) return null;
+    const response = await api.get(`/sections/${sectionId}`);
+    return response.data.project_id;
+  } catch (error) {
+    console.error('Error getting project ID from section:', error);
+    return null;
+  }
+};
+
+const checkUserProjectPermission = async (userId, projectId) => {
+  try {
+    const userProfile = await fetchUserProfile();
+    console.log('User profile:', userProfile); // Debug log
+
+    // Admin always has permission
+    if (userProfile.role === 'Admin') {
+      return { canEdit: true };
+    }
+
+    if (!projectId) {
+      console.log('No project ID provided');
+      return { canEdit: false };
+    }
+
+    // For Site User, check project assignments
+    const userProjects = await fetchUserProjects(userId);
+    console.log('User projects:', userProjects); // Debug log
+
+    const hasProjectAccess = userProjects?.data?.some(project => 
+      project.project_id?.toString() === projectId?.toString()
+    );
+
+    console.log('Permission check result:', {
+      role: userProfile.role,
+      hasProjectAccess,
+      projectId
+    });
+
+    return {
+      canEdit: userProfile.role === 'Site User' && hasProjectAccess
+    };
+  } catch (error) {
+    console.error('Error checking user project permission:', error);
+    return { canEdit: false };
+  }
+};
+
+
 export {
   api,
   publicApi,
   fetchUsers,
+  deleteComponent,
   deleteProjectImage,
+  checkUserProjectPermission,
   fetchUserProjects,
   checkUsernameAndRole,
   checkAuthToken,
@@ -833,7 +920,6 @@ export {
   fetchComponentsBySectionId,
   fetchComponentsByProjectId,
   updateComponent,
-  deleteComponent,
   addComponentHistory,
   fetchRoles,
   uploadFileToS3,
@@ -857,6 +943,7 @@ export {
   fetchOtherComponentsByProjectIdV2,
   updateOtherComponentDetails,
   deleteOtherComponentById,
+  getProjectIdFromSectionId ,
 };
 
 export default api; // Keep the default export
