@@ -36,7 +36,6 @@ const FormComponent = () => {
               <Tab label="เพิ่มชิ้นงานเข้าระบบรายชิ้น" value="1" />
               <Tab label="เพิ่มชิ้นงานเข้าระบบด้วย Excel" value="2" />
               <Tab label="จัดการชิ้นงานอื่นๆ" value="3" /> {/* New tab */}
-              <Tab label="จัดการชิ้นงานพรีคาสท์" value="4"/> {/* New tab */}
             </TabList>
           </Box>
           <TabPanel value="1">
@@ -60,13 +59,13 @@ const FormComponent = () => {
               </Grid>
             </Grid>
           </TabPanel>
-          <TabPanel value="4">
+          {/* <TabPanel value="4">
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <PrecastComponentManager />
               </Grid>
             </Grid>
-          </TabPanel>
+          </TabPanel> */}
         </TabContext>
       </ParentCard>
     </PageContainer>

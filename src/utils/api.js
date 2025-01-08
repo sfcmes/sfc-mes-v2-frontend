@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sfcpcbackend.ngrok.app/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://54.251.182.137:3000/api'
-// const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -884,11 +884,50 @@ const checkUserProjectPermission = async (userId, projectId) => {
   }
 };
 
+const fetchComponentStats = async (projectId) => {
+  try {
+    const response = await publicApi.get(`/projects/${projectId}/component-stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching component stats:', error);
+    return {
+      total_components: 0,
+      manufactured_count: 0,
+      transported_count: 0,
+      accepted_count: 0,
+      installed_count: 0,
+      rejected_count: 0,
+      manufactured_percent: 0,
+      transported_percent: 0,
+      accepted_percent: 0,
+      installed_percent: 0,
+      rejected_percent: 0
+    };
+  }
+};
+
+const fetchSectionStats = async (projectId) => {
+  try {
+    const response = await publicApi.get(`/projects/${projectId}/section-status-stats`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching section stats:', error);
+    return {
+      manufactured_count: 0,
+      transported_count: 0,
+      accepted_count: 0,
+      installed_count: 0,
+      rejected_count: 0,
+    };
+  }
+};
+
 
 export {
   api,
   publicApi,
   fetchUsers,
+  fetchSectionStats,
   deleteComponent,
   deleteProjectImage,
   checkUserProjectPermission,
@@ -943,7 +982,8 @@ export {
   fetchOtherComponentsByProjectIdV2,
   updateOtherComponentDetails,
   deleteOtherComponentById,
-  getProjectIdFromSectionId ,
+  getProjectIdFromSectionId,
+  fetchComponentStats,
 };
 
 export default api; // Keep the default export

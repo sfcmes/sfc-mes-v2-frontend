@@ -203,8 +203,8 @@ const Modern = () => {
           {showTopCards && (
             <Grid item xs={12} sx={{ position: 'sticky', top: theme.spacing(2), zIndex: 2 }}>
               <TopCards
-                stats={projectStats}
-                projectName={selectedProject ? selectedProject.name : 'Not Selected'}
+                projectId={selectedProject?.id}
+                projectName={selectedProject?.name}
                 isResetState={currentTab === '2'}
               />
             </Grid>

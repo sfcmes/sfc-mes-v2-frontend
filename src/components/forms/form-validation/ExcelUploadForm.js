@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Box, Typography, FormControl, InputLabel, Select, MenuItem, LinearProgress, Modal, Backdrop, Fade } from '@mui/material';
+import { 
+  Button, 
+  Box, 
+  Typography, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  LinearProgress, 
+  Modal, 
+  Backdrop, 
+  Fade 
+} from '@mui/material';
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -8,7 +20,7 @@ import {
   addComponentHistory,
   fetchSectionsByProjectId,
   fetchSectionByName,
-  createSection, // Ensure this is imported
+  createSection,
 } from 'src/utils/api';
 import DataTable from './DataTable';
 
@@ -37,7 +49,7 @@ const ExcelUploadForm = () => {
   const [selectedProject, setSelectedProject] = useState('');
   const [sections, setSections] = useState([]);
   const [progress, setProgress] = useState(0);
-  const [modalOpen, setModalOpen] = useState(false); // State for controlling modal
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,7 +98,15 @@ const ExcelUploadForm = () => {
             headers.forEach((header, index) => {
               const trimmedHeader = header.trim();
               const mappedKey = columnMapping[trimmedHeader] || trimmedHeader;
-              obj[mappedKey] = row[index] || null;
+              
+              // Add status normalization
+              if (mappedKey === 'status') {
+                const status = row[index];
+                // Silently normalize any case variation of 'planning' to lowercase
+                obj[mappedKey] = status?.toLowerCase() === 'planning' ? 'planning' : (status || 'planning');
+              } else {
+                obj[mappedKey] = row[index] || null;
+              }
             });
             return obj;
           });
@@ -106,18 +126,18 @@ const ExcelUploadForm = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  const parseNumber = (value) => {
+    if (value === undefined || value === null || value === '') return null;
+    const cleanedValue = String(value).replace(/[^\d.,]/g, '');
+    const normalizedValue = cleanedValue.replace(',', '.');
+    return parseFloat(normalizedValue);
+  };
+
   const validateExcelData = (data) => {
     const errors = [];
     const warnings = [];
 
-    const parseNumber = (value) => {
-      if (value === undefined || value === null || value === '') return null;
-      const cleanedValue = String(value).replace(/[^\d.,]/g, '');
-      const normalizedValue = cleanedValue.replace(',', '.');
-      return parseFloat(normalizedValue);
-    };
-
-    const requiredFields = ['section_name', 'component_name', 'width', 'area'];
+    const requiredFields = ['section_name', 'name', 'width', 'area'];
     const optionalNumericFields = [
       'height',
       'thickness',
@@ -212,18 +232,20 @@ const ExcelUploadForm = () => {
               matchingSection = await createSection({
                 name: component.section_name,
                 project_id: selectedProject,
-                status: 'planning'
+                status: 'planning' // Always use lowercase for new sections
               });
-              sections.push(matchingSection); // Add the new section to our local array
+              sections.push(matchingSection);
             } catch (createSectionError) {
               if (createSectionError.response && createSectionError.response.status === 409) {
-                // If the section already exists (409 Conflict), fetch it instead
                 matchingSection = await fetchSectionByName(selectedProject, component.section_name);
               } else {
                 throw new Error(`Failed to create section "${component.section_name}": ${createSectionError.message}`);
               }
             }
           }
+
+          // Normalize status before creating component
+          const status = component.status?.toLowerCase() === 'planning' ? 'planning' : (component.status || 'planning');
   
           const componentData = {
             id: uuidv4(),
@@ -238,7 +260,7 @@ const ExcelUploadForm = () => {
             area: component.area ? parseFloat(component.area) : null,
             volume: component.volume ? parseFloat(component.volume) : null,
             weight: component.weight ? parseFloat(component.weight) : null,
-            status: component.status || 'planning'
+            status: status
           };
   
           const createdComponent = await createComponent(componentData);
@@ -268,7 +290,6 @@ const ExcelUploadForm = () => {
       setModalOpen(false);
     }
   };
-  
 
   const handleDownloadTemplate = () => {
     const ws = XLSX.utils.aoa_to_sheet([excelHeaders]);
@@ -349,7 +370,6 @@ const ExcelUploadForm = () => {
         </>
       )}
 
-      {/* Modal for progress bar */}
       <Modal
         open={modalOpen}
         onClose={() => {}}
