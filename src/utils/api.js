@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sfcpcbackend.ngrok.app/api';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://54.251.182.137:3000/api'
-// const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -922,12 +922,24 @@ const fetchSectionStats = async (projectId) => {
   }
 };
 
+const fetchSectionStatusStats = async (projectId) => {
+  try {
+    const response = await publicApi.get(`/projects/${projectId}/section-status-stats`);
+    console.log('Section status stats response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching section status stats:', error);
+    // Return empty array instead of throwing to avoid breaking UI
+    return [];
+  }
+};
 
 export {
   api,
   publicApi,
   fetchUsers,
   fetchSectionStats,
+  fetchSectionStatusStats,
   deleteComponent,
   deleteProjectImage,
   checkUserProjectPermission,

@@ -21,7 +21,6 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { Close as CloseIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import ComponentDialog from './ComponentDialog';
-import { fetchSectionStatusStats } from 'src/utils/api';
 
 // CircularProgressWithLabel Component
 function CircularProgressWithLabel({ value }) {
@@ -58,11 +57,11 @@ const COLORS = {
 
 const STATUS_THAI = {
   planning: 'รอผลิต',
-  manufactured: 'ผลิต',
-  transported: 'ขนส่ง',
-  accepted: 'ตรวจรับ',
-  installed: 'ติดตั้ง',
-  rejected: 'ปฏิเสธ',
+  manufactured: 'ผลิตแล้ว',
+  transported: 'ขนส่งสำเร็จ',
+  accepted: 'ตรวจรับแล้ว',
+  installed: 'ติดตั้งแล้ว',
+  rejected: 'ถูกปฏิเสธ',
 };
 
 const statusOrder = [
@@ -143,7 +142,7 @@ const getComponentCountText = (count) => {
 };
 
 /** StatusChip Component **/
-const StatusChip = memo(({ status, label, count, percentage }) => {
+const StatusChip = memo(({ status, label }) => {
   const { bg, color } = getStatusColor(status);
   return (
     <Box
@@ -155,31 +154,11 @@ const StatusChip = memo(({ status, label, count, percentage }) => {
         padding: '4px 8px',
         borderRadius: '16px',
         fontSize: { xs: '0.7rem', sm: '0.9rem' },
-        display: 'inline-flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        display: 'inline-block',
         margin: '2px',
-        minWidth: '80px',
       }}
     >
-      <Typography
-        sx={{
-          fontSize: { xs: '0.7rem', sm: '0.9rem' },
-          fontWeight: 'bold',
-          textAlign: 'center',
-        }}
-      >
-        {`${label}: ${count}`}
-      </Typography>
-      <Typography
-        sx={{
-          fontSize: { xs: '0.6rem', sm: '0.8rem' },
-          opacity: 0.9,
-          textAlign: 'center',
-        }}
-      >
-        {`(${percentage}%)`}
-      </Typography>
+      {label}
     </Box>
   );
 });
@@ -253,35 +232,31 @@ const ComponentCard = memo(({ component, onOpenDialog }) => {
 });
 
 /** SectionAccordion Component **/
-const SectionAccordion = memo(({ section, projectCode, onOpenDialog, statusStats }) => {
+const SectionAccordion = memo(({ section, projectCode, onOpenDialog }) => {
   if (!section) return null;
 
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
 
-  const handleChange = useCallback((event, isExpanded) => {
-    setExpanded(isExpanded);
-  }, []);
+  const handleChange = (panel) => (event, isExpanded) => {
+    setExpanded(isExpanded ? panel : false);
+  };
 
-  const sectionStats = useMemo(() => {
-    return statusStats?.find((stat) => stat.section_id === section.id)?.status_counts || null;
-  }, [statusStats, section.id]);
+  const componentCount = section.components?.filter(Boolean).length || 0;
 
-  const statusChips = useMemo(() => {
-    if (!sectionStats) return [];
-
-    return Object.entries(STATUS_THAI).map(([status, label]) => ({
-      status,
-      count: sectionStats[status]?.count || 0,
-      percentage: sectionStats[status]?.percentage?.toFixed(1) || 0,
-      label: label,
-    }));
-  }, [sectionStats]);
+  const statusCounts = useMemo(() => {
+    if (!Array.isArray(section.components)) return {};
+    return section.components.reduce((acc, component) => {
+      if (!component) return acc;
+      acc[component.status] = (acc[component.status] || 0) + 1;
+      return acc;
+    }, {});
+  }, [section.components]);
 
   return (
     <Accordion
-      expanded={expanded}
-      onChange={handleChange}
+      expanded={expanded === `panel${section.id}`}
+      onChange={handleChange(`panel${section.id}`)}
       sx={{
         mb: 2,
         boxShadow: 3,
@@ -306,19 +281,16 @@ const SectionAccordion = memo(({ section, projectCode, onOpenDialog, statusStats
         <Box display="flex" alignItems="center" gap={1}>
           <Typography variant="h6">{section.name || `ชั้นที่ ${section.id}`}</Typography>
           <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-            {sectionStats ? `(${sectionStats.total} ชิ้นงาน)` : ''}
+            {getComponentCountText(componentCount)}
           </Typography>
         </Box>
         <Box display="flex" flexWrap="wrap" mt={1}>
-          {statusChips.map(({ status, label, count, percentage }) => (
-            <StatusChip
-              key={status}
-              status={status}
-              label={label}
-              count={count}
-              percentage={percentage}
-            />
-          ))}
+          {statusOrder.map((status) => {
+            const count = statusCounts[status] || 0;
+            return (
+              <StatusChip key={status} status={status} label={`${STATUS_THAI[status]}: ${count}`} />
+            );
+          })}
         </Box>
       </AccordionSummary>
       <AccordionDetails>
@@ -348,7 +320,7 @@ const ProjectModal = memo(
     onClose,
     userRole,
     userProjectIds,
-    canEdit: initialCanEdit,
+    canEdit: initialCanEdit, // Rename to avoid conflict
     onProjectSelect,
     isLoading: parentIsLoading,
     error: parentError,
@@ -360,7 +332,6 @@ const ProjectModal = memo(
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [localLoading, setLocalLoading] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(0);
-    const [sectionStats, setSectionStats] = useState([]);
 
     const hasEditPermission = useMemo(() => {
       return userRole === 'Admin' || userProjectIds?.includes(project?.id);
@@ -382,24 +353,6 @@ const ProjectModal = memo(
       () => getTotalComponentCount(project?.sections),
       [project?.sections],
     );
-
-    // Load section stats when modal opens
-    useEffect(() => {
-      const loadSectionStats = async () => {
-        if (!project?.id || !open) return;
-
-        try {
-          const stats = await fetchSectionStatusStats(project.id);
-          console.log('Got section stats:', stats);
-          setSectionStats(stats || []); // Ensure we always set an array
-        } catch (error) {
-          console.error('Error loading section stats:', error);
-          setSectionStats([]); // Set empty array on error
-        }
-      };
-
-      loadSectionStats();
-    }, [project?.id, open]); // Only depend on project ID and open state
 
     useEffect(() => {
       if (localLoading || parentIsLoading) {
@@ -442,7 +395,9 @@ const ProjectModal = memo(
       (updatedComponent) => {
         if (!project?.sections || !Array.isArray(project.sections)) return;
 
+        // เพิ่มเงื่อนไขเมื่อ component ถูกลบ (updatedComponent เป็น null)
         if (updatedComponent === null) {
+          // สร้าง sections ใหม่โดยลบ component ที่ถูกลบออก
           const updatedSections = project.sections.map((section) => {
             if (!section) return section;
             return {
@@ -453,6 +408,7 @@ const ProjectModal = memo(
             };
           });
 
+          // กรองเอาเฉพาะ section ที่มี components ที่ไม่ใช่ array ว่าง
           const filteredSections = updatedSections.filter(
             (section) =>
               section && Array.isArray(section.components) && section.components.length > 0,
@@ -464,10 +420,11 @@ const ProjectModal = memo(
           };
 
           onProjectSelect?.(updatedProject);
-          setSelectedComponent(null);
+          setSelectedComponent(null); // ปิด ComponentDialog
           return;
         }
 
+        // กรณี update ปกติ
         const updatedSections = project.sections.map((section) => {
           if (!section) return section;
           return {
@@ -597,7 +554,6 @@ const ProjectModal = memo(
                       section={section}
                       projectCode={project?.project_code}
                       onOpenDialog={handleOpenDialog}
-                      statusStats={sectionStats}
                     />
                   ),
               )}
@@ -611,7 +567,7 @@ const ProjectModal = memo(
             component={selectedComponent}
             projectCode={project?.project_code}
             onComponentUpdate={handleComponentUpdate}
-            canEdit={hasEditPermission}
+            canEdit={hasEditPermission} // Use hasEditPermission here
             userRole={userRole}
           />
         )}
