@@ -504,54 +504,62 @@ const ComponentDialog = memo(
                 {state.componentFiles.map((file, index) => (
                   <ListItem key={index}>
                     <ListItemText
-                      primary={file.file_name || `Revision ${file.revision}`}
+                      primary={`Revision ${file.revision}`}
                       secondary={new Date(file.created_at).toLocaleString('th-TH')}
+                      SS
                     />
-                    <Button onClick={() => handleFileOpen(file.s3_url)}>เปิดไฟล์</Button>
+                    <Button
+                      onClick={() => {
+                        window.open(file.s3_url, '_blank');
+                        // หรือถ้าใช้ openFile อยู่แล้ว ก็ใช้แบบนี้
+                        // handleFileOpen(file.s3_url);
+                      }}
+                    >
+                      เปิดไฟล์
+                    </Button>
                   </ListItem>
                 ))}
               </List>
               {state.componentFiles.length === 0 && <Typography>ไม่มีไฟล์ที่เกี่ยวข้อง</Typography>}
             </Box>
           );
-        case 3:
-          return (
-            <Box mt={2}>
-              <Typography variant="h6" gutterBottom>
-                อัพเดทสถานะ
-              </Typography>
-              {state.userRole === 'Admin' || hasEditPermission ? (
-                <>
-                  <Select
-                    value={state.newStatus || ''}
-                    onChange={handleStatusChange}
-                    fullWidth
-                    sx={{ mt: 2 }}
-                  >
-                    {Object.entries(STATUS_DISPLAY_MAP).map(([value, label]) => (
-                      <MenuItem key={value} value={value}>
-                        {label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleStatusUpdate}
-                    disabled={state.isUpdating}
-                    sx={{ mt: 2 }}
-                  >
-                    {state.isUpdating ? 'กำลังอัพเดท...' : 'อัพเดทสถานะ'}
-                  </Button>
-                </>
-              ) : (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  คุณไม่มีสิทธิ์ในการอัพเดทสถานะสำหรับโปรเจคนี้
-                </Alert>
-              )}
-            </Box>
-          );
-        case 4:
+          case 3:
+            return (
+              <Box mt={2}>
+                <Typography variant="h6" gutterBottom>
+                  อัพเดทสถานะ
+                </Typography>
+                {(state.userRole === 'Admin' || hasEditPermission) ? (
+                  <>
+                    <Select
+                      value={state.newStatus || ''}
+                      onChange={handleStatusChange}
+                      fullWidth
+                      sx={{ mt: 2 }}
+                    >
+                      {Object.entries(STATUS_DISPLAY_MAP).map(([value, label]) => (
+                        <MenuItem key={value} value={value}>
+                          {label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={handleStatusUpdate}
+                      disabled={state.isUpdating}
+                      sx={{ mt: 2 }}
+                    >
+                      {state.isUpdating ? 'กำลังอัพเดท...' : 'อัพเดทสถานะ'}
+                    </Button>
+                  </>
+                ) : (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    คุณไม่มีสิทธิ์ในการอัพเดทสถานะสำหรับโปรเจคนี้
+                  </Alert>
+                )}
+              </Box>
+            );case 4:
           return hasEditPermission ? (
             <Box position="relative">
               <input

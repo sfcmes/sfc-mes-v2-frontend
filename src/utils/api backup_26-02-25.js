@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// const API_BASE_URL = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -378,13 +378,10 @@ const deleteProject = async (projectId) => {
 export const fetchComponentFiles = async (componentId) => {
   try {
     const response = await api.get(`/components/${componentId}/files`);
-    return response.data.map(file => ({
-      ...file,
-      file_name: file.file_name || `Revision ${file.revision}.pdf`
-    }));
+    return response.data;
   } catch (error) {
-    console.error('Error fetching files:', error);
-    throw error;
+    console.error('Error fetching component files:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.error || 'Failed to fetch component files');
   }
 };
 
