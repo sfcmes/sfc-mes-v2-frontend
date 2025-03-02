@@ -21,6 +21,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { Close as CloseIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import ComponentDialog from './ComponentDialog';
+import RejectedComponentsDialog from './RejectedComponentsDialog';
 import { fetchSectionStatusStats } from 'src/utils/api';
 
 // CircularProgressWithLabel Component
@@ -143,11 +144,12 @@ const getComponentCountText = (count) => {
 };
 
 /** StatusChip Component **/
-const StatusChip = memo(({ status, label, count, percentage }) => {
+const StatusChip = memo(({ status, label, count, percentage, onClick }) => {
   const { bg, color } = getStatusColor(status);
   return (
     <Box
       component="span"
+      onClick={onClick}
       sx={{
         bgcolor: bg,
         color: color,
@@ -160,6 +162,12 @@ const StatusChip = memo(({ status, label, count, percentage }) => {
         alignItems: 'center',
         margin: '2px',
         minWidth: '80px',
+        cursor: 'pointer',
+        '&:hover': {
+          opacity: 0.9,
+          transform: 'scale(1.02)',
+        },
+        transition: 'all 0.2s ease',
       }}
     >
       <Typography
@@ -258,10 +266,27 @@ const SectionAccordion = memo(({ section, projectCode, onOpenDialog, statusStats
 
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
+  const [showRejectedDialog, setShowRejectedDialog] = useState(false);
 
   const handleChange = useCallback((event, isExpanded) => {
     setExpanded(isExpanded);
   }, []);
+
+  const handleStatusChipClick = useCallback((status) => {
+    if (status === 'rejected') {
+      setShowRejectedDialog(true);
+    }
+  }, []);
+
+  const handleCloseRejectedDialog = useCallback(() => {
+    setShowRejectedDialog(false);
+  }, []);
+
+  // Filter rejected components
+  const rejectedComponents = useMemo(() => {
+    if (!Array.isArray(section.components)) return [];
+    return section.components.filter(component => component.status === 'rejected');
+  }, [section.components]);
 
   const sectionStats = useMemo(() => {
     return statusStats?.find((stat) => stat.section_id === section.id)?.status_counts || null;
@@ -279,17 +304,18 @@ const SectionAccordion = memo(({ section, projectCode, onOpenDialog, statusStats
   }, [sectionStats]);
 
   return (
-    <Accordion
-      expanded={expanded}
-      onChange={handleChange}
-      sx={{
-        mb: 2,
-        boxShadow: 3,
-        '&:before': {
-          display: 'none',
-        },
-      }}
-    >
+    <>
+      <Accordion
+        expanded={expanded}
+        onChange={handleChange}
+        sx={{
+          mb: 2,
+          boxShadow: 3,
+          '&:before': {
+            display: 'none',
+          },
+        }}
+      >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         sx={{
@@ -317,6 +343,7 @@ const SectionAccordion = memo(({ section, projectCode, onOpenDialog, statusStats
               label={label}
               count={count}
               percentage={percentage}
+              onClick={() => handleStatusChipClick(status)}
             />
           ))}
         </Box>
@@ -336,7 +363,15 @@ const SectionAccordion = memo(({ section, projectCode, onOpenDialog, statusStats
             )}
         </Grid>
       </AccordionDetails>
-    </Accordion>
+      </Accordion>
+      <RejectedComponentsDialog
+        open={showRejectedDialog}
+        onClose={handleCloseRejectedDialog}
+        onComponentClick={onOpenDialog}
+        sectionId={section.id}
+        sectionName={section.name || `ชั้นที่ ${section.id}`}
+      />
+    </>
   );
 });
 

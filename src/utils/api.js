@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-// const API_BASE_URL = 'http://localhost:3000/api';
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -935,6 +935,20 @@ const fetchSectionStatusStats = async (projectId) => {
   }
 };
 
+const fetchRejectedComponentsHistory = async (sectionId) => {
+  try {
+    const url = sectionId 
+      ? `/components/rejected-history?section_id=${sectionId}`
+      : '/components/rejected-history';
+    const response = await publicApi.get(url);
+    console.log('Rejected components history:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching rejected components history:', error);
+    return [];
+  }
+};
+
 export {
   api,
   publicApi,
@@ -997,6 +1011,7 @@ export {
   deleteOtherComponentById,
   getProjectIdFromSectionId,
   fetchComponentStats,
+  fetchRejectedComponentsHistory,
 };
 
 export default api; // Keep the default export
