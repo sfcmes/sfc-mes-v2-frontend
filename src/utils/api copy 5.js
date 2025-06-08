@@ -277,43 +277,21 @@ const fetchUserById = async (userId) => {
 const downloadFile = async (fileUrl) => {
   try {
     const response = await api.get(`/download?url=${encodeURIComponent(fileUrl)}`, {
-      responseType: 'blob',
+      responseType: 'blob', // Important: This tells Axios to treat the response as binary data
     });
 
-    // Get content type from response headers
-    const contentType = response.headers['content-type'] || 'application/pdf';
-    const blob = new Blob([response.data], { type: contentType });
+    // Create a new Blob object using the response data as a Uint8Array
+    const blob = new Blob([response.data]);
 
-    // Extract filename from the Content-Disposition header if available
-    const contentDisposition = response.headers['content-disposition'];
-    let filename = 'document.pdf';
-    
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-      if (filenameMatch && filenameMatch[1]) {
-        filename = filenameMatch[1].replace(/['"]/g, '');
-      }
-    } else {
-      // Fallback: extract from original URL
-      const urlParts = fileUrl.split('/');
-      const urlFilename = urlParts[urlParts.length - 1];
-      if (urlFilename && urlFilename.includes('.')) {
-        filename = urlFilename.split('?')[0]; // Remove query parameters
-      }
-    }
-
-    // Create download link
+    // Create a link element, set the download attribute, and click it
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.download = filename;
-    
-    // Add to DOM, click, and remove (required for some browsers)
-    document.body.appendChild(link);
+    link.download = 'document.pdf'; // You can set a default name or use the one from the server if available
     link.click();
-    document.body.removeChild(link);
 
-    // Clean up the blob URL
+    // Clean up by revoking the Object URL
     window.URL.revokeObjectURL(link.href);
+
     return true;
   } catch (error) {
     console.error('Error downloading file:', error);
