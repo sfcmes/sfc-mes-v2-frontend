@@ -397,6 +397,7 @@ const ProjectModal = memo(
     const [localLoading, setLocalLoading] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(0);
     const [sectionStats, setSectionStats] = useState([]);
+    const [sectionStatsRefreshTrigger, setSectionStatsRefreshTrigger] = useState(0);
 
     const hasEditPermission = useMemo(() => {
       return userRole === 'Admin' || userProjectIds?.includes(project?.id);
@@ -419,14 +420,15 @@ const ProjectModal = memo(
       [project?.sections],
     );
 
-    // Load section stats when modal opens
+    // Load section stats when modal opens and when components are updated
     useEffect(() => {
       const loadSectionStats = async () => {
         if (!project?.id || !open) return;
 
         try {
+          console.log('Refreshing section stats for project:', project.id);
           const stats = await fetchSectionStatusStats(project.id);
-          console.log('Got section stats:', stats);
+          console.log('Updated section stats:', stats);
           setSectionStats(stats || []); // Ensure we always set an array
         } catch (error) {
           console.error('Error loading section stats:', error);
@@ -435,7 +437,7 @@ const ProjectModal = memo(
       };
 
       loadSectionStats();
-    }, [project?.id, open]); // Only depend on project ID and open state
+    }, [project?.id, open, sectionStatsRefreshTrigger]); // Depend on refresh trigger instead of sections
 
     useEffect(() => {
       if (localLoading || parentIsLoading) {
@@ -499,10 +501,11 @@ const ProjectModal = memo(
             sections: filteredSections,
           };
 
-          onProjectSelect?.(updatedProject);
-          onComponentUpdate?.(); // Trigger refresh of TopCards
-          setSelectedComponent(null);
-          return;
+        onProjectSelect?.(updatedProject);
+        onComponentUpdate?.(); // Trigger refresh of TopCards
+        setSectionStatsRefreshTrigger(prev => prev + 1); // Trigger section stats refresh
+        setSelectedComponent(null);
+        return;
         }
 
         const updatedSections = project.sections.map((section) => {
@@ -524,6 +527,7 @@ const ProjectModal = memo(
 
         onProjectSelect?.(updatedProject);
         onComponentUpdate?.(); // Trigger refresh of TopCards
+        setSectionStatsRefreshTrigger(prev => prev + 1); // Trigger section stats refresh
       },
       [project, onProjectSelect, selectedComponent, onComponentUpdate],
     );
