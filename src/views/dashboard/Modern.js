@@ -34,6 +34,7 @@ const Modern = () => {
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleComponentUpdate = useCallback(() => {
+    console.log('Component updated, triggering refresh');
     setRefreshTrigger((prev) => prev + 1);
   }, []);
 
@@ -206,6 +207,7 @@ const Modern = () => {
                 projectId={selectedProject?.id}
                 projectName={selectedProject?.name}
                 isResetState={currentTab === '2'}
+                refreshTrigger={refreshTrigger}
               />
             </Grid>
           )}
@@ -217,6 +219,7 @@ const Modern = () => {
               refreshTrigger={refreshTrigger}
               onTabChange={handleTabChange}
               userProjects={userProjects}
+              onComponentUpdate={handleComponentUpdate}
             />
           </Grid>
           <Grid item xs={12} lg={4}>

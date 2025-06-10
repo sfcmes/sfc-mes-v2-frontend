@@ -131,7 +131,7 @@ const ProjectSummary = ({ stats, projectName, isXsScreen }) => (
 );
 
 // Main TopCards Component
-const TopCards = ({ projectId, projectName, isResetState }) => {
+const TopCards = ({ projectId, projectName, isResetState, refreshTrigger }) => {
   const [stats, setStats] = useState({
     manufactured_count: 0,
     transported_count: 0,
@@ -160,7 +160,9 @@ const TopCards = ({ projectId, projectName, isResetState }) => {
 
       setLoading(true);
       try {
+        console.log('Refreshing component stats for project:', projectId);
         const data = await fetchComponentStats(projectId);
+        console.log('Updated stats:', data);
         setStats(data);
       } catch (error) {
         console.error('Error loading stats:', error);
@@ -171,7 +173,7 @@ const TopCards = ({ projectId, projectName, isResetState }) => {
     };
 
     loadStats();
-  }, [projectId, isResetState]);
+  }, [projectId, isResetState, refreshTrigger]);
 
   if (loading || !stats) return null;
 

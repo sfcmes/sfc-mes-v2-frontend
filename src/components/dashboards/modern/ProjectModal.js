@@ -385,6 +385,7 @@ const ProjectModal = memo(
     userProjectIds,
     canEdit: initialCanEdit,
     onProjectSelect,
+    onComponentUpdate,
     isLoading: parentIsLoading,
     error: parentError,
   }) => {
@@ -499,6 +500,7 @@ const ProjectModal = memo(
           };
 
           onProjectSelect?.(updatedProject);
+          onComponentUpdate?.(); // Trigger refresh of TopCards
           setSelectedComponent(null);
           return;
         }
@@ -521,8 +523,9 @@ const ProjectModal = memo(
         };
 
         onProjectSelect?.(updatedProject);
+        onComponentUpdate?.(); // Trigger refresh of TopCards
       },
-      [project, onProjectSelect, selectedComponent],
+      [project, onProjectSelect, selectedComponent, onComponentUpdate],
     );
 
     useEffect(() => {

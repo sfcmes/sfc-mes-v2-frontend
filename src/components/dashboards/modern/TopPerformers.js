@@ -129,7 +129,7 @@ function CircularProgressWithLabel({ value }) {
 
 // ProjectRow Component
 const ProjectRow = memo(
-  ({ project, userRole, selectedProjectId, onProjectSelect, isSmallScreen, userProjectIds }) => {
+  ({ project, userRole, selectedProjectId, onProjectSelect, isSmallScreen, userProjectIds, onComponentUpdate }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(0);
     const [localProject, setLocalProject] = useState(project);
@@ -240,6 +240,7 @@ const ProjectRow = memo(
               userRole={userRole}
               canEdit={canEditProject} // ส่ง canEditProject
               userProjectIds={userProjectIds} // เพิ่ม prop นี้
+              onComponentUpdate={onComponentUpdate}
               onProjectSelect={(updatedProject) => {
                 setLocalProject(updatedProject);
                 onProjectSelect(updatedProject);
@@ -256,7 +257,7 @@ const ProjectRow = memo(
 );
 
 // Main TopPerformers Component
-const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabChange, userId }) => {
+const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabChange, userId, onComponentUpdate }) => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -489,6 +490,7 @@ const TopPerformers = memo(({ onProjectSelect, userRole, refreshTrigger, onTabCh
                     onProjectSelect={onProjectSelect}
                     isSmallScreen={isSmallScreen}
                     userProjectIds={state.userProjectIds}
+                    onComponentUpdate={onComponentUpdate}
                   />
                 ))
               ) : (
