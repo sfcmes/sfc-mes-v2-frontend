@@ -123,20 +123,21 @@ const FileManagement = ({
   };
 
   // Handle file actions (download/open)
-  const handleFileAction = async (fileUrl, action) => {
+  const handleFileAction = async (file, action) => {
     try {
       setIsLoading(true);
       if (action === 'download') {
-        await downloadFile(fileUrl);
+        await downloadFile(file.s3_url, componentId, file.revision);
         setSnackbarMessage('ดาวน์โหลดไฟล์สำเร็จ');
       } else if (action === 'open') {
-        await openFile(fileUrl);
+        await openFile(file.s3_url);
         setSnackbarMessage('เปิดไฟล์สำเร็จ');
       }
       setSnackbarOpen(true);
     } catch (err) {
       console.error(`Error ${action}ing file:`, err);
-      setSnackbarMessage(`ไม่สามารถ${action === 'download' ? 'ดาวน์โหลด' : 'เปิด'}ไฟล์ได้ กรุณาลองใหม่`);
+      const errorMessage = err.message || `ไม่สามารถ${action === 'download' ? 'ดาวน์โหลด' : 'เปิด'}ไฟล์ได้ กรุณาลองใหม่`;
+      setSnackbarMessage(errorMessage);
       setSnackbarOpen(true);
     } finally {
       setIsLoading(false);
@@ -232,14 +233,14 @@ const FileManagement = ({
               </TableCell>
               <TableCell align="right">
                 <IconButton 
-                  onClick={() => handleFileAction(file.s3_url, 'download')}
+                  onClick={() => handleFileAction(file, 'download')}
                   title="ดาวน์โหลด"
                   disabled={isLoading}
                 >
                   <GetAppIcon />
                 </IconButton>
                 <IconButton 
-                  onClick={() => handleFileAction(file.s3_url, 'open')}
+                  onClick={() => handleFileAction(file, 'open')}
                   title="เปิดดู"
                   disabled={isLoading}
                 >

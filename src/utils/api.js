@@ -291,10 +291,15 @@ const downloadFile = async (fileUrl, componentId = null, revision = null) => {
     
     const response = await api.get(downloadUrl, {
       responseType: 'blob',
-      timeout: 30000, // 30 seconds timeout
+      timeout: 60000, // Increased to 60 seconds timeout
     });
 
     console.log('Download response headers:', response.headers);
+
+    // Check if response is successful
+    if (!response.data || response.data.size === 0) {
+      throw new Error('ไฟล์ที่ดาวน์โหลดมาว่างเปล่า');
+    }
 
     // Get content type and create blob
     const contentType = response.headers['content-type'] || 'application/pdf';
@@ -345,9 +350,26 @@ const downloadFile = async (fileUrl, componentId = null, revision = null) => {
     return true;
   } catch (error) {
     console.error('Download failed:', error);
-    // Show user-friendly error message
-    alert('การดาวน์โหลดล้มเหลว กรุณาลองใหม่อีกครั้ง');
-    throw error;
+    
+    // Provide more specific error messages
+    let errorMessage = 'การดาวน์โหลดล้มเหลว กรุณาลองใหม่อีกครั้ง';
+    
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      errorMessage = 'การดาวน์โหลดใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง';
+    } else if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage = 'ไม่พบไฟล์ที่ต้องการดาวน์โหลด';
+      } else if (error.response.status === 403) {
+        errorMessage = 'ไม่มีสิทธิ์ในการดาวน์โหลดไฟล์นี้';
+      } else if (error.response.status >= 500) {
+        errorMessage = 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่ภายหลัง';
+      }
+    } else if (error.message.includes('Network Error')) {
+      errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต';
+    }
+    
+    // Throw error with user-friendly message
+    throw new Error(errorMessage);
   }
 };
 
