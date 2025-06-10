@@ -25,17 +25,24 @@ const SidebarItems = () => {
       // Non-authenticated users
       return Menuitems.filter(item => 
         item.href === '/dashboards/modern' || 
-        (item.title === 'Login' && item.href === '/auth/login')
+        (item.title === 'Login' && item.href === '/auth/login') ||
+        item.title === 'COMPANY PROFILE'
       );
     } else if (user.role === 'Admin') {
       // Admin users can access all routes
       return Menuitems;
     } else if (user.role === 'Site User') {
-      // Site Users can only access the Modern Dashboard
-      return Menuitems.filter(item => item.href === '/dashboards/modern');
+      // Site Users can only access the Modern Dashboard and Company Profile
+      return Menuitems.filter(item => 
+        item.href === '/dashboards/modern' || 
+        item.title === 'COMPANY PROFILE'
+      );
     } else {
-      // Default case: only show Modern Dashboard
-      return Menuitems.filter(item => item.href === '/dashboards/modern');
+      // Default case: only show Modern Dashboard and Company Profile
+      return Menuitems.filter(item => 
+        item.href === '/dashboards/modern' || 
+        item.title === 'COMPANY PROFILE'
+      );
     }
   }, [user]);
 
