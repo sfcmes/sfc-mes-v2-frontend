@@ -274,24 +274,49 @@ const fetchUserById = async (userId) => {
   }
 };
 
-const downloadFile = async (fileUrl) => {
+const downloadFile = async (fileUrl, componentId = null, revision = null) => {
   try {
-    const response = await api.get(`/download?url=${encodeURIComponent(fileUrl)}`, {
+    console.log('Starting download:', { fileUrl, componentId, revision });
+    
+    // Build download URL with parameters
+    let downloadUrl = `/download?url=${encodeURIComponent(fileUrl)}`;
+    if (componentId) {
+      downloadUrl += `&componentId=${componentId}`;
+    }
+    if (revision) {
+      downloadUrl += `&revision=${revision}`;
+    }
+    
+    console.log('Download URL:', downloadUrl);
+    
+    const response = await api.get(downloadUrl, {
       responseType: 'blob',
+      timeout: 30000, // 30 seconds timeout
     });
 
-    // Get content type from response headers
+    console.log('Download response headers:', response.headers);
+
+    // Get content type and create blob
     const contentType = response.headers['content-type'] || 'application/pdf';
     const blob = new Blob([response.data], { type: contentType });
 
-    // Extract filename from the Content-Disposition header if available
+    // Extract filename from Content-Disposition header
     const contentDisposition = response.headers['content-disposition'];
     let filename = 'document.pdf';
     
     if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-      if (filenameMatch && filenameMatch[1]) {
-        filename = filenameMatch[1].replace(/['"]/g, '');
+      console.log('Content-Disposition:', contentDisposition);
+      
+      // Handle both regular and UTF-8 encoded filenames
+      const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch) {
+        if (filenameMatch[1]) {
+          // UTF-8 encoded filename
+          filename = decodeURIComponent(filenameMatch[1]);
+        } else if (filenameMatch[2]) {
+          // Regular filename
+          filename = filenameMatch[2].replace(/['"]/g, '');
+        }
       }
     } else {
       // Fallback: extract from original URL
@@ -302,24 +327,30 @@ const downloadFile = async (fileUrl) => {
       }
     }
 
-    // Create download link
+    console.log('Final filename:', filename);
+
+    // Create and trigger download
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
     link.download = filename;
     
-    // Add to DOM, click, and remove (required for some browsers)
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    // Clean up the blob URL
+    // Clean up
     window.URL.revokeObjectURL(link.href);
+    
+    console.log('Download completed successfully');
     return true;
   } catch (error) {
-    console.error('Error downloading file:', error);
+    console.error('Download failed:', error);
+    // Show user-friendly error message
+    alert('การดาวน์โหลดล้มเหลว กรุณาลองใหม่อีกครั้ง');
     throw error;
   }
 };
+
 
 const openFile = async (fileUrl) => {
   try {
